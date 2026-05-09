@@ -32,8 +32,6 @@ import {
    Mars,
    Venus,
    VenusAndMars,
-   Sun,
-   Moon,
 } from "lucide-react"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -106,8 +104,8 @@ function Slide({ children, dir = 1 }: { children: React.ReactNode; dir?: number 
 
 export default function Onboarding() {
    const navigate = useNavigate()
-   const { completeOnboarding, isDarkMode, toggleDarkMode } = useStore()
-   const { trigger } = useWebHaptics()
+   const { completeOnboarding } = useStore()
+   const { trigger } = useWebHaptics({ debug: true })
    const [stepIdx, setStepIdx] = useState(0)
    const [dir, setDir] = useState(1)
    const [form, setForm] = useState<FormData>({
@@ -144,11 +142,7 @@ export default function Onboarding() {
 
       // Todos los haptics deben dispararse SINCRÓNICAMENTE en el user gesture
       // (los browsers bloquean vibrate() en callbacks async/setTimeout)
-      if (window.navigator && window.navigator.vibrate) {
-         window.navigator.vibrate([
-            25, 80, 25, 80, 25, 80, 25, 80, 25, 80, 25, 80, 25, 80, 25, 80,
-         ])
-      }
+      trigger([{ duration: 750 }], { intensity: 0.64 })
 
       // Solo el efecto visual usa setTimeout
       for (let i = 0; i < 14; i++) {
@@ -237,17 +231,10 @@ export default function Onboarding() {
    const showProgress = progressIdx >= 0
 
    return (
-      <div className="flex flex-col h-full bg-background font-sans select-none relative">
-         <button
-            onClick={toggleDarkMode}
-            className="absolute top-6 right-6 z-50 w-10 h-10 rounded-full border border-card-border bg-card-bg flex items-center justify-center text-foreground shadow-sm"
-         >
-            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-         </button>
-
+      <div className="flex flex-col h-full bg-background font-sans select-none">
          {/* ── Header ── */}
          {!isFirst && step !== "summary" && (
-            <div className="flex items-center px-6 pt-6 pb-2 gap-4 shrink-0 pr-16">
+            <div className="flex items-center px-6 pt-6 pb-2 gap-4 shrink-0">
                <button
                   onClick={() => go(-1)}
                   className="w-10 h-10 rounded-full border border-card-border bg-card-bg flex items-center justify-center text-foreground shadow-sm">
@@ -417,6 +404,7 @@ export default function Onboarding() {
                                  <button
                                     key={opt.value}
                                     onClick={() => {
+                                       trigger("rigid")
                                        setForm({ ...form, goal: opt.value })
                                        setTimeout(() => go(1), 180)
                                     }}
@@ -477,6 +465,7 @@ export default function Onboarding() {
                                  <button
                                     key={opt.value}
                                     onClick={() => {
+                                       trigger("rigid")
                                        setForm({ ...form, gender: opt.value })
                                        setTimeout(() => go(1), 180)
                                     }}
@@ -660,6 +649,7 @@ export default function Onboarding() {
                                  <button
                                     key={opt.value}
                                     onClick={() => {
+                                       trigger("rigid")
                                        setForm({ ...form, level: opt.value })
                                        setTimeout(() => go(1), 180)
                                     }}
@@ -732,6 +722,7 @@ export default function Onboarding() {
                                  <button
                                     key={opt.value}
                                     onClick={() => {
+                                       trigger("rigid")
                                        setForm({
                                           ...form,
                                           timePerSession: opt.value,
@@ -807,7 +798,10 @@ export default function Onboarding() {
                               return (
                                  <button
                                     key={opt.value}
-                                    onClick={() => togglePref(opt.value)}
+                                    onClick={() => {
+                                       trigger("rigid")
+                                       togglePref(opt.value)
+                                    }}
                                     className={`p-5 rounded-2xl text-left border-2 flex items-center gap-4 transition-all ${
                                        selected
                                           ? "border-primary bg-primary/5 shadow-md shadow-primary/10"
@@ -875,6 +869,7 @@ export default function Onboarding() {
                                  <button
                                     key={opt.value}
                                     onClick={() => {
+                                       trigger("rigid")
                                        setForm({ ...form, vibe: opt.value })
                                        setTimeout(() => go(1), 180)
                                     }}
@@ -960,7 +955,7 @@ export default function Onboarding() {
                                  ref={addBtnRef}
                                  onClick={handleFoodDemo}
                                  disabled={!demoFood.trim()}
-                                 className="relative z-[9999999] w-full bg-primary text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-all disabled:opacity-40">
+                                 className="w-full bg-primary text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-all disabled:opacity-40">
                                  <span className="text-lg">+</span> Agregar Comida
                               </button>
                            )}
@@ -1043,7 +1038,7 @@ export default function Onboarding() {
          </div>
 
          {/* ── Footer CTA ── */}
-         <div className="shrink-0 h-[88px] relative w-full">
+         <div className="shrink-0 h-[116px] relative w-full">
             <AnimatePresence mode="wait">
                {(() => {
                   let btn = null
@@ -1096,7 +1091,7 @@ export default function Onboarding() {
                         whileTap={{ scale: 0.95 }}
                         onClick={btn.onClick}
                         disabled={btn.disabled}
-                        className="absolute left-6 right-6 top-0 bg-primary text-white font-extrabold text-lg py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-primary/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                        className="absolute left-6 right-6 top-4 bg-primary text-white font-extrabold text-lg py-5 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-primary/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                         {btn.label}
                         {btn.icon}
                      </motion.button>

@@ -9,6 +9,7 @@ import Progress from '@/pages/Progress';
 import Profile from '@/pages/Profile';
 import Onboarding from '@/pages/Onboarding';
 import { useStore } from '@/store/useStore';
+import { useWebHaptics } from 'web-haptics/react';
 
 // Premium iOS-like page transition variants
 const pageVariants = {
@@ -59,6 +60,7 @@ function Layout() {
   const { pathname } = useLocation();
   const isOnboarding = pathname === '/onboarding';
   const isDarkMode = useStore((state) => state.isDarkMode);
+  const { trigger } = useWebHaptics({ debug: true });
 
   useEffect(() => {
     if (isDarkMode) {
@@ -67,6 +69,18 @@ function Layout() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  useEffect(() => {
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement;
+      const btn = target.closest('button, a, [role="button"]');
+      if (btn && !btn.hasAttribute('data-no-haptic')) {
+        trigger('light');
+      }
+    };
+    window.addEventListener('pointerdown', handlePointerDown);
+    return () => window.removeEventListener('pointerdown', handlePointerDown);
+  }, [trigger]);
 
   return (
     <div className={`min-h-screen font-sans flex ${isOnboarding ? 'bg-background' : 'flex-col md:flex-row bg-background'}`}>

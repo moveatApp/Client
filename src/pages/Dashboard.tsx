@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import confetti from "canvas-confetti"
 import { useStore } from "@/store/useStore"
+import { useWebHaptics } from "web-haptics/react"
 import {
    CheckCircle,
    CircleDashed,
@@ -20,6 +21,7 @@ export default function Home() {
    const navigate = useNavigate()
    const { isOnboarded, user, streak, targetCalories, dailyCalories, waterGlasses, resetWater, addWater } =
       useStore()
+   const { trigger } = useWebHaptics({ debug: true })
    const hydrationButtonRef = useRef<HTMLButtonElement>(null)
    const [mounted, setMounted] = useState(false)
    const [isCompletingWater, setIsCompletingWater] = useState(false)
@@ -52,6 +54,7 @@ export default function Home() {
             const y = (rect.top + rect.height / 2) / window.innerHeight
             
             setTimeout(() => {
+               trigger("success")
                confetti({
                   particleCount: 25,
                   spread: 45,
