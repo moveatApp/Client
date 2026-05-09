@@ -85,10 +85,10 @@ function Layout() {
   return (
     <div className={`min-h-screen font-sans flex ${isOnboarding ? 'bg-background' : 'flex-col md:flex-row bg-background'}`}>
       {!isOnboarding && <Navigation />}
-      <main className={`flex-1 w-full overflow-hidden ${isOnboarding ? 'flex items-start md:items-center justify-center' : 'overflow-y-auto pb-20 md:pb-0'}`}>
+      <main className={`flex-1 w-full overflow-hidden ${isOnboarding ? 'flex justify-center bg-background' : 'overflow-y-auto pb-20 md:pb-0'}`}>
         {isOnboarding ? (
-          // Onboarding: full-screen on mobile, centered card on desktop
-          <div className="w-full max-w-md md:max-w-md h-screen md:h-[820px] md:my-8 md:rounded-[32px] md:shadow-2xl md:border md:border-card-border bg-card-bg flex flex-col overflow-hidden">
+          // Onboarding: full-screen on all devices, slightly reduced max height
+          <div className="w-full max-w-md h-[100dvh] max-h-[820px] md:my-auto flex flex-col overflow-hidden">
             <AnimatedRoutes />
           </div>
         ) : (

@@ -1,10 +1,10 @@
 import { useStore } from "@/store/useStore"
-import { Settings, LogOut, User, Activity, Dumbbell, Calendar } from "lucide-react"
+import { Settings, LogOut, User, Activity, Dumbbell, Calendar, Moon, Sun } from "lucide-react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 
 export default function ProfilePage() {
-   const { user, streak, xp, targetCalories, resetDaily, resetProgress } = useStore()
+   const { user, streak, xp, targetCalories, resetDaily, resetProgress, isDarkMode, toggleDarkMode } = useStore()
    const navigate = useNavigate()
 
    if (!user) return null
@@ -15,9 +15,17 @@ export default function ProfilePage() {
             <h1 className="text-3xl font-display font-extrabold text-foreground tracking-tight">
                Perfil
             </h1>
-            <button className="p-2 text-gray-400 hover:text-foreground transition-colors bg-card-bg rounded-full shadow-sm border border-card-border">
-               <Settings size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+               <button
+                  onClick={toggleDarkMode}
+                  className="p-2 text-gray-400 hover:text-foreground transition-colors bg-card-bg rounded-full shadow-sm border border-card-border"
+               >
+                  {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+               </button>
+               <button className="p-2 text-gray-400 hover:text-foreground transition-colors bg-card-bg rounded-full shadow-sm border border-card-border">
+                  <Settings size={20} />
+               </button>
+            </div>
          </header>
 
          <motion.div
