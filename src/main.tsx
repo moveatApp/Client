@@ -15,8 +15,15 @@ if (typeof window !== "undefined") {
    })
 }
 
+// import { GoogleOAuthProvider } from "@react-oauth/google"
+
+// Placeholder Client ID for Google Auth
+// const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE"
+
 createRoot(document.getElementById("root")!).render(
    <StrictMode>
-      <App />
+      {/* <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}> */}
+         <App />
+      {/* </GoogleOAuthProvider> */}
    </StrictMode>,
 )

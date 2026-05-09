@@ -4,6 +4,7 @@ import { useStore } from "@/store/useStore"
 import { motion, AnimatePresence } from "framer-motion"
 import { useWebHaptics } from "web-haptics/react"
 import { emojiBlast } from "emoji-blast"
+// import { useGoogleLogin } from "@react-oauth/google"
 import {
    ArrowRight,
    ArrowLeft,
@@ -97,7 +98,7 @@ function Slide({ children, dir = 1 }: { children: React.ReactNode; dir?: number 
          animate={{ x: 0, opacity: 1 }}
          exit={{ x: -dir * 40, opacity: 0 }}
          transition={{ duration: 0.3, ease: "easeInOut" }}
-         className="flex flex-col h-full">
+         className="flex flex-col min-h-full">
          {children}
       </motion.div>
    )
@@ -127,6 +128,17 @@ export default function Onboarding() {
    const [demoFood, setDemoFood] = useState("")
    const [demoAdded, setDemoAdded] = useState(false)
    const addBtnRef = useRef<HTMLButtonElement>(null)
+
+   /* 
+   const loginWithGoogle = useGoogleLogin({
+      onSuccess: (codeResponse) => {
+         console.log("Google Auth Success:", codeResponse)
+         trigger("success")
+         finish()
+      },
+      onError: (error) => console.log("Google Login Failed:", error),
+   })
+   */
 
    const step = STEPS[stepIdx]
    const isFirst = stepIdx === 0
@@ -239,8 +251,7 @@ export default function Onboarding() {
          <div className="absolute top-6 right-6 z-50">
             <button
                onClick={toggleDarkMode}
-               className="w-10 h-10 rounded-full bg-card-bg border border-card-border flex items-center justify-center text-foreground shadow-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-            >
+               className="w-10 h-10 rounded-full bg-card-bg border border-card-border flex items-center justify-center text-foreground shadow-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
          </div>
@@ -270,7 +281,7 @@ export default function Onboarding() {
          )}
 
          {/* ── Content ── */}
-         <div className="flex-1 flex flex-col px-6 py-4 overflow-hidden relative z-10 pt-16">
+         <div className="flex-1 flex flex-col px-6 py-4 overflow-y-auto relative z-10 pt-16 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <AnimatePresence mode="wait">
                <Slide key={step} dir={dir}>
                   {/* ══ WELCOME ══════════════════════════════════════════════ */}
@@ -332,7 +343,7 @@ export default function Onboarding() {
 
                   {/* ══ NAME ═════════════════════════════════════════════════ */}
                   {step === "name" && (
-                     <div className="flex flex-col flex-1 justify-center gap-8">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
                               Paso 1
@@ -369,7 +380,7 @@ export default function Onboarding() {
 
                   {/* ══ GOAL ═════════════════════════════════════════════════ */}
                   {step === "goal" && (
-                     <div className="flex flex-col flex-1 justify-center gap-6">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-6">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
                               Objetivo
@@ -448,7 +459,7 @@ export default function Onboarding() {
 
                   {/* ══ GENDER ═══════════════════════════════════════════════ */}
                   {step === "gender" && (
-                     <div className="flex flex-col flex-1 justify-center gap-8">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
                               Perfil
@@ -498,7 +509,7 @@ export default function Onboarding() {
 
                   {/* ══ AGE ══════════════════════════════════════════════════ */}
                   {step === "age" && (
-                     <div className="flex flex-col flex-1 justify-center gap-8">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
                               Perfil
@@ -533,7 +544,7 @@ export default function Onboarding() {
 
                   {/* ══ METRICS ══════════════════════════════════════════════ */}
                   {step === "metrics" && (
-                     <div className="flex flex-col flex-1 justify-center gap-8">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
                               Tu cuerpo
@@ -617,7 +628,7 @@ export default function Onboarding() {
 
                   {/* ══ LEVEL ════════════════════════════════════════════════ */}
                   {step === "level" && (
-                     <div className="flex flex-col flex-1 justify-center gap-6">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-6">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
                               Actividad
@@ -693,7 +704,7 @@ export default function Onboarding() {
 
                   {/* ══ TIME ═════════════════════════════════════════════════ */}
                   {step === "time" && (
-                     <div className="flex flex-col flex-1 justify-center gap-8">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
                               Sesiones
@@ -769,7 +780,7 @@ export default function Onboarding() {
 
                   {/* ══ PREFERENCES ══════════════════════════════════════════ */}
                   {step === "preferences" && (
-                     <div className="flex flex-col flex-1 justify-center gap-6">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-6">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
                               Alimentación
@@ -837,7 +848,7 @@ export default function Onboarding() {
 
                   {/* ══ VIBE ═════════════════════════════════════════════════ */}
                   {step === "vibe" && (
-                     <div className="flex flex-col flex-1 justify-center gap-8">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
                               Check-in
@@ -913,7 +924,7 @@ export default function Onboarding() {
 
                   {/* ══ FOOD DEMO ════════════════════════════════════════════ */}
                   {step === "fooddemo" && (
-                     <div className="flex flex-col flex-1 justify-center gap-6 relative">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-6 relative">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
                               Demo
@@ -979,7 +990,7 @@ export default function Onboarding() {
 
                   {/* ══ SUMMARY ══════════════════════════════════════════════ */}
                   {step === "summary" && (
-                     <div className="flex flex-col flex-1 justify-center gap-6">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-6">
                         <div className="text-center">
                            <motion.div
                               initial={{ scale: 0 }}
@@ -1044,34 +1055,37 @@ export default function Onboarding() {
 
                   {/* ══ LOGIN ═════════════════════════════════════════════════ */}
                   {step === "login" && (
-                     <div className="flex flex-col flex-1 justify-center gap-6 items-center text-center">
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-6 items-center text-center">
                         <motion.div
                            initial={{ scale: 0.8, opacity: 0 }}
                            animate={{ scale: 1, opacity: 1 }}
                            transition={{ type: "spring", stiffness: 200 }}
-                           className="mb-4"
-                        >
-                           <img src="/logo-manzana.png" alt="MovEat" className="w-24 h-24 object-contain mx-auto drop-shadow-sm" />
+                           className="mb-4">
+                           <img
+                              src="/logo-manzana.png"
+                              alt="MovEat"
+                              className="w-24 h-24 object-contain mx-auto drop-shadow-sm"
+                           />
                         </motion.div>
-                        
+
                         <div>
                            <h2 className="text-3xl font-display font-extrabold text-foreground mb-2 leading-tight">
                               Crea tu cuenta
                            </h2>
                            <p className="text-gray-400 text-sm font-medium px-4">
-                              Guardá tu progreso y conectá tu perfil con la nube para no perder nunca tus datos.
+                              Guardá tu progreso y conectá tu perfil con la nube para
+                              no perder nunca tus datos.
                            </p>
                         </div>
 
                         <div className="w-full max-w-sm mt-6">
                            <button
                               onClick={() => {
-                                 // Acá irá la integración con el backend para Google Auth
+                                 // loginWithGoogle()
                                  trigger("success")
                                  finish()
                               }}
-                              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm hover:bg-gray-50 transition-all active:scale-95"
-                           >
+                              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm hover:bg-gray-50 transition-all active:scale-95">
                               <svg className="w-5 h-5" viewBox="0 0 24 24">
                                  <path
                                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -1091,16 +1105,6 @@ export default function Onboarding() {
                                  />
                               </svg>
                               Continuar con Google
-                           </button>
-                           
-                           <button
-                              onClick={() => {
-                                 trigger("light")
-                                 finish()
-                              }}
-                              className="w-full mt-4 text-sm font-bold text-gray-400 hover:text-foreground transition-colors"
-                           >
-                              Omitir por ahora
                            </button>
                         </div>
                      </div>

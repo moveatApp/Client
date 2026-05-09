@@ -44,7 +44,7 @@ export default function Home() {
       const nextGlasses = waterGlasses + 1
       addWater()
 
-      if (nextGlasses === 4) {
+      if (nextGlasses === 10) {
          setIsCompletingWater(true)
          
          const cardElement = hydrationButtonRef.current?.closest('section')
@@ -180,15 +180,12 @@ export default function Home() {
                animate={{ y: 0, opacity: 1 }}
                transition={{ delay: 0.2 }}
                className="col-span-1 bg-primary text-white rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px] md:min-h-[140px]">
-               <div className="flex justify-between items-start">
-                  <h3 className="font-bold flex items-center gap-2 text-sm">
-                     <span className="bg-white/10 p-1.5 rounded-lg">
-                        <Droplet size={16} />
-                     </span>
+               <div className="flex justify-between items-center">
+                  <h3 className="font-bold text-sm">
                      Hidratación
                   </h3>
                   {useStore.getState().waterLiters > 0 && (
-                     <div className="bg-white/20 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                     <div className="text-xs font-bold opacity-80">
                         {useStore.getState().waterLiters}L
                      </div>
                   )}
@@ -213,17 +210,19 @@ export default function Home() {
                            </motion.div>
                         </motion.div>
                      ) : (
-                        <div className="flex gap-3">
-                           {[...Array(4)].map((_, i) => (
+                        <div className="grid grid-cols-5 gap-x-2 gap-y-2 justify-items-center mt-2">
+                           {[...Array(10)].map((_, i) => (
                               <motion.div
                                  key={i}
-                                 className={`w-8 h-8 rounded-xl flex items-center justify-center border-2 transition-all ${
+                                 onClick={handleWaterClick}
+                                 className={`cursor-pointer transition-all duration-300 flex items-center justify-center ${
                                     i < waterGlasses
-                                       ? "bg-white text-primary border-white"
-                                       : "bg-transparent border-white/20 text-white"
+                                       ? "text-white scale-110 drop-shadow-sm"
+                                       : "text-white/30 scale-100 hover:text-white/50"
                                  }`}>
                                  <Droplet
-                                    size={16}
+                                    size={24}
+                                    strokeWidth={i < waterGlasses ? 0 : 2}
                                     fill={i < waterGlasses ? "currentColor" : "none"}
                                  />
                               </motion.div>
@@ -236,7 +235,7 @@ export default function Home() {
                <div className="relative z-10 flex items-end justify-between w-full">
                   <div className="flex flex-col">
                      <span className="text-3xl font-display font-bold">
-                        {waterGlasses * 250}
+                        {waterGlasses * 100}
                         <span className="text-lg font-normal opacity-70 ml-1">ml</span>
                      </span>
                   </div>
