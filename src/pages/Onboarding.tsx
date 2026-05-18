@@ -4,7 +4,7 @@ import { useStore } from "@/store/useStore"
 import { motion, AnimatePresence } from "framer-motion"
 import { useWebHaptics } from "web-haptics/react"
 import { emojiBlast } from "emoji-blast"
-// import { useGoogleLogin } from "@react-oauth/google"
+import { useGoogleLogin } from "@react-oauth/google"
 import {
    ArrowRight,
    ArrowLeft,
@@ -128,17 +128,166 @@ export default function Onboarding() {
    const [demoFood, setDemoFood] = useState("")
    const [demoAdded, setDemoAdded] = useState(false)
    const addBtnRef = useRef<HTMLButtonElement>(null)
+   const [isAuthenticating, setIsAuthenticating] = useState(false)
+   const [email, setEmail] = useState("")
+   const [password, setPassword] = useState("")
+   const [phoneNumber, setPhoneNumber] = useState("")
+   const [authError, setAuthError] = useState("")
+   const [isLoginMode, setIsLoginMode] = useState(false)
+   const [phoneError, setPhoneError] = useState("")
+   const [emailError, setEmailError] = useState("")
 
-   /* 
+   const handleEmailSignup = async () => {
+      setAuthError("")
+      setPhoneError("")
+      setEmailError("")
+      if (!email || !password || !phoneNumber) {
+         setAuthError("Completá todos los campos")
+         return
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+         setEmailError("Ingresa un correo electrónico válido")
+         trigger("rigid")
+         return
+      }
+
+      const phoneRegex = /^\+?[0-9]{8,15}$/
+      if (!phoneRegex.test(phoneNumber.replace(/\s/g, ""))) {
+         setPhoneError("Ingresa un número de teléfono válido")
+         trigger("rigid")
+         return
+      }
+
+      if (
+         password.length < 8 ||
+         !/[A-Z]/.test(password) ||
+         !/[^a-zA-Z0-9]/.test(password)
+      ) {
+         setAuthError("La contraseña no cumple los requisitos")
+         trigger("rigid")
+         return
+      }
+
+      setIsAuthenticating(true)
+      try {
+         const res = await fetch("https://api.mov-eat.app/v1/auth/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+               email,
+               password,
+               username: form.name,
+               phoneNumber,
+            }),
+         })
+         if (res.ok) {
+            trigger("success")
+            finish()
+         } else {
+            try {
+               const data = await res.json()
+               const msg =
+                  data?.issues
+                     ?.map((i: { message: string }) => i.message)
+                     .join(" · ") ||
+                  data?.message ||
+                  "Error desconocido"
+               setAuthError(msg)
+            } catch {
+               setAuthError("Error al registrar")
+            }
+            trigger("rigid")
+         }
+      } catch (error) {
+         console.error("Error conectando con el backend:", error)
+         setAuthError("Error de conexión")
+         trigger("rigid")
+      } finally {
+         setIsAuthenticating(false)
+      }
+   }
+
+   const handleEmailLogin = async () => {
+      setAuthError("")
+      setEmailError("")
+      if (!email || !password) return
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+         setEmailError("Ingresa un correo electrónico válido")
+         trigger("rigid")
+         return
+      }
+
+      if (password.length < 6) {
+         setAuthError("La contraseña debe tener al menos 6 caracteres")
+         trigger("rigid")
+         return
+      }
+
+      setIsAuthenticating(true)
+      try {
+         const res = await fetch("https://api.mov-eat.app/v1/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+         })
+         if (res.ok) {
+            trigger("success")
+            finish()
+         } else {
+            const err = await res.text()
+            setAuthError("Email o contraseña incorrectos")
+            trigger("rigid")
+         }
+      } catch (error) {
+         console.error("Error conectando con el backend:", error)
+         setAuthError("Error de conexión")
+         trigger("rigid")
+      } finally {
+         setIsAuthenticating(false)
+      }
+   }
+
    const loginWithGoogle = useGoogleLogin({
-      onSuccess: (codeResponse) => {
-         console.log("Google Auth Success:", codeResponse)
-         trigger("success")
-         finish()
+      onSuccess: async (tokenResponse) => {
+         setIsAuthenticating(true)
+         try {
+            // TODO: Acá envías el token al backend
+            // El 'tokenResponse.access_token' es lo que Google devuelve en el frontend
+
+            const response = await fetch("TU_URL_DEL_BACKEND/api/auth/google", {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({
+                  token: tokenResponse.access_token,
+                  // También podés enviar los datos del formulario de onboarding acá:
+                  // onboardingData: form
+               }),
+            })
+
+            const data = await response.json()
+            // Acá guardas el usuario o token del backend en el estado (useStore)
+
+            console.log("Google Auth Token:", tokenResponse.access_token)
+
+            // Cuando termine todo el proceso exitosamente:
+            trigger("success")
+            finish()
+         } catch (error) {
+            console.error("Error conectando con el backend:", error)
+            trigger("rigid")
+         } finally {
+            setIsAuthenticating(false)
+         }
       },
-      onError: (error) => console.log("Google Login Failed:", error),
+      onError: (error) => {
+         console.log("Google Login Failed:", error)
+         trigger("rigid")
+      },
    })
-   */
 
    const step = STEPS[stepIdx]
    const isFirst = stepIdx === 0
@@ -1070,7 +1219,9 @@ export default function Onboarding() {
 
                         <div>
                            <h2 className="text-3xl font-display font-extrabold text-foreground mb-2 leading-tight">
-                              Crea tu cuenta
+                              {isLoginMode
+                                 ? "Bienvenido de nuevo"
+                                 : "Crea tu cuenta"}
                            </h2>
                            <p className="text-gray-400 text-sm font-medium px-4">
                               Guardá tu progreso y conectá tu perfil con la nube para
@@ -1079,13 +1230,158 @@ export default function Onboarding() {
                         </div>
 
                         <div className="w-full max-w-sm mt-6">
+                           {/* Toggle registro/login */}
+                           <div className="flex bg-gray-100 dark:bg-white/5 rounded-2xl p-1 mb-5">
+                              <button
+                                 onClick={() => {
+                                    setIsLoginMode(false)
+                                    setAuthError("")
+                                 }}
+                                 className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                                    !isLoginMode
+                                       ? "bg-white dark:bg-white/10 text-foreground shadow-sm"
+                                       : "text-gray-400"
+                                 }`}>
+                                 Registrarse
+                              </button>
+                              <button
+                                 onClick={() => {
+                                    setIsLoginMode(true)
+                                    setAuthError("")
+                                 }}
+                                 className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                                    isLoginMode
+                                       ? "bg-white dark:bg-white/10 text-foreground shadow-sm"
+                                       : "text-gray-400"
+                                 }`}>
+                                 Iniciar sesión
+                              </button>
+                           </div>
+
+                           <div className="flex flex-col gap-3 mb-4">
+                              <AnimatePresence>
+                                 {emailError && (
+                                    <motion.p
+                                       initial={{ opacity: 0, y: -4 }}
+                                       animate={{ opacity: 1, y: 0 }}
+                                       exit={{ opacity: 0 }}
+                                       className="text-xs font-bold text-red-500 px-1 -mt-1">
+                                       {emailError}
+                                    </motion.p>
+                                 )}
+                              </AnimatePresence>
+                              <input
+                                 type="email"
+                                 placeholder="Tu correo electrónico"
+                                 className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm outline-none focus:border-primary"
+                                 value={email}
+                                 onChange={(e) => {
+                                    setEmail(e.target.value)
+                                    setEmailError("")
+                                 }}
+                              />
+
+                              <AnimatePresence>
+                                 {!isLoginMode && (
+                                    <motion.div
+                                       initial={{ height: 0, opacity: 0 }}
+                                       animate={{ height: "auto", opacity: 1 }}
+                                       exit={{ height: 0, opacity: 0 }}
+                                       className="overflow-hidden flex flex-col gap-1">
+                                       <AnimatePresence>
+                                          {phoneError && (
+                                             <motion.p
+                                                initial={{ opacity: 0, y: -4 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0 }}
+                                                className="text-xs font-bold text-red-500 px-1 pb-0.5">
+                                                {phoneError}
+                                             </motion.p>
+                                          )}
+                                       </AnimatePresence>
+                                       <input
+                                          type="tel"
+                                          placeholder="Tu número de teléfono"
+                                          className={`w-full bg-white border ${phoneError ? "border-red-300" : "border-gray-200"} text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm outline-none focus:border-primary`}
+                                          value={phoneNumber}
+                                          onChange={(e) => {
+                                             setPhoneNumber(e.target.value.replace(/\D/g, ""))
+                                             setPhoneError("")
+                                          }}
+                                       />
+                                    </motion.div>
+                                 )}
+                              </AnimatePresence>
+                              <input
+                                 type="password"
+                                 placeholder="Contraseña"
+                                 className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm outline-none focus:border-primary"
+                                 value={password}
+                                 onChange={(e) => setPassword(e.target.value)}
+                              />
+                              <AnimatePresence>
+                                 {!isLoginMode && (
+                                    <motion.div
+                                       initial={{ height: 0, opacity: 0 }}
+                                       animate={{ height: "auto", opacity: 1 }}
+                                       exit={{ height: 0, opacity: 0 }}
+                                       className="overflow-hidden">
+                                       <div className="flex flex-col gap-1 px-1 pt-1">
+                                          {[
+                                             {
+                                                ok: password.length >= 8,
+                                                label: "Mínimo 8 caracteres",
+                                             },
+                                             {
+                                                ok: /[A-Z]/.test(password),
+                                                label: "Al menos una mayúscula",
+                                             },
+                                             {
+                                                ok: /[^a-zA-Z0-9]/.test(password),
+                                                label: "Al menos un símbolo",
+                                             },
+                                          ].map(({ ok, label }) => (
+                                             <p
+                                                key={label}
+                                                className={`text-xs font-bold flex items-center gap-1.5 transition-all ${ok ? "text-green-500 line-through" : "text-gray-400"}`}>
+                                                <span
+                                                   className={`w-3 h-3 rounded-full border-2 flex-shrink-0 transition-all ${ok ? "bg-green-500 border-green-500" : "border-gray-300"}`}
+                                                />
+                                                {label}
+                                             </p>
+                                          ))}
+                                       </div>
+                                    </motion.div>
+                                 )}
+                              </AnimatePresence>
+                              <button
+                                 onClick={
+                                    isLoginMode
+                                       ? handleEmailLogin
+                                       : handleEmailSignup
+                                 }
+                                 disabled={isAuthenticating || !email || !password}
+                                 className={`w-full bg-primary text-white font-bold py-4 px-6 rounded-2xl shadow-sm transition-all ${isAuthenticating || !email || !password ? "opacity-50" : "hover:bg-primary/90 active:scale-95"}`}>
+                                 {isAuthenticating
+                                    ? "Conectando..."
+                                    : isLoginMode
+                                      ? "Iniciar sesión"
+                                      : "Registrarse con Email"}
+                              </button>
+                           </div>
+
+                           <div className="relative flex py-2 items-center mb-4">
+                              <div className="flex-grow border-t border-gray-200"></div>
+                              <span className="flex-shrink-0 mx-4 text-gray-400 text-xs font-bold uppercase">
+                                 o
+                              </span>
+                              <div className="flex-grow border-t border-gray-200"></div>
+                           </div>
+
                            <button
-                              onClick={() => {
-                                 // loginWithGoogle()
-                                 trigger("success")
-                                 finish()
-                              }}
-                              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                              onClick={() => loginWithGoogle()}
+                              disabled={isAuthenticating}
+                              className={`w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm transition-all ${isAuthenticating ? "opacity-70" : "hover:bg-gray-50 active:scale-95"}`}>
                               <svg className="w-5 h-5" viewBox="0 0 24 24">
                                  <path
                                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -1104,7 +1400,9 @@ export default function Onboarding() {
                                     fill="#EA4335"
                                  />
                               </svg>
-                              Continuar con Google
+                              {isAuthenticating
+                                 ? "Conectando..."
+                                 : "Continuar con Google"}
                            </button>
                         </div>
                      </div>
@@ -1114,67 +1412,72 @@ export default function Onboarding() {
          </div>
 
          {/* ── Footer CTA ── */}
-         <div className="shrink-0 h-[116px] relative w-full">
-            <AnimatePresence mode="wait">
-               {(() => {
-                  let btn = null
-                  if (step === "welcome") {
-                     btn = {
-                        onClick: () => go(1),
-                        label: "Empezar",
-                        icon: <ChevronRight size={22} />,
-                        disabled: false,
-                     }
-                  } else if (step === "summary") {
-                     btn = {
-                        onClick: () => go(1),
-                        label: "Continuar",
-                        icon: <ArrowRight size={20} />,
-                        disabled: false,
-                     }
-                  } else if (step === "fooddemo") {
-                     btn = {
-                        onClick: () => go(1),
-                        label: "Continuar",
-                        icon: <ArrowRight size={20} />,
-                        disabled: !demoAdded,
-                     }
-                  } else if (["age", "metrics", "preferences"].includes(step)) {
-                     btn = {
-                        onClick: () => go(1),
-                        label: "Continuar",
-                        icon: <ArrowRight size={20} />,
-                        disabled: !canContinue(),
-                     }
-                  } else if (step === "name") {
-                     btn = {
-                        onClick: () => go(1),
-                        label: "Continuar",
-                        icon: <ArrowRight size={20} />,
-                        disabled: !form.name.trim(),
-                     }
-                  }
+         {(() => {
+            let btn = null
+            if (step === "welcome") {
+               btn = {
+                  onClick: () => go(1),
+                  label: "Empezar",
+                  icon: <ChevronRight size={22} />,
+                  disabled: false,
+               }
+            } else if (step === "summary") {
+               btn = {
+                  onClick: () => go(1),
+                  label: "Continuar",
+                  icon: <ArrowRight size={20} />,
+                  disabled: false,
+               }
+            } else if (step === "fooddemo") {
+               btn = {
+                  onClick: () => go(1),
+                  label: "Continuar",
+                  icon: <ArrowRight size={20} />,
+                  disabled: !demoAdded,
+               }
+            } else if (["age", "metrics", "preferences"].includes(step)) {
+               btn = {
+                  onClick: () => go(1),
+                  label: "Continuar",
+                  icon: <ArrowRight size={20} />,
+                  disabled: !canContinue(),
+               }
+            } else if (step === "name") {
+               btn = {
+                  onClick: () => go(1),
+                  label: "Continuar",
+                  icon: <ArrowRight size={20} />,
+                  disabled: !form.name.trim(),
+               }
+            }
 
-                  if (!btn) return null
-
-                  return (
-                     <motion.button
-                        key={step}
-                        initial={{ scale: 0.8, opacity: 0, y: 15 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.8, opacity: 0, y: 15 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={btn.onClick}
-                        disabled={btn.disabled}
-                        className="absolute left-6 right-6 top-4 bg-primary text-white font-extrabold text-lg py-5 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-primary/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                        {btn.label}
-                        {btn.icon}
-                     </motion.button>
-                  )
-               })()}
-            </AnimatePresence>
-         </div>
+            return (
+               <div
+                  className={`shrink-0 relative w-full transition-all duration-300 ease-in-out ${btn ? "h-[116px]" : "h-0"}`}>
+                  <AnimatePresence mode="wait">
+                     {btn && (
+                        <motion.button
+                           key={step}
+                           initial={{ scale: 0.8, opacity: 0, y: 15 }}
+                           animate={{ scale: 1, opacity: 1, y: 0 }}
+                           exit={{ scale: 0.8, opacity: 0, y: 15 }}
+                           transition={{
+                              type: "spring",
+                              stiffness: 500,
+                              damping: 30,
+                           }}
+                           whileTap={{ scale: 0.95 }}
+                           onClick={btn.onClick}
+                           disabled={btn.disabled}
+                           className="absolute left-6 right-6 top-4 bg-primary text-white font-extrabold text-lg py-5 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-primary/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                           {btn.label}
+                           {btn.icon}
+                        </motion.button>
+                     )}
+                  </AnimatePresence>
+               </div>
+            )
+         })()}
       </div>
    )
 }
