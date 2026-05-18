@@ -33,6 +33,12 @@ export interface Meal {
   time: string;
 }
 
+export interface ExerciseSet {
+  id: string;
+  reps: string;
+  completed: boolean;
+}
+
 export interface Exercise {
   id: string;
   name: string;
@@ -40,6 +46,13 @@ export interface Exercise {
   reps: string;
   rest: string;
   completed: boolean;
+  setDetails?: ExerciseSet[];
+}
+
+export interface Workout {
+  id: string;
+  name: string;
+  exercises: Exercise[];
 }
 
 interface AppState {
@@ -56,6 +69,9 @@ interface AppState {
   workoutCompleted: boolean;
   isDarkMode: boolean;
   totalWorkouts: number;
+  workouts: Workout[];
+  activeWorkoutId: string | null;
+  themeColor: string;
   
   // Actions
   completeOnboarding: (profile: UserProfile) => void;
@@ -68,7 +84,20 @@ interface AppState {
   setWorkoutCompleted: (completed: boolean) => void;
   resetDaily: () => void;
   toggleDarkMode: () => void;
+  setThemeColor: (theme: string) => void;
   resetProgress: () => void;
+  updateUser: (updates: Partial<UserProfile>) => void;
+  
+  // Workout Actions
+  addWorkout: (name: string) => void;
+  deleteWorkout: (id: string) => void;
+  setActiveWorkout: (id: string) => void;
+  
+  // Exercise Actions
+  addExercise: (workoutId: string) => void;
+  updateExercise: (workoutId: string, exerciseId: string, fields: Partial<Exercise>) => void;
+  deleteExercise: (workoutId: string, exerciseId: string) => void;
+  toggleExerciseCompletion: (workoutId: string, exerciseId: string) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -87,6 +116,21 @@ export const useStore = create<AppState>()(
       workoutCompleted: false,
       isDarkMode: false,
       totalWorkouts: 0,
+      workouts: [
+        {
+          id: 'w1',
+          name: 'Full Body Express',
+          exercises: [
+            { id: 'e1', name: 'Jumping Jacks', sets: 3, reps: '45s', rest: '15s', completed: false },
+            { id: 'e2', name: 'Squats', sets: 3, reps: '15', rest: '30s', completed: false },
+            { id: 'e3', name: 'Push-ups', sets: 3, reps: '10', rest: '30s', completed: false },
+            { id: 'e4', name: 'Plank', sets: 3, reps: '30s', rest: '30s', completed: false },
+          ]
+        }
+      ],
+      activeWorkoutId: 'w1',
+      themeColor: 'orange',
+      setThemeColor: (theme) => set({ themeColor: theme }),
 
       completeOnboarding: (profile) => set({ isOnboarded: true, user: profile, targetCalories: profile.goal === 'baja_peso' ? 1800 : profile.goal === 'gana_masa' ? 2500 : 2000 }),
       addXP: (amount) => set((state) => {
@@ -142,9 +186,100 @@ export const useStore = create<AppState>()(
         }
         set({ workoutCompleted: completed });
       },
-      resetDaily: () => set({ dailyCalories: 0, waterGlasses: 0, waterLiters: 0, meals: [], workoutCompleted: false }),
+      resetDaily: () => set((state) => ({ 
+        dailyCalories: 0, waterGlasses: 0, waterLiters: 0, meals: [], workoutCompleted: false,
+        workouts: state.workouts.map(w => ({ ...w, exercises: w.exercises.map(e => ({ ...e, completed: false })) }))
+      })),
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
       resetProgress: () => set({ xp: 0, level: 1, streak: 0, totalWorkouts: 0, workoutCompleted: false, waterGlasses: 0, waterLiters: 0, dailyCalories: 0, meals: [] }),
+      updateUser: (updates) => set((state) => ({ 
+        user: state.user ? { ...state.user, ...updates } : null,
+        // Update target calories if goal changed
+        targetCalories: updates.goal 
+          ? (updates.goal === 'baja_peso' ? 1800 : updates.goal === 'gana_masa' ? 2500 : 2000)
+          : state.targetCalories
+      })),
+
+      // Workout Actions
+      addWorkout: (name) => set((state) => {
+        const newWorkout: Workout = {
+          id: Date.now().toString(),
+          name,
+          exercises: []
+        };
+        return { workouts: [...state.workouts, newWorkout], activeWorkoutId: newWorkout.id };
+      }),
+      deleteWorkout: (id) => set((state) => {
+        const remaining = state.workouts.filter(w => w.id !== id);
+        return { 
+          workouts: remaining,
+          activeWorkoutId: state.activeWorkoutId === id ? (remaining[0]?.id || null) : state.activeWorkoutId
+        };
+      }),
+      setActiveWorkout: (id) => set({ activeWorkoutId: id }),
+
+      // Exercise Actions
+      addExercise: (workoutId) => set((state) => ({
+        workouts: state.workouts.map(w => {
+          if (w.id === workoutId) {
+            return {
+              ...w,
+              exercises: [...w.exercises, {
+                id: Date.now().toString(),
+                name: 'Nuevo Ejercicio',
+                sets: 3,
+                reps: '10',
+                rest: '30s',
+                completed: false
+              }]
+            };
+          }
+          return w;
+        })
+      })),
+      updateExercise: (workoutId, exerciseId, fields) => set((state) => ({
+        workouts: state.workouts.map(w => {
+          if (w.id === workoutId) {
+            return {
+              ...w,
+              exercises: w.exercises.map(e => e.id === exerciseId ? { ...e, ...fields } : e)
+            };
+          }
+          return w;
+        })
+      })),
+      deleteExercise: (workoutId, exerciseId) => set((state) => ({
+        workouts: state.workouts.map(w => {
+          if (w.id === workoutId) {
+            return {
+              ...w,
+              exercises: w.exercises.filter(e => e.id !== exerciseId)
+            };
+          }
+          return w;
+        })
+      })),
+      toggleExerciseCompletion: (workoutId, exerciseId) => set((state) => ({
+        workouts: state.workouts.map(w => {
+          if (w.id === workoutId) {
+            return {
+              ...w,
+              exercises: w.exercises.map(e => {
+                if (e.id === exerciseId) {
+                  const newCompleted = !e.completed;
+                  return {
+                    ...e,
+                    completed: newCompleted,
+                    setDetails: e.setDetails?.map(s => ({ ...s, completed: newCompleted }))
+                  };
+                }
+                return e;
+              })
+            };
+          }
+          return w;
+        })
+      }))
     }),
     {
       name: 'moveat-storage',
