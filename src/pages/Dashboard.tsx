@@ -125,7 +125,7 @@ export default function Home() {
                initial={{ y: 20, opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
                transition={{ delay: 0.1 }}
-               className="col-span-1 md:col-span-2 xl:col-span-1 bg-card-bg rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between items-center text-center min-h-[280px]">
+               className="col-span-1 bg-card-bg rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between items-center text-center min-h-[280px]">
                <div className="w-full flex justify-between items-center mb-2">
                   <h3 className="font-bold text-xl">
                      {Math.round(todayProgress)}
@@ -179,7 +179,7 @@ export default function Home() {
                initial={{ y: 20, opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
                transition={{ delay: 0.2 }}
-               className="col-span-1 bg-primary text-white rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px] md:min-h-[140px]">
+               className="col-span-1 bg-water text-white rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px] md:min-h-[140px]">
                <div className="flex justify-between items-center">
                   <h3 className="font-bold text-sm">
                      Hidratación
@@ -199,7 +199,7 @@ export default function Home() {
                            initial={{ scale: 0, rotate: -180 }}
                            animate={{ scale: 1, rotate: 0 }}
                            exit={{ scale: 0 }}
-                           className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-primary shadow-xl"
+                           className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-water shadow-xl"
                         >
                            <motion.div
                               initial={{ pathLength: 0 }}
@@ -243,43 +243,7 @@ export default function Home() {
                      onClick={handleWaterClick}
                      ref={hydrationButtonRef}
                      disabled={isCompletingWater}
-                     className={`w-10 h-10 bg-white text-primary rounded-full flex items-center justify-center shadow-lg transition-all ${isCompletingWater ? 'opacity-0 scale-50' : 'group-hover:scale-110 active:scale-95'}`}>
-                     <Plus size={20} />
-                  </button>
-               </div>
-            </motion.section>
-
-            {/* Hábitos card */}
-            <motion.section
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               transition={{ delay: 0.3 }}
-               className="col-span-1 bg-accent text-white rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px]">
-               <h3 className="font-bold flex items-center gap-2 text-sm">
-                  <span className="bg-white/10 p-1.5 rounded-lg">
-                     <ListTodo size={16} />
-                  </span>
-                  Hábitos
-               </h3>
-
-               <div className="flex flex-col gap-1.5 my-1">
-                  <div className="flex items-center gap-2">
-                     <CheckCircle size={14} className="text-white" />
-                     <span className="text-xs font-medium opacity-80 line-through">
-                        Sin azúcar
-                     </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <CircleDashed size={14} className="text-white/60" />
-                     <span className="text-xs font-medium">Meditación</span>
-                  </div>
-               </div>
-
-               <div className="flex items-end justify-between w-full">
-                  <span className="text-3xl font-display font-bold">
-                     1<span className="text-lg font-normal opacity-70 ml-1">/2</span>
-                  </span>
-                  <button className="w-10 h-10 bg-white text-accent rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                     className={`w-10 h-10 bg-white text-water rounded-full flex items-center justify-center shadow-lg transition-all ${isCompletingWater ? 'opacity-0 scale-50' : 'group-hover:scale-110 active:scale-95'}`}>
                      <Plus size={20} />
                   </button>
                </div>
@@ -289,9 +253,9 @@ export default function Home() {
             <motion.section
                initial={{ y: 20, opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
-               transition={{ delay: 0.4 }}
+               transition={{ delay: 0.3 }}
                onClick={() => navigate("/training")}
-               className="col-span-1 md:col-span-2 xl:col-span-1 bg-foreground rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px]">
+               className="col-span-2 xl:col-span-1 bg-foreground rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px]">
                <div className="absolute inset-0 right-0 bg-primary/10 z-0" />
                <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1">

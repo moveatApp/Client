@@ -3,25 +3,24 @@
 :root {
   --background: #F7F3EE;
   --foreground: #2C2C2C;
-  --primary: #5B6347;
-  --secondary: #D26640;
-  --accent: #E67E22;
-  --water: #38BDF8;
+  --primary: #F97316;
+  --secondary: #EA580C;
+  --accent: #FB923C;
+  --water: #93C5E6;
   --card-bg: #FFFFFF;
   --card-border: rgba(0, 0, 0, 0.05);
   --chart-grid: #E5E7EB;
   --chart-label: #9CA3AF;
   --level-card-bg: #F7F3EE;
-  /* Match the "Para Hoy" background exactly (Cream/Off-white) */
 }
 
 .dark {
   --background: #1A1A1A;
   --foreground: #F7F3EE;
-  --primary: #5B6347;
-  --secondary: #D26640;
-  --accent: #E67E22;
-  --water: #38BDF8;
+  --primary: #F97316;
+  --secondary: #EA580C;
+  --accent: #FB923C;
+  --water: #93C5E6;
   --card-bg: #242424;
   --card-border: rgba(255, 255, 255, 0.08);
   --chart-grid: #333333;
@@ -29,7 +28,24 @@
   --muted: #2A2A2A;
   --muted-foreground: #9CA3AF;
   --level-card-bg: #F7F3EE;
-  /* Keep the same cream color for level card hierarchy even in dark mode as requested */
+}
+
+[data-theme="green"] {
+  --primary: #5B6347;
+  --secondary: #D26640;
+  --accent: #7A8B5E;
+}
+
+[data-theme="blue"] {
+  --primary: #3B82F6;
+  --secondary: #2563EB;
+  --accent: #60A5FA;
+}
+
+[data-theme="purple"] {
+  --primary: #8B5CF6;
+  --secondary: #7C3AED;
+  --accent: #A78BFA;
 }
 
 @theme inline {
@@ -96,4 +112,16 @@ body {
 * {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface *,
+.recharts-wrapper:focus,
+.recharts-surface:focus,
+.recharts-cartesian-axis-tick:focus,
+.recharts-active-dot:focus,
+.recharts-dot:focus {
+  outline: none !important;
 }

@@ -15,15 +15,15 @@ if (typeof window !== "undefined") {
    })
 }
 
-// import { GoogleOAuthProvider } from "@react-oauth/google"
+import { GoogleOAuthProvider } from "@react-oauth/google"
 
-// Placeholder Client ID for Google Auth
-// const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE"
+// TODO: Reemplazar este ID con el Google Client ID real de tu consola de Google Cloud
+const GOOGLE_CLIENT_ID = "TU_GOOGLE_CLIENT_ID"
 
 createRoot(document.getElementById("root")!).render(
    <StrictMode>
-      {/* <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}> */}
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
          <App />
-      {/* </GoogleOAuthProvider> */}
+      </GoogleOAuthProvider>
    </StrictMode>,
 )

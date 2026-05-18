@@ -60,6 +60,7 @@ function Layout() {
   const { pathname } = useLocation();
   const isOnboarding = pathname === '/onboarding';
   const isDarkMode = useStore((state) => state.isDarkMode);
+  const themeColor = useStore((state) => state.themeColor);
   const { trigger } = useWebHaptics({ debug: true });
 
   useEffect(() => {
@@ -68,7 +69,9 @@ function Layout() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [isDarkMode]);
+    
+    document.documentElement.setAttribute('data-theme', themeColor);
+  }, [isDarkMode, themeColor]);
 
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
