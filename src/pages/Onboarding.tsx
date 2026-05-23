@@ -56,6 +56,7 @@ interface FormData {
 
 const STEPS = [
    "welcome",
+   "login",
    "name",
    "goal",
    "gender",
@@ -67,7 +68,6 @@ const STEPS = [
    "vibe",
    "fooddemo",
    "summary",
-   "login",
 ]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -87,6 +87,128 @@ const vibeLabels: Record<string, string> = {
    great: "¡Con toda la energía!",
    ok: "Bien, puedo mejorar",
    low: "Necesito un empujón",
+}
+
+const API_BASE_URL =
+   (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env
+      ?.VITE_API_BASE_URL ?? "https://api.mov-eat.app"
+
+type SignupPayload = {
+   email: string
+   password: string
+   firstName: string
+   lastName: string
+}
+
+type OnboardingPayload = {
+   unitSystem: "METRIC"
+   profile: {
+      birthDate: string
+      sex: "MALE" | "FEMALE" | "OTHER" | "UNSPECIFIED"
+      height: { cm: number }
+      currentWeight: number
+      timezone: string
+      locale: string
+   }
+   goals: {
+      primaryGoal: "FAT_LOSS" | "MUSCLE_GAIN" | "MAINTENANCE"
+      activityLevel: "LIGHT" | "MODERATE" | "ACTIVE"
+      trainingDaysPerWeek: number
+   }
+   nutrition: {
+      targetMode: "MANUAL"
+      manualCalorieTarget: number
+   }
+}
+
+function buildSignupPayload(
+   email: string,
+   password: string,
+   firstName: string,
+   lastName: string,
+): SignupPayload {
+   return {
+      email: email.trim(),
+      password,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+   }
+}
+
+function buildOnboardingPayload(form: FormData): OnboardingPayload {
+   return {
+      unitSystem: "METRIC",
+      profile: {
+         birthDate: birthDateFromAge(form.age),
+         sex: mapSex(form.gender),
+         height: { cm: form.height },
+         currentWeight: form.weight,
+         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+         locale: navigator.language || "es-AR",
+      },
+      goals: {
+         primaryGoal: mapPrimaryGoal(form.goal),
+         activityLevel: mapActivityLevel(form.level),
+         trainingDaysPerWeek:
+            form.level === "principiante" ? 2 : form.level === "intermedio" ? 3 : 5,
+      },
+      nutrition: {
+         targetMode: "MANUAL",
+         manualCalorieTarget: getManualCalorieTarget(form.goal),
+      },
+   }
+}
+
+function birthDateFromAge(age: number): string {
+   const today = new Date()
+   const year = today.getFullYear() - age
+   const month = String(today.getMonth() + 1).padStart(2, "0")
+   const day = String(today.getDate()).padStart(2, "0")
+
+   return `${year}-${month}-${day}`
+}
+
+function mapSex(gender: string): OnboardingPayload["profile"]["sex"] {
+   if (gender === "male") return "MALE"
+   if (gender === "female") return "FEMALE"
+   if (gender === "other") return "OTHER"
+
+   return "UNSPECIFIED"
+}
+
+function mapPrimaryGoal(goal: string): OnboardingPayload["goals"]["primaryGoal"] {
+   if (goal === "baja_peso") return "FAT_LOSS"
+   if (goal === "gana_masa") return "MUSCLE_GAIN"
+
+   return "MAINTENANCE"
+}
+
+function mapActivityLevel(level: string): OnboardingPayload["goals"]["activityLevel"] {
+   if (level === "principiante") return "LIGHT"
+   if (level === "avanzado") return "ACTIVE"
+
+   return "MODERATE"
+}
+
+function getManualCalorieTarget(goal: string): number {
+   if (goal === "baja_peso") return 1800
+   if (goal === "gana_masa") return 2500
+
+   return 2000
+}
+
+async function readApiError(response: Response, fallback: string): Promise<string> {
+   try {
+      const data = await response.json()
+      const message = data?.message ?? data?.issues?.map((i: { message: string }) => i.message)
+
+      if (Array.isArray(message)) return message.join(" · ")
+      if (typeof message === "string") return message
+   } catch {
+      // Use fallback below when the response is not JSON.
+   }
+
+   return fallback
 }
 
 // ─── Slide wrapper ────────────────────────────────────────────────────────────
@@ -129,19 +251,19 @@ export default function Onboarding() {
    const [demoAdded, setDemoAdded] = useState(false)
    const addBtnRef = useRef<HTMLButtonElement>(null)
    const [isAuthenticating, setIsAuthenticating] = useState(false)
+   const [signupFirstName, setSignupFirstName] = useState("")
+   const [signupLastName, setSignupLastName] = useState("")
    const [email, setEmail] = useState("")
    const [password, setPassword] = useState("")
-   const [phoneNumber, setPhoneNumber] = useState("")
    const [authError, setAuthError] = useState("")
+   const [onboardingError, setOnboardingError] = useState("")
    const [isLoginMode, setIsLoginMode] = useState(false)
-   const [phoneError, setPhoneError] = useState("")
    const [emailError, setEmailError] = useState("")
 
    const handleEmailSignup = async () => {
       setAuthError("")
-      setPhoneError("")
       setEmailError("")
-      if (!email || !password || !phoneNumber) {
+      if (!signupFirstName.trim() || !signupLastName.trim() || !email || !password) {
          setAuthError("Completá todos los campos")
          return
       }
@@ -149,13 +271,6 @@ export default function Onboarding() {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(email)) {
          setEmailError("Ingresa un correo electrónico válido")
-         trigger("rigid")
-         return
-      }
-
-      const phoneRegex = /^\+?[0-9]{8,15}$/
-      if (!phoneRegex.test(phoneNumber.replace(/\s/g, ""))) {
-         setPhoneError("Ingresa un número de teléfono válido")
          trigger("rigid")
          return
       }
@@ -172,37 +287,28 @@ export default function Onboarding() {
 
       setIsAuthenticating(true)
       try {
-         const res = await fetch("https://api.mov-eat.app/v1/auth/signup", {
+         const res = await fetch(`${API_BASE_URL}/v1/auth/signup`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-               email,
-               password,
-               username: form.name,
-               phoneNumber,
-            }),
+            body: JSON.stringify(
+               buildSignupPayload(email, password, signupFirstName, signupLastName),
+            ),
          })
          if (res.ok) {
+            setForm({
+               ...form,
+               name: `${signupFirstName.trim()} ${signupLastName.trim()}`,
+            })
             trigger("success")
-            finish()
+            go(1)
          } else {
-            try {
-               const data = await res.json()
-               const msg =
-                  data?.issues
-                     ?.map((i: { message: string }) => i.message)
-                     .join(" · ") ||
-                  data?.message ||
-                  "Error desconocido"
-               setAuthError(msg)
-            } catch {
-               setAuthError("Error al registrar")
-            }
+            setAuthError(await readApiError(res, "Error al registrar"))
             trigger("rigid")
          }
       } catch (error) {
          console.error("Error conectando con el backend:", error)
-         setAuthError("Error de conexión")
+         setAuthError(error instanceof Error ? error.message : "Error de conexión")
          trigger("rigid")
       } finally {
          setIsAuthenticating(false)
@@ -229,22 +335,39 @@ export default function Onboarding() {
 
       setIsAuthenticating(true)
       try {
-         const res = await fetch("https://api.mov-eat.app/v1/auth/login", {
+         const res = await fetch(`${API_BASE_URL}/v1/auth/login`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email: email.trim(), password }),
          })
          if (res.ok) {
             trigger("success")
-            finish()
+            go(1)
          } else {
-            const err = await res.text()
             setAuthError("Email o contraseña incorrectos")
             trigger("rigid")
          }
       } catch (error) {
          console.error("Error conectando con el backend:", error)
-         setAuthError("Error de conexión")
+         setAuthError(error instanceof Error ? error.message : "Error de conexión")
+         trigger("rigid")
+      } finally {
+         setIsAuthenticating(false)
+      }
+   }
+
+   const handleCompleteOnboarding = async () => {
+      setOnboardingError("")
+      setIsAuthenticating(true)
+
+      try {
+         await submitPlatformOnboarding()
+         trigger("success")
+         finish()
+      } catch (error) {
+         console.error("Error guardando onboarding:", error)
+         setOnboardingError(error instanceof Error ? error.message : "Error al guardar el onboarding")
          trigger("rigid")
       } finally {
          setIsAuthenticating(false)
@@ -288,6 +411,19 @@ export default function Onboarding() {
          trigger("rigid")
       },
    })
+
+   const submitPlatformOnboarding = async () => {
+      const res = await fetch(`${API_BASE_URL}/v1/me/onboarding`, {
+         method: "PUT",
+         credentials: "include",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify(buildOnboardingPayload(form)),
+      })
+
+      if (!res.ok) {
+         throw new Error(await readApiError(res, "Error al guardar el onboarding"))
+      }
+   }
 
    const step = STEPS[stepIdx]
    const isFirst = stepIdx === 0
@@ -390,7 +526,9 @@ export default function Onboarding() {
    }
 
    // ─── Progress (excluding welcome + summary) ────────────────────────────────
-   const progressSteps = STEPS.filter((s) => s !== "welcome" && s !== "summary")
+   const progressSteps = STEPS.filter(
+      (s) => s !== "welcome" && s !== "summary" && s !== "login",
+   )
    const progressIdx = progressSteps.indexOf(step)
    const showProgress = progressIdx >= 0
 
@@ -509,7 +647,7 @@ export default function Onboarding() {
                            <input
                               autoFocus
                               type="text"
-                              placeholder="Tu nombre aquí"
+                              placeholder="Nombre y apellido"
                               className="w-full pl-16 pr-4 py-5 text-xl font-bold bg-card-bg border-2 border-card-border focus:border-primary rounded-2xl outline-none text-foreground placeholder-gray-300 transition-colors"
                               value={form.name}
                               onChange={(e) =>
@@ -522,7 +660,7 @@ export default function Onboarding() {
                         </div>
 
                         <p className="text-gray-400 text-sm font-medium">
-                           Usaremos tu nombre para personalizar la experiencia.
+                           Usaremos tu nombre y apellido para crear tu cuenta.
                         </p>
                      </div>
                   )}
@@ -1199,6 +1337,17 @@ export default function Onboarding() {
                         <p className="text-center text-xs text-gray-400 font-medium">
                            Podés actualizar todo esto más adelante en tu perfil.
                         </p>
+                        <AnimatePresence>
+                           {onboardingError && (
+                              <motion.p
+                                 initial={{ opacity: 0, y: -4 }}
+                                 animate={{ opacity: 1, y: 0 }}
+                                 exit={{ opacity: 0 }}
+                                 className="text-center text-xs font-bold text-red-500 px-4">
+                                 {onboardingError}
+                              </motion.p>
+                           )}
+                        </AnimatePresence>
                      </div>
                   )}
 
@@ -1287,31 +1436,25 @@ export default function Onboarding() {
                                        initial={{ height: 0, opacity: 0 }}
                                        animate={{ height: "auto", opacity: 1 }}
                                        exit={{ height: 0, opacity: 0 }}
-                                       className="overflow-hidden flex flex-col gap-1">
-                                       <AnimatePresence>
-                                          {phoneError && (
-                                             <motion.p
-                                                initial={{ opacity: 0, y: -4 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0 }}
-                                                className="text-xs font-bold text-red-500 px-1 pb-0.5">
-                                                {phoneError}
-                                             </motion.p>
-                                          )}
-                                       </AnimatePresence>
+                                       className="overflow-hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
                                        <input
-                                          type="tel"
-                                          placeholder="Tu número de teléfono"
-                                          className={`w-full bg-white border ${phoneError ? "border-red-300" : "border-gray-200"} text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm outline-none focus:border-primary`}
-                                          value={phoneNumber}
-                                          onChange={(e) => {
-                                             setPhoneNumber(e.target.value.replace(/\D/g, ""))
-                                             setPhoneError("")
-                                          }}
+                                          type="text"
+                                          placeholder="Nombre"
+                                          className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 px-5 rounded-2xl shadow-sm outline-none focus:border-primary"
+                                          value={signupFirstName}
+                                          onChange={(e) => setSignupFirstName(e.target.value)}
+                                       />
+                                       <input
+                                          type="text"
+                                          placeholder="Apellido"
+                                          className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 px-5 rounded-2xl shadow-sm outline-none focus:border-primary"
+                                          value={signupLastName}
+                                          onChange={(e) => setSignupLastName(e.target.value)}
                                        />
                                     </motion.div>
                                  )}
                               </AnimatePresence>
+
                               <input
                                  type="password"
                                  placeholder="Contraseña"
@@ -1360,8 +1503,14 @@ export default function Onboarding() {
                                        ? handleEmailLogin
                                        : handleEmailSignup
                                  }
-                                 disabled={isAuthenticating || !email || !password}
-                                 className={`w-full bg-primary text-white font-bold py-4 px-6 rounded-2xl shadow-sm transition-all ${isAuthenticating || !email || !password ? "opacity-50" : "hover:bg-primary/90 active:scale-95"}`}>
+                                 disabled={
+                                    isAuthenticating ||
+                                    !email ||
+                                    !password ||
+                                    (!isLoginMode &&
+                                       (!signupFirstName.trim() || !signupLastName.trim()))
+                                 }
+                                 className={`w-full bg-primary text-white font-bold py-4 px-6 rounded-2xl shadow-sm transition-all ${isAuthenticating || !email || !password || (!isLoginMode && (!signupFirstName.trim() || !signupLastName.trim())) ? "opacity-50" : "hover:bg-primary/90 active:scale-95"}`}>
                                  {isAuthenticating
                                     ? "Conectando..."
                                     : isLoginMode
@@ -1423,10 +1572,10 @@ export default function Onboarding() {
                }
             } else if (step === "summary") {
                btn = {
-                  onClick: () => go(1),
-                  label: "Continuar",
+                  onClick: handleCompleteOnboarding,
+                  label: isAuthenticating ? "Guardando..." : "Continuar",
                   icon: <ArrowRight size={20} />,
-                  disabled: false,
+                  disabled: isAuthenticating,
                }
             } else if (step === "fooddemo") {
                btn = {
