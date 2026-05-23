@@ -65,7 +65,7 @@ interface FormData {
 const STEPS = [
    "welcome",
    "login",
-   "name",
+   /* "name", */
    "goal",
    "gender",
    "age",
@@ -212,7 +212,8 @@ export default function Onboarding() {
       const res = await apiLogin({ email: email.trim(), password })
       if (res.ok) {
          trigger("success")
-         go(1)
+         useStore.setState({ isOnboarded: true })
+         navigate("/")
       } else {
          setAuthError(res.message)
          trigger("rigid")
@@ -350,8 +351,8 @@ export default function Onboarding() {
    }
 
    const canContinue = () => {
-      if (step === "name")
-         return form.name.trim().length > 0 && form.lastName.trim().length > 0
+      /* if (step === "name")
+         return form.name.trim().length > 0 && form.lastName.trim().length > 0 */
       if (step === "goal") return !!form.goal
       if (step === "gender") return !!form.gender
       if (step === "level") return !!form.level
@@ -431,7 +432,7 @@ export default function Onboarding() {
          )}
 
          {/* ── Content ── */}
-         <div className="flex-1 flex flex-col px-6 py-4 overflow-y-auto relative z-10 pt-16 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+         <div className="flex-1 flex flex-col px-6 overflow-y-auto relative z-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <AnimatePresence mode="wait">
                <Slide key={step} dir={dir}>
                   {/* ══ WELCOME ══════════════════════════════════════════════ */}
@@ -492,7 +493,7 @@ export default function Onboarding() {
                   )}
 
                   {/* ══ NAME ═════════════════════════════════════════════════ */}
-                  {step === "name" && (
+                  {/*  {step === "name" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
                         <div>
                            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-2">
@@ -546,7 +547,7 @@ export default function Onboarding() {
                                  }
                               />
                            </div>
-                           <input
+                           {/*  <input
                               autoFocus
                               type="text"
                               placeholder="Nombre y apellido"
@@ -558,15 +559,15 @@ export default function Onboarding() {
                               onKeyDown={(e) =>
                                  e.key === "Enter" && form.name && go(1)
                               }
-                           />
+                           /> 
                         </div>
 
                         <p className="text-gray-400 text-sm font-medium">
                            Usaremos tu nombre y apellido para crear tu cuenta.
                         </p>
                      </div>
-                  )}
-
+                  )} 
+*/}
                   {/* ══ GOAL ═════════════════════════════════════════════════ */}
                   {step === "goal" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-6">
@@ -1255,7 +1256,7 @@ export default function Onboarding() {
 
                   {/* ══ LOGIN ═════════════════════════════════════════════════ */}
                   {step === "login" && (
-                     <div className="flex flex-col my-auto py-8 shrink-0 gap-6 items-center text-center">
+                     <div className="flex flex-col my-auto shrink-0 gap-6 items-center text-center">
                         <motion.div
                            initial={{ scale: 0.8, opacity: 0 }}
                            animate={{ scale: 1, opacity: 1 }}
@@ -1392,9 +1393,9 @@ export default function Onboarding() {
                                           ].map(({ ok, label }) => (
                                              <p
                                                 key={label}
-                                                className={`text-xs font-bold flex items-center gap-1.5 transition-all ${ok ? "text-green-500 line-through" : "text-gray-400"}`}>
+                                                className={`text-xs font-bold flex items-center gap-1.5 transition-all ${ok ? "text-green-500 line-through" : "text-red-500"}`}>
                                                 <span
-                                                   className={`w-3 h-3 rounded-full border-2 flex-shrink-0 transition-all ${ok ? "bg-green-500 border-green-500" : "border-gray-300"}`}
+                                                   className={`w-3 h-3 rounded-full border-2 flex-shrink-0 transition-all ${ok ? "bg-green-500 border-green-500" : "border-red-500"}`}
                                                 />
                                                 {label}
                                              </p>
@@ -1403,6 +1404,19 @@ export default function Onboarding() {
                                     </motion.div>
                                  )}
                               </AnimatePresence>
+
+                              <AnimatePresence>
+                                 {authError && (
+                                    <motion.p
+                                       initial={{ opacity: 0, y: -4 }}
+                                       animate={{ opacity: 1, y: 0 }}
+                                       exit={{ opacity: 0 }}
+                                       className="text-xs font-bold text-red-500 px-1 mb-2 text-center">
+                                       {authError}
+                                    </motion.p>
+                                 )}
+                              </AnimatePresence>
+
                               <button
                                  onClick={
                                     isLoginMode
@@ -1498,14 +1512,14 @@ export default function Onboarding() {
                   icon: <ArrowRight size={20} />,
                   disabled: !canContinue(),
                }
-            } else if (step === "name") {
+            } /* else if (step === "name") {
                btn = {
                   onClick: () => go(1),
                   label: "Continuar",
                   icon: <ArrowRight size={20} />,
                   disabled: !form.name.trim(),
                }
-            }
+            } */
 
             return (
                <div
