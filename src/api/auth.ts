@@ -1,5 +1,9 @@
-const BASE_URL = "https://api.mov-eat.app/v1/auth"
-const BASE_ME_URL = "https://api.mov-eat.app/v1/me"
+const API_BASE_URL =
+   (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env
+      ?.VITE_API_BASE_URL ?? "https://api.mov-eat.app"
+
+const BASE_URL = `${API_BASE_URL}/v1/auth`
+const BASE_ME_URL = `${API_BASE_URL}/v1/me`
 
 // ─── Error parsing ────────────────────────────────────────────────────────────
 
@@ -249,3 +253,98 @@ export async function apiPutOnboarding(payload: PutOnboardingPayload): Promise<{
       return { ok: false, message: "Error de conexión" }
    }
 }
+
+// ─── Onboarding Mapping Helpers ───────────────────────────────────────────────
+
+export interface OnboardingFormData {
+   name: string
+   lastName: string
+   goal: string
+   gender: string
+   age: number
+   weight: number
+   height: number
+   level: string
+   timePerSession: number
+   preferences: string[]
+   vibe: string
+}
+
+export function buildSignupPayload(
+   email: string,
+   password: string,
+   firstName: string,
+   lastName: string,
+): SignupPayload {
+   return {
+      email: email.trim(),
+      password,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+   }
+}
+
+export function birthDateFromAge(age: number): string {
+   const today = new Date()
+   const year = today.getFullYear() - age
+   const month = String(today.getMonth() + 1).padStart(2, "0")
+   const day = String(today.getDate()).padStart(2, "0")
+
+   return `${year}-${month}-${day}`
+}
+
+export function mapSex(gender: string): "MALE" | "FEMALE" | "OTHER" | "UNSPECIFIED" {
+   if (gender === "male") return "MALE"
+   if (gender === "female") return "FEMALE"
+   if (gender === "other") return "OTHER"
+
+   return "UNSPECIFIED"
+}
+
+export function mapPrimaryGoal(goal: string): "FAT_LOSS" | "MUSCLE_GAIN" | "MAINTENANCE" {
+   if (goal === "baja_peso") return "FAT_LOSS"
+   if (goal === "gana_masa") return "MUSCLE_GAIN"
+
+   return "MAINTENANCE"
+}
+
+export function mapActivityLevel(
+   level: string,
+): "LIGHT" | "MODERATE" | "ACTIVE" {
+   if (level === "principiante") return "LIGHT"
+   if (level === "avanzado") return "ACTIVE"
+
+   return "MODERATE"
+}
+
+export function getManualCalorieTarget(goal: string): number {
+   if (goal === "baja_peso") return 1800
+   if (goal === "gana_masa") return 2500
+
+   return 2000
+}
+
+export function buildOnboardingPayload(form: OnboardingFormData): PutOnboardingPayload {
+   return {
+      unitSystem: "METRIC",
+      profile: {
+         birthDate: birthDateFromAge(form.age),
+         sex: mapSex(form.gender),
+         height: { cm: form.height },
+         currentWeight: form.weight,
+         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+         locale: navigator.language || "es-AR",
+      },
+      goals: {
+         primaryGoal: mapPrimaryGoal(form.goal),
+         activityLevel: mapActivityLevel(form.level),
+         trainingDaysPerWeek:
+            form.level === "principiante" ? 2 : form.level === "intermedio" ? 3 : 5,
+      },
+      nutrition: {
+         targetMode: "MANUAL",
+         manualCalorieTarget: getManualCalorieTarget(form.goal),
+      },
+   }
+}
+

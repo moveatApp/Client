@@ -1,7 +1,13 @@
 import { useState, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { useStore } from "@/store/useStore"
-import { apiSignup, apiLogin } from "@/api/auth"
+import {
+   apiSignup,
+   apiLogin,
+   apiPutOnboarding,
+   buildSignupPayload,
+   buildOnboardingPayload,
+} from "@/api/auth"
 import { motion, AnimatePresence } from "framer-motion"
 import { useWebHaptics } from "web-haptics/react"
 import { emojiBlast } from "emoji-blast"
@@ -58,6 +64,7 @@ interface FormData {
 
 const STEPS = [
    "welcome",
+   "login",
    "name",
    "goal",
    "gender",
@@ -69,7 +76,6 @@ const STEPS = [
    "vibe",
    "fooddemo",
    "summary",
-   "login",
 ]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -132,16 +138,19 @@ export default function Onboarding() {
    const [demoAdded, setDemoAdded] = useState(false)
    const addBtnRef = useRef<HTMLButtonElement>(null)
    const [isAuthenticating, setIsAuthenticating] = useState(false)
+   const [signupFirstName, setSignupFirstName] = useState("")
+   const [signupLastName, setSignupLastName] = useState("")
    const [email, setEmail] = useState("")
    const [password, setPassword] = useState("")
    const [authError, setAuthError] = useState("")
+   const [onboardingError, setOnboardingError] = useState("")
    const [isLoginMode, setIsLoginMode] = useState(false)
    const [emailError, setEmailError] = useState("")
 
    const handleEmailSignup = async () => {
       setAuthError("")
       setEmailError("")
-      if (!email || !password) {
+      if (!signupFirstName.trim() || !signupLastName.trim() || !email || !password) {
          setAuthError("Completá todos los campos")
          return
       }
@@ -164,21 +173,21 @@ export default function Onboarding() {
       }
 
       setIsAuthenticating(true)
-      try {
-         const firstName = form.name
-         const lastName = form.lastName || "-"
-
-         const result = await apiSignup({ email, password, firstName, lastName })
-         if (result.ok) {
-            trigger("success")
-            finish()
-         } else {
-            setAuthError(result.message)
-            trigger("rigid")
-         }
-      } finally {
-         setIsAuthenticating(false)
+      const res = await apiSignup(
+         buildSignupPayload(email, password, signupFirstName, signupLastName),
+      )
+      if (res.ok) {
+         setForm({
+            ...form,
+            name: `${signupFirstName.trim()} ${signupLastName.trim()}`,
+         })
+         trigger("success")
+         go(1)
+      } else {
+         setAuthError(res.message)
+         trigger("rigid")
       }
+      setIsAuthenticating(false)
    }
 
    const handleEmailLogin = async () => {
@@ -200,15 +209,33 @@ export default function Onboarding() {
       }
 
       setIsAuthenticating(true)
+      const res = await apiLogin({ email: email.trim(), password })
+      if (res.ok) {
+         trigger("success")
+         go(1)
+      } else {
+         setAuthError(res.message)
+         trigger("rigid")
+      }
+      setIsAuthenticating(false)
+   }
+
+   const handleCompleteOnboarding = async () => {
+      setOnboardingError("")
+      setIsAuthenticating(true)
+
       try {
-         const result = await apiLogin({ email, password })
-         if (result.ok) {
-            trigger("success")
-            finish()
-         } else {
-            setAuthError(result.message)
-            trigger("rigid")
-         }
+         await submitPlatformOnboarding()
+         trigger("success")
+         finish()
+      } catch (error) {
+         console.error("Error guardando onboarding:", error)
+         setOnboardingError(
+            error instanceof Error
+               ? error.message
+               : "Error al guardar el onboarding",
+         )
+         trigger("rigid")
       } finally {
          setIsAuthenticating(false)
       }
@@ -251,6 +278,14 @@ export default function Onboarding() {
          trigger("rigid")
       },
    })
+
+   const submitPlatformOnboarding = async () => {
+      const payload = buildOnboardingPayload(form)
+      const res = await apiPutOnboarding(payload)
+      if (!res.ok) {
+         throw new Error(res.message)
+      }
+   }
 
    const step = STEPS[stepIdx]
    const isFirst = stepIdx === 0
@@ -315,7 +350,8 @@ export default function Onboarding() {
    }
 
    const canContinue = () => {
-      if (step === "name") return form.name.trim().length > 0 && form.lastName.trim().length > 0
+      if (step === "name")
+         return form.name.trim().length > 0 && form.lastName.trim().length > 0
       if (step === "goal") return !!form.goal
       if (step === "gender") return !!form.gender
       if (step === "level") return !!form.level
@@ -353,7 +389,9 @@ export default function Onboarding() {
    }
 
    // ─── Progress (excluding welcome + summary) ────────────────────────────────
-   const progressSteps = STEPS.filter((s) => s !== "welcome" && s !== "summary")
+   const progressSteps = STEPS.filter(
+      (s) => s !== "welcome" && s !== "summary" && s !== "login",
+   )
    const progressIdx = progressSteps.indexOf(step)
    const showProgress = progressIdx >= 0
 
@@ -480,7 +518,10 @@ export default function Onboarding() {
                                     setForm({ ...form, name: e.target.value })
                                  }
                                  onKeyDown={(e) =>
-                                    e.key === "Enter" && form.name && form.lastName && go(1)
+                                    e.key === "Enter" &&
+                                    form.name &&
+                                    form.lastName &&
+                                    go(1)
                                  }
                               />
                            </div>
@@ -498,14 +539,30 @@ export default function Onboarding() {
                                     setForm({ ...form, lastName: e.target.value })
                                  }
                                  onKeyDown={(e) =>
-                                    e.key === "Enter" && form.name && form.lastName && go(1)
+                                    e.key === "Enter" &&
+                                    form.name &&
+                                    form.lastName &&
+                                    go(1)
                                  }
                               />
                            </div>
+                           <input
+                              autoFocus
+                              type="text"
+                              placeholder="Nombre y apellido"
+                              className="w-full pl-16 pr-4 py-5 text-xl font-bold bg-card-bg border-2 border-card-border focus:border-primary rounded-2xl outline-none text-foreground placeholder-gray-300 transition-colors"
+                              value={form.name}
+                              onChange={(e) =>
+                                 setForm({ ...form, name: e.target.value })
+                              }
+                              onKeyDown={(e) =>
+                                 e.key === "Enter" && form.name && go(1)
+                              }
+                           />
                         </div>
 
                         <p className="text-gray-400 text-sm font-medium">
-                           Usaremos tu nombre para personalizar la experiencia.
+                           Usaremos tu nombre y apellido para crear tu cuenta.
                         </p>
                      </div>
                   )}
@@ -1182,6 +1239,17 @@ export default function Onboarding() {
                         <p className="text-center text-xs text-gray-400 font-medium">
                            Podés actualizar todo esto más adelante en tu perfil.
                         </p>
+                        <AnimatePresence>
+                           {onboardingError && (
+                              <motion.p
+                                 initial={{ opacity: 0, y: -4 }}
+                                 animate={{ opacity: 1, y: 0 }}
+                                 exit={{ opacity: 0 }}
+                                 className="text-center text-xs font-bold text-red-500 px-4">
+                                 {onboardingError}
+                              </motion.p>
+                           )}
+                        </AnimatePresence>
                      </div>
                   )}
 
@@ -1270,10 +1338,29 @@ export default function Onboarding() {
                                        initial={{ height: 0, opacity: 0 }}
                                        animate={{ height: "auto", opacity: 1 }}
                                        exit={{ height: 0, opacity: 0 }}
-                                       className="overflow-hidden">
+                                       className="overflow-hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                       <input
+                                          type="text"
+                                          placeholder="Nombre"
+                                          className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 px-5 rounded-2xl shadow-sm outline-none focus:border-primary"
+                                          value={signupFirstName}
+                                          onChange={(e) =>
+                                             setSignupFirstName(e.target.value)
+                                          }
+                                       />
+                                       <input
+                                          type="text"
+                                          placeholder="Apellido"
+                                          className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 px-5 rounded-2xl shadow-sm outline-none focus:border-primary"
+                                          value={signupLastName}
+                                          onChange={(e) =>
+                                             setSignupLastName(e.target.value)
+                                          }
+                                       />
                                     </motion.div>
                                  )}
                               </AnimatePresence>
+
                               <input
                                  type="password"
                                  placeholder="Contraseña"
@@ -1322,8 +1409,15 @@ export default function Onboarding() {
                                        ? handleEmailLogin
                                        : handleEmailSignup
                                  }
-                                 disabled={isAuthenticating || !email || !password}
-                                 className={`w-full bg-primary text-white font-bold py-4 px-6 rounded-2xl shadow-sm transition-all ${isAuthenticating || !email || !password ? "opacity-50" : "hover:bg-primary/90 active:scale-95"}`}>
+                                 disabled={
+                                    isAuthenticating ||
+                                    !email ||
+                                    !password ||
+                                    (!isLoginMode &&
+                                       (!signupFirstName.trim() ||
+                                          !signupLastName.trim()))
+                                 }
+                                 className={`w-full bg-primary text-white font-bold py-4 px-6 rounded-2xl shadow-sm transition-all ${isAuthenticating || !email || !password || (!isLoginMode && (!signupFirstName.trim() || !signupLastName.trim())) ? "opacity-50" : "hover:bg-primary/90 active:scale-95"}`}>
                                  {isAuthenticating
                                     ? "Conectando..."
                                     : isLoginMode
@@ -1385,10 +1479,10 @@ export default function Onboarding() {
                }
             } else if (step === "summary") {
                btn = {
-                  onClick: () => go(1),
-                  label: "Continuar",
+                  onClick: handleCompleteOnboarding,
+                  label: isAuthenticating ? "Guardando..." : "Continuar",
                   icon: <ArrowRight size={20} />,
-                  disabled: false,
+                  disabled: isAuthenticating,
                }
             } else if (step === "fooddemo") {
                btn = {
