@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { useStore } from "@/store/useStore"
+import { apiSignup, apiLogin } from "@/api/auth"
 import { motion, AnimatePresence } from "framer-motion"
 import { useWebHaptics } from "web-haptics/react"
 import { emojiBlast } from "emoji-blast"
@@ -41,6 +42,7 @@ import {
 
 interface FormData {
    name: string
+   lastName: string
    goal: string
    gender: string
    age: number
@@ -114,6 +116,7 @@ export default function Onboarding() {
    const [dir, setDir] = useState(1)
    const [form, setForm] = useState<FormData>({
       name: "",
+      lastName: "",
       goal: "",
       gender: "",
       age: 25,
@@ -131,17 +134,14 @@ export default function Onboarding() {
    const [isAuthenticating, setIsAuthenticating] = useState(false)
    const [email, setEmail] = useState("")
    const [password, setPassword] = useState("")
-   const [phoneNumber, setPhoneNumber] = useState("")
    const [authError, setAuthError] = useState("")
    const [isLoginMode, setIsLoginMode] = useState(false)
-   const [phoneError, setPhoneError] = useState("")
    const [emailError, setEmailError] = useState("")
 
    const handleEmailSignup = async () => {
       setAuthError("")
-      setPhoneError("")
       setEmailError("")
-      if (!email || !password || !phoneNumber) {
+      if (!email || !password) {
          setAuthError("Completá todos los campos")
          return
       }
@@ -149,13 +149,6 @@ export default function Onboarding() {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(email)) {
          setEmailError("Ingresa un correo electrónico válido")
-         trigger("rigid")
-         return
-      }
-
-      const phoneRegex = /^\+?[0-9]{8,15}$/
-      if (!phoneRegex.test(phoneNumber.replace(/\s/g, ""))) {
-         setPhoneError("Ingresa un número de teléfono válido")
          trigger("rigid")
          return
       }
@@ -172,38 +165,17 @@ export default function Onboarding() {
 
       setIsAuthenticating(true)
       try {
-         const res = await fetch("https://api.mov-eat.app/v1/auth/signup", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-               email,
-               password,
-               username: form.name,
-               phoneNumber,
-            }),
-         })
-         if (res.ok) {
+         const firstName = form.name
+         const lastName = form.lastName || "-"
+
+         const result = await apiSignup({ email, password, firstName, lastName })
+         if (result.ok) {
             trigger("success")
             finish()
          } else {
-            try {
-               const data = await res.json()
-               const msg =
-                  data?.issues
-                     ?.map((i: { message: string }) => i.message)
-                     .join(" · ") ||
-                  data?.message ||
-                  "Error desconocido"
-               setAuthError(msg)
-            } catch {
-               setAuthError("Error al registrar")
-            }
+            setAuthError(result.message)
             trigger("rigid")
          }
-      } catch (error) {
-         console.error("Error conectando con el backend:", error)
-         setAuthError("Error de conexión")
-         trigger("rigid")
       } finally {
          setIsAuthenticating(false)
       }
@@ -229,23 +201,14 @@ export default function Onboarding() {
 
       setIsAuthenticating(true)
       try {
-         const res = await fetch("https://api.mov-eat.app/v1/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-         })
-         if (res.ok) {
+         const result = await apiLogin({ email, password })
+         if (result.ok) {
             trigger("success")
             finish()
          } else {
-            const err = await res.text()
-            setAuthError("Email o contraseña incorrectos")
+            setAuthError(result.message)
             trigger("rigid")
          }
-      } catch (error) {
-         console.error("Error conectando con el backend:", error)
-         setAuthError("Error de conexión")
-         trigger("rigid")
       } finally {
          setIsAuthenticating(false)
       }
@@ -352,7 +315,7 @@ export default function Onboarding() {
    }
 
    const canContinue = () => {
-      if (step === "name") return form.name.trim().length > 0
+      if (step === "name") return form.name.trim().length > 0 && form.lastName.trim().length > 0
       if (step === "goal") return !!form.goal
       if (step === "gender") return !!form.gender
       if (step === "level") return !!form.level
@@ -502,23 +465,43 @@ export default function Onboarding() {
                            </h2>
                         </div>
 
-                        <div className="relative">
-                           <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                              <User size={20} className="text-primary" />
+                        <div className="flex flex-col gap-4">
+                           <div className="relative">
+                              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                                 <User size={20} className="text-primary" />
+                              </div>
+                              <input
+                                 autoFocus
+                                 type="text"
+                                 placeholder="Tu nombre aquí"
+                                 className="w-full pl-16 pr-4 py-5 text-xl font-bold bg-card-bg border-2 border-card-border focus:border-primary rounded-2xl outline-none text-foreground placeholder-gray-300 transition-colors"
+                                 value={form.name}
+                                 onChange={(e) =>
+                                    setForm({ ...form, name: e.target.value })
+                                 }
+                                 onKeyDown={(e) =>
+                                    e.key === "Enter" && form.name && form.lastName && go(1)
+                                 }
+                              />
                            </div>
-                           <input
-                              autoFocus
-                              type="text"
-                              placeholder="Tu nombre aquí"
-                              className="w-full pl-16 pr-4 py-5 text-xl font-bold bg-card-bg border-2 border-card-border focus:border-primary rounded-2xl outline-none text-foreground placeholder-gray-300 transition-colors"
-                              value={form.name}
-                              onChange={(e) =>
-                                 setForm({ ...form, name: e.target.value })
-                              }
-                              onKeyDown={(e) =>
-                                 e.key === "Enter" && form.name && go(1)
-                              }
-                           />
+
+                           <div className="relative">
+                              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                                 <User size={20} className="text-primary" />
+                              </div>
+                              <input
+                                 type="text"
+                                 placeholder="Tu apellido aquí"
+                                 className="w-full pl-16 pr-4 py-5 text-xl font-bold bg-card-bg border-2 border-card-border focus:border-primary rounded-2xl outline-none text-foreground placeholder-gray-300 transition-colors"
+                                 value={form.lastName}
+                                 onChange={(e) =>
+                                    setForm({ ...form, lastName: e.target.value })
+                                 }
+                                 onKeyDown={(e) =>
+                                    e.key === "Enter" && form.name && form.lastName && go(1)
+                                 }
+                              />
+                           </div>
                         </div>
 
                         <p className="text-gray-400 text-sm font-medium">
@@ -1287,28 +1270,7 @@ export default function Onboarding() {
                                        initial={{ height: 0, opacity: 0 }}
                                        animate={{ height: "auto", opacity: 1 }}
                                        exit={{ height: 0, opacity: 0 }}
-                                       className="overflow-hidden flex flex-col gap-1">
-                                       <AnimatePresence>
-                                          {phoneError && (
-                                             <motion.p
-                                                initial={{ opacity: 0, y: -4 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0 }}
-                                                className="text-xs font-bold text-red-500 px-1 pb-0.5">
-                                                {phoneError}
-                                             </motion.p>
-                                          )}
-                                       </AnimatePresence>
-                                       <input
-                                          type="tel"
-                                          placeholder="Tu número de teléfono"
-                                          className={`w-full bg-white border ${phoneError ? "border-red-300" : "border-gray-200"} text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm outline-none focus:border-primary`}
-                                          value={phoneNumber}
-                                          onChange={(e) => {
-                                             setPhoneNumber(e.target.value.replace(/\D/g, ""))
-                                             setPhoneError("")
-                                          }}
-                                       />
+                                       className="overflow-hidden">
                                     </motion.div>
                                  )}
                               </AnimatePresence>
