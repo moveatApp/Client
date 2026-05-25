@@ -418,7 +418,7 @@ export default function ProfilePage() {
                } catch {
                   // ignore: always clear local state even if server fails
                }
-               useStore.setState({ user: null, isOnboarded: false })
+                 useStore.setState({ isOnboarded: false })
                resetProgress()
                navigate("/onboarding")
             }}

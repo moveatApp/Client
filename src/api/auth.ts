@@ -36,6 +36,27 @@ export interface AuthError {
    message: string
 }
 
+export interface LoginUser {
+   id: string
+   email: string
+   firstName: string
+   lastName: string
+   displayName: string
+   status: string
+}
+
+export interface LoginSession {
+   expiresAt: string
+}
+
+export interface LoginResult {
+   ok: true
+   data: {
+      user: LoginUser
+      session: LoginSession
+   }
+}
+
 // ─── POST /v1/auth/signup ─────────────────────────────────────────────────────
 
 export interface SignupPayload {
@@ -92,7 +113,7 @@ export interface LoginPayload {
    password: string
 }
 
-export async function apiLogin(payload: LoginPayload): Promise<AuthResult | AuthError> {
+export async function apiLogin(payload: LoginPayload): Promise<LoginResult | AuthError> {
    try {
       const res = await fetch(`${BASE_URL}/login`, {
          method: "POST",
@@ -136,6 +157,36 @@ export async function apiGetMe(): Promise<{ ok: true; data: MeResponse } | AuthE
    try {
       const res = await fetch(BASE_ME_URL, { credentials: "include" })
       if (res.ok) return { ok: true, data: await res.json() }
+      return { ok: false, message: "Sesión inválida o expirada" }
+   } catch {
+      return { ok: false, message: "Error de conexión" }
+   }
+}
+
+// ─── GET /v1/me/profile ───────────────────────────────────────────────────────
+
+export interface PhysicalProfile {
+   unitSystem: "METRIC" | "IMPERIAL" | string
+   birthDate: string
+   sex: "MALE" | "FEMALE" | "OTHER" | string
+   height: {
+      cm?: number
+      inches?: number
+   }
+   currentWeight: number
+   timezone: string
+   locale: string
+}
+
+export interface GetProfileResponse {
+   profile: PhysicalProfile
+}
+
+export async function apiGetProfile(): Promise<{ ok: true; data: GetProfileResponse } | AuthError> {
+   try {
+      const res = await fetch(`${BASE_ME_URL}/profile`, { credentials: "include" })
+      if (res.ok) return { ok: true, data: await res.json() }
+      if (res.status === 404) return { ok: false, message: "Perfil no encontrado" }
       return { ok: false, message: "Sesión inválida o expirada" }
    } catch {
       return { ok: false, message: "Error de conexión" }

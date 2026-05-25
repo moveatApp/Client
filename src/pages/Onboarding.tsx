@@ -4,6 +4,7 @@ import { useStore } from "@/store/useStore"
 import {
    apiSignup,
    apiLogin,
+   apiGetProfile,
    apiPutOnboarding,
    buildSignupPayload,
    buildOnboardingPayload,
@@ -190,36 +191,64 @@ export default function Onboarding() {
       setIsAuthenticating(false)
    }
 
-   const handleEmailLogin = async () => {
-      setAuthError("")
-      setEmailError("")
-      if (!email || !password) return
+     const handleEmailLogin = async () => {
+        setAuthError("")
+        setEmailError("")
+        if (!email || !password) return
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(email)) {
-         setEmailError("Ingresa un correo electrónico válido")
-         trigger("rigid")
-         return
-      }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(email)) {
+           setEmailError("Ingresa un correo electrónico válido")
+           trigger("rigid")
+           return
+        }
 
-      if (password.length < 6) {
-         setAuthError("La contraseña debe tener al menos 6 caracteres")
-         trigger("rigid")
-         return
-      }
+        if (password.length < 6) {
+           setAuthError("La contraseña debe tener al menos 6 caracteres")
+           trigger("rigid")
+           return
+        }
 
-      setIsAuthenticating(true)
-      const res = await apiLogin({ email: email.trim(), password })
-      if (res.ok) {
-         trigger("success")
-         useStore.setState({ isOnboarded: true })
-         navigate("/")
-      } else {
-         setAuthError(res.message)
-         trigger("rigid")
-      }
-      setIsAuthenticating(false)
-   }
+        setIsAuthenticating(true)
+        const res = await apiLogin({ email: email.trim(), password })
+        if (res.ok) {
+           trigger("success")
+
+           const loginUser = res.data.user
+           const name =
+              loginUser.displayName ||
+              `${loginUser.firstName} ${loginUser.lastName}`.trim()
+
+           const existing = useStore.getState().user
+           const profileRes = await apiGetProfile()
+
+           let weight = existing?.weight ?? 70
+           if (profileRes.ok) {
+              weight = profileRes.data.profile.currentWeight || weight
+           }
+
+           useStore.setState({
+              isOnboarded: true,
+              user: existing
+                 ? { ...existing, name, weight }
+                 : {
+                      name,
+                      goal: "mantiene" as any,
+                      level: "principiante" as any,
+                      weight,
+                      workoutsPerWeek: 2,
+                      timePerSession: 30,
+                      preferences: ["ninguna"],
+                   },
+           })
+
+           navigate("/")
+        } else {
+           setAuthError(res.message)
+           trigger("rigid")
+        }
+        setIsAuthenticating(false)
+     }
 
    const handleCompleteOnboarding = async () => {
       setOnboardingError("")
