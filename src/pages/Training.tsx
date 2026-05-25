@@ -132,7 +132,7 @@ export default function TrainingPage() {
       <div className="p-4 md:p-6 pb-32 animate-fade-in font-sans flex flex-col min-h-screen">
          <header className="mb-6 flex flex-col items-start justify-between">
             <div className="flex items-center gap-2 mb-2">
-               <button onClick={() => navigate('/')} className="p-2 bg-gray-50 dark:bg-white/5 rounded-xl"><ChevronLeft size={20}/></button>
+               <button onClick={() => navigate('/')} className="p-2 bg-muted dark:bg-white/5 rounded-xl"><ChevronLeft size={20}/></button>
                <h1 className="text-3xl font-display font-extrabold text-foreground flex items-center gap-2">
                   <Zap size={32} className="text-primary" /> Rutinas
                </h1>
@@ -146,7 +146,7 @@ export default function TrainingPage() {
                   <button 
                      key={w.id}
                      onClick={() => setActiveWorkout(w.id)}
-                     className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all snap-start ${activeWorkoutId === w.id ? 'bg-gray-900 text-white dark:bg-white dark:text-black shadow-md' : 'bg-card-bg text-gray-500 border border-card-border hover:bg-gray-50'}`}
+                     className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all snap-start ${activeWorkoutId === w.id ? 'bg-gray-900 text-white dark:bg-white dark:text-black shadow-md' : 'bg-card-bg text-gray-500 border border-card-border hover:bg-muted'}`}
                   >
                      {w.name}
                   </button>
@@ -207,7 +207,7 @@ export default function TrainingPage() {
                            layout
                            key={ex.id}
                            className={`rounded-[32px] border-2 transition-all ${
-                              ex.completed ? 'bg-gray-50 dark:bg-white/5 opacity-60 border-transparent' : 
+                              ex.completed ? 'bg-muted dark:bg-white/5 opacity-60 border-transparent' : 
                               isActive ? 'bg-card-bg border-primary shadow-lg ring-4 ring-primary/5' : 'bg-card-bg border-card-border hover:border-gray-200'
                            }`}
                         >
@@ -239,7 +239,7 @@ export default function TrainingPage() {
                               </div>
 
                               <div className="flex items-center gap-2">
-                                 <button onClick={(e) => { e.stopPropagation(); setEditingExId(isEditing ? null : ex.id) }} className={`p-2.5 rounded-xl transition-colors ${isEditing ? 'bg-gray-100 dark:bg-white/10 text-primary' : 'bg-gray-50 dark:bg-white/5 text-gray-400 hover:text-foreground'}`}>
+                                 <button onClick={(e) => { e.stopPropagation(); setEditingExId(isEditing ? null : ex.id) }} className={`p-2.5 rounded-xl transition-colors ${isEditing ? 'bg-gray-100 dark:bg-white/10 text-primary' : 'bg-muted dark:bg-white/5 text-gray-400 hover:text-foreground'}`}>
                                     <Settings2 size={18} />
                                  </button>
                               </div>
@@ -254,7 +254,7 @@ export default function TrainingPage() {
                                              <div className="w-6 text-center text-xs font-bold text-gray-400">
                                                 {setIdx + 1}
                                              </div>
-                                             <div className="flex-1 bg-gray-50 dark:bg-white/5 rounded-xl px-4 py-3 flex items-center gap-2 border border-transparent focus-within:border-primary/30">
+                                             <div className="flex-1 bg-muted dark:bg-white/5 rounded-xl px-4 py-3 flex items-center gap-2 border border-transparent focus-within:border-primary/30">
                                                 <input 
                                                    type="number"
                                                    className={`w-full bg-transparent font-bold outline-none text-sm ${setDetail.completed ? 'text-gray-400 line-through' : 'text-foreground'}`}
@@ -307,7 +307,7 @@ export default function TrainingPage() {
                               {isEditing && (
                                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="px-6 pb-6 overflow-hidden">
                                     <div className="grid grid-cols-3 gap-3 mb-4 mt-2">
-                                       <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/5">
+                                       <div className="bg-muted dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/5">
                                           <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Sets</span>
                                           <input type="number" min="0" className="w-full bg-transparent font-bold text-foreground outline-none" value={ex.sets} onChange={(e) => {
                                              const newSets = parseInt(e.target.value) || 0;
@@ -318,7 +318,7 @@ export default function TrainingPage() {
                                              updateExercise(activeWorkout.id, ex.id, { sets: newSets, setDetails: updatedSets });
                                           }}/>
                                        </div>
-                                       <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/5">
+                                       <div className="bg-muted dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/5">
                                           <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Cantidad</span>
                                           <input type="number" min="0" className="w-full bg-transparent font-bold text-foreground outline-none" 
                                              value={ex.reps.replace(/[^0-9]/g, '')} 
@@ -349,7 +349,7 @@ export default function TrainingPage() {
                                                    className={`px-3 py-2.5 font-bold text-xs text-left transition-all w-full border-t first:border-t-0 border-gray-100 dark:border-white/5 ${
                                                       isSelected
                                                          ? 'bg-primary text-white'
-                                                         : 'bg-gray-50 dark:bg-white/[0.02] text-foreground hover:bg-gray-100 dark:hover:bg-white/5'
+                                                         : 'bg-muted dark:bg-white/[0.02] text-foreground hover:bg-gray-100 dark:hover:bg-white/5'
                                                    }`}
                                                 >
                                                    {opt.label}
@@ -381,7 +381,7 @@ export default function TrainingPage() {
                   
                   <button 
                      onClick={() => addExercise(activeWorkout.id)} 
-                     className="w-full py-5 mt-4 border-2 border-dashed border-gray-200 dark:border-white/10 text-gray-400 font-bold rounded-[32px] flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors active:scale-95"
+                     className="w-full py-5 mt-4 border-2 border-dashed border-gray-200 dark:border-white/10 text-gray-400 font-bold rounded-[32px] flex items-center justify-center gap-2 hover:bg-muted dark:hover:bg-white/5 transition-colors active:scale-95"
                   >
                      <Plus size={20} /> Añadir Ejercicio
                   </button>
@@ -418,7 +418,7 @@ export default function TrainingPage() {
                         <p className="text-sm text-gray-500 font-medium mb-6">{modal.message}</p>
                      )}
                      {modal.type === 'prompt' && (
-                        <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/5 mb-6">
+                        <div className="bg-muted dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/5 mb-6">
                            <input 
                               className="w-full bg-transparent font-bold text-foreground outline-none text-base"
                               value={modalInput}
@@ -430,7 +430,7 @@ export default function TrainingPage() {
                      <div className="flex gap-3">
                         <button 
                            onClick={() => setModal(prev => ({ ...prev, isOpen: false }))}
-                           className="flex-1 py-3.5 bg-gray-50 dark:bg-white/5 text-gray-500 hover:text-foreground font-bold rounded-2xl transition-colors border border-card-border"
+                           className="flex-1 py-3.5 bg-muted dark:bg-white/5 text-gray-500 hover:text-foreground font-bold rounded-2xl transition-colors border border-card-border"
                         >
                            Cancelar
                         </button>

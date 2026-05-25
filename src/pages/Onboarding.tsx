@@ -402,7 +402,7 @@ export default function Onboarding() {
          <div className="absolute top-6 right-6 z-50">
             <button
                onClick={toggleDarkMode}
-               className="w-10 h-10 rounded-full bg-card-bg border border-card-border flex items-center justify-center text-foreground shadow-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+               className="w-10 h-10 rounded-full bg-card-bg border border-card-border flex items-center justify-center text-foreground shadow-sm hover:bg-muted dark:hover:bg-white/5 transition-colors">
                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
          </div>
@@ -448,13 +448,9 @@ export default function Onboarding() {
                            }}
                            className="flex items-center justify-center">
                            <img
-                              src="/logo-manzana.png"
+                              src="/Logo.png"
                               alt="MovEat"
-                              className="w-28 h-28 object-contain"
-                              onError={(e) => {
-                                 ;(e.target as HTMLImageElement).style.display =
-                                    "none"
-                              }}
+                              className="w-24 h-24 object-contain mx-auto drop-shadow-sm"
                            />
                         </motion.div>
 
@@ -1128,7 +1124,7 @@ export default function Onboarding() {
                         </div>
 
                         <div className="bg-card-bg border border-card-border rounded-3xl p-5 shadow-sm">
-                           <div className="flex items-center gap-3 bg-gray-50 dark:bg-white/5 rounded-2xl px-4 mb-4">
+                           <div className="flex items-center gap-3 bg-muted dark:bg-white/5 rounded-2xl px-4 mb-4">
                               <span className="text-2xl">🍽️</span>
                               <input
                                  type="text"
@@ -1263,7 +1259,7 @@ export default function Onboarding() {
                            transition={{ type: "spring", stiffness: 200 }}
                            className="mb-4">
                            <img
-                              src="/logo-manzana.png"
+                              src="/Logo.png"
                               alt="MovEat"
                               className="w-24 h-24 object-contain mx-auto drop-shadow-sm"
                            />
@@ -1283,7 +1279,7 @@ export default function Onboarding() {
 
                         <div className="w-full max-w-sm mt-6">
                            {/* Toggle registro/login */}
-                           <div className="flex bg-gray-100 dark:bg-white/5 rounded-2xl p-1 mb-5">
+                           <div className="flex bg-muted dark:bg-white/5 rounded-2xl p-1 mb-5">
                               <button
                                  onClick={() => {
                                     setIsLoginMode(false)
@@ -1451,7 +1447,7 @@ export default function Onboarding() {
                            <button
                               onClick={() => loginWithGoogle()}
                               disabled={isAuthenticating}
-                              className={`w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm transition-all ${isAuthenticating ? "opacity-70" : "hover:bg-gray-50 active:scale-95"}`}>
+                              className={`w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm transition-all ${isAuthenticating ? "opacity-70" : "hover:bg-muted active:scale-95"}`}>
                               <svg className="w-5 h-5" viewBox="0 0 24 24">
                                  <path
                                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

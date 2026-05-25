@@ -108,7 +108,7 @@ export default function NutritionPage() {
 
             <motion.section className="bg-card-bg rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-center">
                <form onSubmit={handleAIAnalyze} className="relative ring-1 ring-black/5 dark:ring-white/10 rounded-2xl overflow-hidden focus-within:ring-primary/40 transition-all">
-                  <div className="flex items-center bg-gray-50 dark:bg-white/5">
+                  <div className="flex items-center bg-muted dark:bg-white/5">
                      <div className="p-3 text-gray-400"><ImageIcon size={18} /></div>
                      <input
                         type="text"
@@ -212,7 +212,7 @@ export default function NutritionPage() {
                                     { label: 'Grasas', val: meal.fat, color: 'text-orange-400' },
                                     { label: 'Azúcar', val: meal.sugar, color: 'text-pink-400' }
                                  ].map(m => (
-                                    <div key={m.label} className="bg-gray-50 dark:bg-white/5 p-3 rounded-2xl border border-black/5">
+                                    <div key={m.label} className="bg-muted dark:bg-white/5 p-3 rounded-2xl border border-black/5">
                                        <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">{m.label}</span>
                                        <span className={`text-base font-display font-bold ${m.color}`}>{m.val}g</span>
                                     </div>

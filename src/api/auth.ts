@@ -51,6 +51,27 @@ export async function apiSignup(payload: SignupPayload): Promise<AuthResult | Au
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify(payload),
+         credentials: "include",
+      })
+
+      if (res.ok) return { ok: true, data: await res.json() }
+
+      let data: unknown
+      try { data = await res.json() } catch { data = {} }
+
+      return { ok: false, message: parseErrorMessage(res, data) }
+   } catch {
+      return { ok: false, message: "Error de conexión" }
+   }
+}
+
+// ─── POST /v1/auth/logout ─────────────────────────────────────────────────────
+
+export async function apiLogout(): Promise<AuthResult | AuthError> {
+   try {
+      const res = await fetch(`${BASE_URL}/logout`, {
+         method: "POST",
+         credentials: "include",
       })
 
       if (res.ok) return { ok: true, data: await res.json() }
@@ -77,6 +98,7 @@ export async function apiLogin(payload: LoginPayload): Promise<AuthResult | Auth
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify(payload),
+         credentials: "include",
       })
 
       if (res.ok) return { ok: true, data: await res.json() }
@@ -161,10 +183,10 @@ export async function apiPutChannel(channelType: string, payload: PutChannelPayl
 
       let data: unknown
       try { data = await res.json() } catch { data = {} }
-      
+
       const d = data as Record<string, unknown>
       let msg = "Error desconocido"
-      
+
       if (res.status === 401) {
          msg = "Sesión inválida o expirada"
       } else if (res.status === 409) {
@@ -230,10 +252,10 @@ export async function apiPutOnboarding(payload: PutOnboardingPayload): Promise<{
 
       let data: unknown
       try { data = await res.json() } catch { data = {} }
-      
+
       const d = data as Record<string, unknown>
       let msg = "Error desconocido"
-      
+
       if (res.status === 401) {
          msg = "Sesión inválida o expirada"
       } else if (res.status === 400) {

@@ -102,7 +102,7 @@ export default function ProgressPage() {
                   {badges.map((badge) => {
                      const Icon = badge.icon
                      return (
-                        <div key={badge.id} className={`bg-gray-50 dark:bg-white/5 rounded-2xl p-4 flex items-center gap-4 transition-all ${badge.unlocked ? "border-primary/20 shadow-sm opacity-100" : "border-gray-100 dark:border-white/5 opacity-60 grayscale"} border`}>
+                        <div key={badge.id} className={`bg-muted dark:bg-white/5 rounded-2xl p-4 flex items-center gap-4 transition-all ${badge.unlocked ? "border-primary/20 shadow-sm opacity-100" : "border-gray-100 dark:border-white/5 opacity-60 grayscale"} border`}>
                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${badge.unlocked ? "bg-primary/20 text-primary" : "bg-gray-200 dark:bg-white/10 text-gray-400"}`}>
                               {badge.unlocked ? <CheckCircle2 size={20} /> : <Icon size={20} />}
                            </div>

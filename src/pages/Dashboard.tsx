@@ -19,8 +19,16 @@ import WeightChart from "@/components/WeightChart"
 
 export default function Home() {
    const navigate = useNavigate()
-   const { isOnboarded, user, streak, targetCalories, dailyCalories, waterGlasses, resetWater, addWater } =
-      useStore()
+   const {
+      isOnboarded,
+      user,
+      streak,
+      targetCalories,
+      dailyCalories,
+      waterGlasses,
+      resetWater,
+      addWater,
+   } = useStore()
    const { trigger } = useWebHaptics({ debug: true })
    const hydrationButtonRef = useRef<HTMLButtonElement>(null)
    const [mounted, setMounted] = useState(false)
@@ -46,13 +54,13 @@ export default function Home() {
 
       if (nextGlasses === 10) {
          setIsCompletingWater(true)
-         
-         const cardElement = hydrationButtonRef.current?.closest('section')
+
+         const cardElement = hydrationButtonRef.current?.closest("section")
          if (cardElement) {
             const rect = cardElement.getBoundingClientRect()
             const x = (rect.left + rect.width / 2) / window.innerWidth
             const y = (rect.top + rect.height / 2) / window.innerHeight
-            
+
             setTimeout(() => {
                trigger("success")
                confetti({
@@ -62,7 +70,7 @@ export default function Home() {
                   colors: ["#38BDF8", "#7DD3FC", "#ffffff"],
                   gravity: 1.5,
                   scalar: 0.5,
-                  zIndex: 1000
+                  zIndex: 1000,
                })
             }, 150)
          }
@@ -79,11 +87,7 @@ export default function Home() {
          <header className="flex justify-between items-center mb-6 shrink-0">
             <div>
                <div className="flex items-center gap-2 mb-1 md:hidden">
-                  <img
-                     src="/logo-manzana.png"
-                     alt="MovEat"
-                     className="h-15 w-auto"
-                  />
+                  <img src="/Logo.png" alt="MovEat" className="h-15 w-auto" />
                   <span className="font-display font-extrabold text-lg tracking-tight text-foreground">
                      MovEat
                   </span>
@@ -143,7 +147,7 @@ export default function Home() {
                      <path
                         className="text-gray-100 dark:text-white/5"
                         strokeWidth="5"
-                        stroke="currentColor"
+                        stroke="var(--muted)"
                         fill="none"
                         d="M18 2.5 a 15.5 15.5 0 0 1 0 31.0 a 15.5 15.5 0 0 1 0 -31.0"
                      />
@@ -168,7 +172,7 @@ export default function Home() {
                <div className="flex gap-2 w-full mt-2">
                   <button
                      onClick={() => navigate("/nutrition")}
-                     className="flex-1 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-foreground">
+                     className="flex-1 bg-muted hover:bg-muted-foreground dark:hover:bg-muted-foreground transition-colors py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-foreground">
                      <Plus size={14} /> Comida
                   </button>
                </div>
@@ -181,9 +185,7 @@ export default function Home() {
                transition={{ delay: 0.2 }}
                className="col-span-1 bg-water text-white rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px] md:min-h-[140px]">
                <div className="flex justify-between items-center">
-                  <h3 className="font-bold text-sm">
-                     Hidratación
-                  </h3>
+                  <h3 className="font-bold text-sm">Hidratación</h3>
                   {useStore.getState().waterLiters > 0 && (
                      <div className="text-xs font-bold opacity-80">
                         {useStore.getState().waterLiters}L
@@ -192,20 +194,18 @@ export default function Home() {
                </div>
 
                <div className="flex gap-3 my-2 items-center justify-center relative">
-               <AnimatePresence mode="wait">
+                  <AnimatePresence mode="wait">
                      {isCompletingWater ? (
                         <motion.div
                            key="complete"
                            initial={{ scale: 0, rotate: -180 }}
                            animate={{ scale: 1, rotate: 0 }}
                            exit={{ scale: 0 }}
-                           className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-water shadow-xl"
-                        >
+                           className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-water shadow-xl">
                            <motion.div
                               initial={{ pathLength: 0 }}
                               animate={{ pathLength: 1 }}
-                              transition={{ duration: 0.5, delay: 0.2 }}
-                           >
+                              transition={{ duration: 0.5, delay: 0.2 }}>
                               <Check size={24} strokeWidth={3} />
                            </motion.div>
                         </motion.div>
@@ -236,14 +236,16 @@ export default function Home() {
                   <div className="flex flex-col">
                      <span className="text-3xl font-display font-bold">
                         {waterGlasses * 100}
-                        <span className="text-lg font-normal opacity-70 ml-1">ml</span>
+                        <span className="text-lg font-normal opacity-70 ml-1">
+                           ml
+                        </span>
                      </span>
                   </div>
                   <button
                      onClick={handleWaterClick}
                      ref={hydrationButtonRef}
                      disabled={isCompletingWater}
-                     className={`w-10 h-10 bg-white text-water rounded-full flex items-center justify-center shadow-lg transition-all ${isCompletingWater ? 'opacity-0 scale-50' : 'group-hover:scale-110 active:scale-95'}`}>
+                     className={`w-10 h-10 bg-white text-water rounded-full flex items-center justify-center shadow-lg transition-all ${isCompletingWater ? "opacity-0 scale-50" : "group-hover:scale-110 active:scale-95"}`}>
                      <Plus size={20} />
                   </button>
                </div>

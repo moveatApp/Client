@@ -12,6 +12,8 @@
   --chart-grid: #E5E7EB;
   --chart-label: #9CA3AF;
   --level-card-bg: #F7F3EE;
+  --muted: rgb(243, 244, 246, 100);
+  --muted-foreground: #E5E7EB;
 }
 
 .dark {
@@ -26,7 +28,7 @@
   --chart-grid: #333333;
   --chart-label: #6B7280;
   --muted: #2A2A2A;
-  --muted-foreground: #9CA3AF;
+  --muted-foreground: #333333;
   --level-card-bg: #F7F3EE;
 }
 
@@ -58,6 +60,8 @@
   --color-card-bg: var(--card-bg);
   --color-card-border: var(--card-border);
   --color-level-card-bg: var(--level-card-bg);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
