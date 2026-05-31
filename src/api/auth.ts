@@ -183,15 +183,52 @@ export interface GetProfileResponse {
 }
 
 export async function apiGetProfile(): Promise<{ ok: true; data: GetProfileResponse } | AuthError> {
-   try {
-      const res = await fetch(`${BASE_ME_URL}/profile`, { credentials: "include" })
-      if (res.ok) return { ok: true, data: await res.json() }
-      if (res.status === 404) return { ok: false, message: "Perfil no encontrado" }
-      return { ok: false, message: "Sesión inválida o expirada" }
-   } catch {
-      return { ok: false, message: "Error de conexión" }
-   }
+    try {
+       const res = await fetch(`${BASE_ME_URL}/profile`, { credentials: "include" })
+       if (res.ok) return { ok: true, data: await res.json() }
+       if (res.status === 404) return { ok: false, message: "Perfil no encontrado" }
+       return { ok: false, message: "Sesión inválida o expirada" }
+    } catch {
+       return { ok: false, message: "Error de conexión" }
+    }
+ }
+
+// ─── PUT /v1/me/profile ───────────────────────────────────────────────────────
+
+export interface PutProfilePayload {
+   currentWeight?: number
+   height?: { cm?: number }
+   goal?: string
 }
+
+export async function apiPutProfile(payload: PutProfilePayload): Promise<{ ok: true; data: unknown } | AuthError> {
+    try {
+       const res = await fetch(`${BASE_ME_URL}/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+       })
+
+       if (res.ok) return { ok: true, data: await res.json() }
+
+       let data: unknown
+       try { data = await res.json() } catch { data = {} }
+
+       const d = data as Record<string, unknown>
+       let msg = "Error desconocido"
+
+       if (res.status === 401) {
+          msg = "Sesión inválida o expirada"
+       } else if (d?.message) {
+          msg = Array.isArray(d.message) ? (d.message as string[]).join(" · ") : String(d.message)
+       }
+
+       return { ok: false, message: msg }
+    } catch {
+       return { ok: false, message: "Error de conexión" }
+    }
+ }
 
 // ─── GET /v1/me/channels ──────────────────────────────────────────────────────
 
@@ -398,26 +435,295 @@ export function getManualCalorieTarget(goal: string): number {
 }
 
 export function buildOnboardingPayload(form: OnboardingFormData): PutOnboardingPayload {
-   return {
-      unitSystem: "METRIC",
-      profile: {
-         birthDate: birthDateFromAge(form.age),
-         sex: mapSex(form.gender),
-         height: { cm: form.height },
-         currentWeight: form.weight,
-         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-         locale: navigator.language || "es-AR",
-      },
-      goals: {
-         primaryGoal: mapPrimaryGoal(form.goal),
-         activityLevel: mapActivityLevel(form.level),
-         trainingDaysPerWeek:
-            form.level === "principiante" ? 2 : form.level === "intermedio" ? 3 : 5,
-      },
-      nutrition: {
-         targetMode: "MANUAL",
-         manualCalorieTarget: getManualCalorieTarget(form.goal),
-      },
+    return {
+       unitSystem: "METRIC",
+       profile: {
+          birthDate: birthDateFromAge(form.age),
+          sex: mapSex(form.gender),
+          height: { cm: form.height },
+          currentWeight: form.weight,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          locale: navigator.language || "es-AR",
+       },
+       goals: {
+          primaryGoal: mapPrimaryGoal(form.goal),
+          activityLevel: mapActivityLevel(form.level),
+          trainingDaysPerWeek:
+             form.level === "principiante" ? 2 : form.level === "intermedio" ? 3 : 5,
+       },
+       nutrition: {
+          targetMode: "MANUAL",
+          manualCalorieTarget: getManualCalorieTarget(form.goal),
+       },
+    }
+ }
+
+// ─── GET /v1/me/context ───────────────────────────────────────────────────────
+
+export interface MeContextResponse {
+   user: {
+      id: string
+      email: string
+      firstName: string
+      lastName: string
+      displayName: string
+      status: string
+   }
+   onboardingCompleted: boolean
+   profile: PhysicalProfile
+   goals: {
+      primaryGoal: string
+      activityLevel: string
+      trainingDaysPerWeek: number
+      targetWeight: number
    }
 }
+
+export async function apiGetMeContext(): Promise<{ ok: true; data: MeContextResponse } | AuthError> {
+    try {
+       const res = await fetch(`${BASE_ME_URL}/context`, { credentials: "include" })
+       if (res.ok) return { ok: true, data: await res.json() }
+       return { ok: false, message: "Sesión inválida o expirada" }
+    } catch {
+       return { ok: false, message: "Error de conexión" }
+    }
+ }
+
+// ─── GET /v1/me/goals ─────────────────────────────────────────────────────────
+
+export interface GoalsResponse {
+   goals: {
+      primaryGoal: string
+      activityLevel: string
+      trainingDaysPerWeek: number
+      targetWeight: number
+   }
+}
+
+export async function apiGetGoals(): Promise<{ ok: true; data: GoalsResponse } | AuthError> {
+    try {
+       const res = await fetch(`${BASE_ME_URL}/goals`, { credentials: "include" })
+       if (res.ok) return { ok: true, data: await res.json() }
+       return { ok: false, message: "Sesión inválida o expirada" }
+    } catch {
+       return { ok: false, message: "Error de conexión" }
+    }
+ }
+
+// ─── PUT /v1/me/goals ─────────────────────────────────────────────────────────
+
+export interface PutGoalsPayload {
+   primaryGoal: string
+   activityLevel: string
+   trainingDaysPerWeek: number
+   targetWeight: number
+}
+
+export async function apiPutGoals(payload: PutGoalsPayload): Promise<{ ok: true; data: GoalsResponse } | AuthError> {
+    try {
+       const res = await fetch(`${BASE_ME_URL}/goals`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+       })
+
+       if (res.ok) return { ok: true, data: await res.json() }
+
+       let data: unknown
+       try { data = await res.json() } catch { data = {} }
+
+       const d = data as Record<string, unknown>
+       let msg = "Error desconocido"
+
+       if (res.status === 401) {
+          msg = "Sesión inválida o expirada"
+       } else if (res.status === 400) {
+          if (d?.message) {
+             msg = Array.isArray(d.message) ? (d.message as string[]).join(" · ") : String(d.message)
+          } else {
+             msg = "Datos de objetivos inválidos"
+          }
+       }
+
+       return { ok: false, message: msg }
+    } catch {
+       return { ok: false, message: "Error de conexión" }
+    }
+ }
+
+// ─── GET /v1/me/nutrition-settings ────────────────────────────────────────────
+
+export interface NutritionSettingsResponse {
+   nutrition: {
+      targetMode: string
+      dailyCalorieTarget: number
+      manualCalorieTarget: number
+      calculatedCalorieTarget: number
+      proteinTargetG: number
+      carbsTargetG: number
+      fatTargetG: number
+      calculationVersion: string
+   }
+}
+
+export async function apiGetNutritionSettings(): Promise<{ ok: true; data: NutritionSettingsResponse } | AuthError> {
+    try {
+       const res = await fetch(`${BASE_ME_URL}/nutrition-settings`, { credentials: "include" })
+       if (res.ok) return { ok: true, data: await res.json() }
+       return { ok: false, message: "Sesión inválida o expirada" }
+    } catch {
+       return { ok: false, message: "Error de conexión" }
+    }
+ }
+
+// ─── PUT /v1/me/nutrition-settings ────────────────────────────────────────────
+
+export interface PutNutritionSettingsPayload {
+   targetMode: string
+   manualCalorieTarget?: number
+   proteinTargetG?: number
+   carbsTargetG?: number
+   fatTargetG?: number
+}
+
+export async function apiPutNutritionSettings(payload: PutNutritionSettingsPayload): Promise<{ ok: true; data: NutritionSettingsResponse } | AuthError> {
+    try {
+       const res = await fetch(`${BASE_ME_URL}/nutrition-settings`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+       })
+
+       if (res.ok) return { ok: true, data: await res.json() }
+
+       let data: unknown
+       try { data = await res.json() } catch { data = {} }
+
+       const d = data as Record<string, unknown>
+       let msg = "Error desconocido"
+
+       if (res.status === 401) {
+          msg = "Sesión inválida o expirada"
+       } else if (res.status === 400) {
+          if (d?.message) {
+             msg = Array.isArray(d.message) ? (d.message as string[]).join(" · ") : String(d.message)
+          } else {
+             msg = "Datos de nutrición inválidos"
+          }
+       }
+
+       return { ok: false, message: msg }
+    } catch {
+       return { ok: false, message: "Error de conexión" }
+    }
+ }
+
+// ─── Internal APIs ────────────────────────────────────────────────────────────
+
+const BASE_INTERNAL_URL = `${API_BASE_URL}/internal/v1/users`
+
+// GET /internal/v1/users/resolve-by-channel
+
+export interface ResolveChannelResponse {
+   registered: boolean
+   user: {
+      id: string
+      status: string
+      onboardingCompleted: boolean
+   }
+   channel: {
+      type: string
+      identifier: string
+      verified: boolean
+   }
+}
+
+export async function apiResolveByChannel(channel: string, identifier: string, internalToken: string): Promise<{ ok: true; data: ResolveChannelResponse } | AuthError> {
+    try {
+       const res = await fetch(`${BASE_INTERNAL_URL}/resolve-by-channel?${new URLSearchParams({ channel, identifier })}`, {
+          headers: { "Authorization": `Bearer ${internalToken}` },
+       })
+       if (res.ok) return { ok: true, data: await res.json() }
+
+       let data: unknown
+       try { data = await res.json() } catch { data = {} }
+       const d = data as Record<string, unknown>
+       let msg = "Error desconocido"
+
+       if (res.status === 400) {
+          if (d?.message) {
+             msg = Array.isArray(d.message) ? (d.message as string[]).join(" · ") : String(d.message)
+          } else {
+             msg = "Consulta de canal inválida"
+          }
+       } else if (res.status === 401) {
+          msg = "Token de servicio interno inválido"
+       }
+
+       return { ok: false, message: msg }
+    } catch {
+       return { ok: false, message: "Error de conexión" }
+    }
+ }
+
+// GET /internal/v1/users/{id}/context
+
+export interface InternalUserContextResponse {
+   user: {
+      id: string
+      status: string
+      timezone: string
+      onboardingCompleted: boolean
+   }
+   profile: PhysicalProfile
+   goals: {
+      primaryGoal: string
+      activityLevel: string
+      trainingDaysPerWeek: number
+      targetWeight: number
+   }
+   nutrition: {
+      targetMode: string
+      dailyCalorieTarget: number
+      manualCalorieTarget: number
+      calculatedCalorieTarget: number
+      proteinTargetG: number
+      carbsTargetG: number
+      fatTargetG: number
+      calculationVersion: string
+   }
+}
+
+export async function apiGetInternalUserContext(id: string, internalToken: string): Promise<{ ok: true; data: InternalUserContextResponse } | AuthError> {
+    try {
+       const res = await fetch(`${BASE_INTERNAL_URL}/${encodeURIComponent(id)}/context`, {
+          headers: { "Authorization": `Bearer ${internalToken}` },
+       })
+       if (res.ok) return { ok: true, data: await res.json() }
+
+       let data: unknown
+       try { data = await res.json() } catch { data = {} }
+       const d = data as Record<string, unknown>
+       let msg = "Error desconocido"
+
+       if (res.status === 400) {
+          if (d?.message) {
+             msg = Array.isArray(d.message) ? (d.message as string[]).join(" · ") : String(d.message)
+          } else {
+             msg = "ID de usuario inválido"
+          }
+       } else if (res.status === 401) {
+          msg = "Token de servicio interno inválido"
+       } else if (res.status === 404) {
+          msg = "Usuario no encontrado"
+       }
+
+       return { ok: false, message: msg }
+    } catch {
+       return { ok: false, message: "Error de conexión" }
+    }
+ }
+
 

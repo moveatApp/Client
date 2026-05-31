@@ -1,18 +1,17 @@
-import { useEffect, useState, useRef } from "react"
-import { useNavigate } from "react-router-dom"
-import confetti from "canvas-confetti"
+import { useEffect, useState } from "react"
+import { useNavigate, Link } from "react-router-dom"
 import { useStore } from "@/store/useStore"
 import { useWebHaptics } from "web-haptics/react"
 import {
    CheckCircle,
-   CircleDashed,
    Flame,
    Plus,
    Play,
    Droplet,
-   ListTodo,
    Sparkles,
-   Check,
+   Save,
+   CalendarDays,
+   X,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import WeightChart from "@/components/WeightChart"
@@ -22,17 +21,24 @@ export default function Home() {
    const {
       isOnboarded,
       user,
-      streak,
+      targetWeight,
       targetCalories,
       dailyCalories,
       waterGlasses,
-      resetWater,
       addWater,
+      workouts,
+      activeWorkoutId,
+      updateWeight,
+      addWeightEntry,
+      isDarkMode,
    } = useStore()
    const { trigger } = useWebHaptics({ debug: true })
-   const hydrationButtonRef = useRef<HTMLButtonElement>(null)
    const [mounted, setMounted] = useState(false)
-   const [isCompletingWater, setIsCompletingWater] = useState(false)
+   const [showDashWeightForm, setShowDashWeightForm] = useState(false)
+   const [dashWeight, setDashWeight] = useState("")
+   const [dashWeightDate, setDashWeightDate] = useState(
+      new Date().toISOString().split("T")[0],
+   )
 
    useEffect(() => {
       setMounted(true)
@@ -41,44 +47,27 @@ export default function Home() {
       }
    }, [isOnboarded, navigate])
 
+   const handleDashWeightSave = () => {
+      const parsed = parseFloat(dashWeight)
+      if (!isNaN(parsed) && parsed > 0) {
+         addWeightEntry(parsed, dashWeightDate)
+         setDashWeight("")
+         setDashWeightDate(new Date().toISOString().split("T")[0])
+         setShowDashWeightForm(false)
+      }
+   }
+
    if (!mounted || !isOnboarded || !user) return null
 
    const todayProgress = Math.min((dailyCalories / targetCalories) * 100, 100)
 
    const handleWaterClick = (e: React.MouseEvent) => {
       e.stopPropagation()
-      if (isCompletingWater) return
-
+      if (waterGlasses >= 10) return
       const nextGlasses = waterGlasses + 1
       addWater()
-
       if (nextGlasses === 10) {
-         setIsCompletingWater(true)
-
-         const cardElement = hydrationButtonRef.current?.closest("section")
-         if (cardElement) {
-            const rect = cardElement.getBoundingClientRect()
-            const x = (rect.left + rect.width / 2) / window.innerWidth
-            const y = (rect.top + rect.height / 2) / window.innerHeight
-
-            setTimeout(() => {
-               trigger("success")
-               confetti({
-                  particleCount: 25,
-                  spread: 45,
-                  origin: { x, y },
-                  colors: ["#38BDF8", "#7DD3FC", "#ffffff"],
-                  gravity: 1.5,
-                  scalar: 0.5,
-                  zIndex: 1000,
-               })
-            }, 150)
-         }
-
-         setTimeout(() => {
-            setIsCompletingWater(false)
-            resetWater()
-         }, 1500)
+         trigger("success")
       }
    }
 
@@ -86,178 +75,213 @@ export default function Home() {
       <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-6 animate-fade-in flex flex-col w-full h-full min-h-screen">
          <header className="flex justify-between items-center mb-6 shrink-0">
             <div>
-               <div className="flex items-center gap-2 mb-1 md:hidden">
-                  <img src="/Logo.png" alt="MovEat" className="h-15 w-auto" />
-                  <span className="font-display font-extrabold text-lg tracking-tight text-foreground">
-                     MovEat
-                  </span>
-               </div>
-               <h1 className="text-3xl font-display font-extrabold text-foreground mt-4 md:mt-0">
-                  Hola, {user.name}! 👋
+               <h1 className="text-3xl font-display font-extrabold text-foreground">
+                  Hola, {user.name?.split(" ")[0] ?? ""}! 👋
                </h1>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+               <img
+                  src="/Logo.png"
+                  alt="MovEat"
+                  width={40}
+                  height={40}
+                  className="h-10 w-auto"
+               />
+               <span className="font-display font-extrabold text-lg tracking-tight text-foreground hidden sm:inline">
+                  MovEat
+               </span>
             </div>
          </header>
 
          <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4 flex-1 w-full shrink-0">
-            {/* Chart card - Always 2 columns (Full width on mobile) */}
+            {/* Chart card */}
             <motion.section
                initial={{ y: 20, opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
                className="col-span-2 bg-card-bg rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between min-h-[280px]">
                <div className="flex justify-between items-start mb-2">
-                  <div>
-                     <h2 className="text-4xl font-display font-bold text-foreground">
-                        68.4{" "}
-                        <span className="text-xl text-gray-400 font-normal">kg</span>
-                     </h2>
-                     <p className="text-sm font-bold text-primary flex items-center gap-1 mt-1">
-                        Evolución de Peso <Flame size={14} />
-                     </p>
-                  </div>
+                  <h2 className="text-4xl font-display font-bold text-foreground">
+                     {user?.weight ?? "--"}{" "}
+                     <span className="text-xl text-gray-400 font-normal">kg</span>
+                  </h2>
                   <div className="bg-primary/10 text-primary px-3 py-1 rounded-xl text-xs font-bold">
-                     Objetivo: 65 kg
+                     Objetivo: {targetWeight} kg
                   </div>
                </div>
 
-               <div className="flex-1 w-full -ml-4">
+               <div className="flex-1 w-full">
                   <WeightChart />
+               </div>
+               <div className="mt-3 flex justify-center items-center">
+                  <AnimatePresence mode="wait">
+                     {!showDashWeightForm ? (
+                        <motion.button
+                           key="btn"
+                           initial={{ opacity: 0, scale: 0.9 }}
+                           animate={{ opacity: 1, scale: 1 }}
+                           exit={{ opacity: 0, scale: 0.9 }}
+                           transition={{ duration: 0.2 }}
+                           onClick={() => setShowDashWeightForm(true)}
+                           className="flex items-center gap-2 py-2.5 text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-4 rounded-xl hover:bg-primary/20 active:scale-95 transition-all">
+                           <Plus size={14} /> Registrar peso
+                        </motion.button>
+                     ) : (
+                        <motion.div
+                           key="form"
+                           initial={{ opacity: 0, width: 0 }}
+                           animate={{ opacity: 1, width: "auto" }}
+                           exit={{ opacity: 0, width: 0 }}
+                           transition={{ duration: 0.35, ease: "easeInOut" }}
+                           className="flex items-center gap-2 overflow-hidden">
+                           <div className="flex items-center gap-2 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0">
+                              <input
+                                 type="date"
+                                 aria-label="Fecha del registro"
+                                 className="bg-transparent text-sm font-bold text-foreground outline-none"
+                                 style={{
+                                    colorScheme: isDarkMode ? "dark" : "light",
+                                 }}
+                                 value={dashWeightDate}
+                                 onChange={(e) => setDashWeightDate(e.target.value)}
+                              />
+                           </div>
+                           <div className="flex items-center gap-2 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0">
+                              <input
+                                 type="number"
+                                 step="0.1"
+                                 aria-label="Peso en kg"
+                                 placeholder="70.5"
+                                 className="bg-transparent text-sm font-bold text-foreground w-20 outline-none"
+                                 value={dashWeight}
+                                 onChange={(e) => setDashWeight(e.target.value)}
+                                 onKeyDown={(e) =>
+                                    e.key === "Enter" && handleDashWeightSave()
+                                 }
+                              />
+                              <span className="text-[10px] font-bold text-gray-400">
+                                 kg
+                              </span>
+                           </div>
+                           <div className="flex gap-2 shrink-0">
+                              <button
+                                 aria-label="Guardar peso"
+                                 onClick={handleDashWeightSave}
+                                 className="p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors">
+                                 <Save size={16} />
+                              </button>
+                              <button
+                                 aria-label="Cancelar"
+                                 onClick={() => setShowDashWeightForm(false)}
+                                 className="p-2 bg-muted dark:bg-white-500/10 text-gray-400 rounded-xl hover:text-foreground transition-colors">
+                                 <X size={16} />
+                              </button>
+                           </div>
+                        </motion.div>
+                     )}
+                  </AnimatePresence>
                </div>
             </motion.section>
 
-            {/* Daily circular progress - 1 column on mobile, Row same as hydration */}
+            {/* Daily circular progress — Apple Watch rings */}
             <motion.section
                initial={{ y: 20, opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
                transition={{ delay: 0.1 }}
-               className="col-span-1 bg-card-bg rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between items-center text-center min-h-[280px]">
+               className="col-span-2 md:col-span-1 bg-card-bg rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between items-center text-center min-h-[320px] md:min-h-[380px]">
                <div className="w-full flex justify-between items-center mb-2">
-                  <h3 className="font-bold text-xl">
-                     {Math.round(todayProgress)}
-                     <span className="text-gray-400 text-sm">%</span>
-                  </h3>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                     Resumen Diario
+                     Progreso de Hoy
                   </span>
                </div>
 
-               <div className="relative w-32 h-32 xl:w-40 xl:h-40 flex items-center justify-center flex-1 max-h-[160px]">
+               <div className="relative w-56 h-56 md:w-72 md:h-72 lg:w-80 lg:h-80 flex items-center justify-center flex-1">
                   <svg
-                     viewBox="0 0 36 36"
+                     viewBox="0 0 40 40"
                      className="w-full h-full transform -rotate-90 drop-shadow-md">
-                     <path
-                        className="text-gray-100 dark:text-white/5"
-                        strokeWidth="5"
-                        stroke="var(--muted)"
+                     {/* Outer ring track — Calories */}
+                     <circle
+                        cx="20"
+                        cy="20"
+                        r="18"
                         fill="none"
-                        d="M18 2.5 a 15.5 15.5 0 0 1 0 31.0 a 15.5 15.5 0 0 1 0 -31.0"
-                     />
-                     <path
-                        className="text-primary transition-all duration-1000"
-                        strokeWidth="5"
-                        strokeDasharray={`${todayProgress}, 100`}
+                        stroke="var(--muted-foreground)"
+                        strokeWidth="2.5"
                         strokeLinecap="round"
-                        stroke="currentColor"
+                        opacity="0.15"
+                     />
+                     {/* Outer ring progress — Calories */}
+                     <circle
+                        cx="20"
+                        cy="20"
+                        r="18"
                         fill="none"
-                        d="M18 2.5 a 15.5 15.5 0 0 1 0 31.0 a 15.5 15.5 0 0 1 0 -31.0"
+                        stroke="var(--primary)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeDasharray={`${todayProgress * 1.13}, 113.1`}
+                        className="transition-all duration-700 ease-out"
+                     />
+                     {/* Inner ring track — Hydration */}
+                     <circle
+                        cx="20"
+                        cy="20"
+                        r="13"
+                        fill="none"
+                        stroke="var(--muted-foreground)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        opacity="0.15"
+                     />
+                     {/* Inner ring progress — Hydration */}
+                     <circle
+                        cx="20"
+                        cy="20"
+                        r="13"
+                        fill="none"
+                        stroke="#38BDF8"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeDasharray={`${Math.min((waterGlasses / 10) * 81.6, 81.6)}, 81.6`}
+                        className="transition-all duration-700 ease-out"
                      />
                   </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                     <span className="text-[10px] font-bold text-gray-400 mb-0.5">
-                        Calorías
+
+                  {/* Center text */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                     <span className="text-2xl font-display font-extrabold text-foreground leading-none">
+                        {dailyCalories}
                      </span>
-                     <Flame className="text-primary" size={20} />
-                  </div>
-               </div>
-
-               <div className="flex gap-2 w-full mt-2">
-                  <button
-                     onClick={() => navigate("/nutrition")}
-                     className="flex-1 bg-muted hover:bg-muted-foreground dark:hover:bg-muted-foreground transition-colors py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-foreground">
-                     <Plus size={14} /> Comida
-                  </button>
-               </div>
-            </motion.section>
-
-            {/* Hidratación card */}
-            <motion.section
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               transition={{ delay: 0.2 }}
-               className="col-span-1 bg-water text-white rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px] md:min-h-[140px]">
-               <div className="flex justify-between items-center">
-                  <h3 className="font-bold text-sm">Hidratación</h3>
-                  {useStore.getState().waterLiters > 0 && (
-                     <div className="text-xs font-bold opacity-80">
-                        {useStore.getState().waterLiters}L
-                     </div>
-                  )}
-               </div>
-
-               <div className="flex gap-3 my-2 items-center justify-center relative">
-                  <AnimatePresence mode="wait">
-                     {isCompletingWater ? (
-                        <motion.div
-                           key="complete"
-                           initial={{ scale: 0, rotate: -180 }}
-                           animate={{ scale: 1, rotate: 0 }}
-                           exit={{ scale: 0 }}
-                           className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-water shadow-xl">
-                           <motion.div
-                              initial={{ pathLength: 0 }}
-                              animate={{ pathLength: 1 }}
-                              transition={{ duration: 0.5, delay: 0.2 }}>
-                              <Check size={24} strokeWidth={3} />
-                           </motion.div>
-                        </motion.div>
-                     ) : (
-                        <div className="grid grid-cols-5 gap-x-2 gap-y-2 justify-items-center mt-2">
-                           {[...Array(10)].map((_, i) => (
-                              <motion.div
-                                 key={i}
-                                 onClick={handleWaterClick}
-                                 className={`cursor-pointer transition-all duration-300 flex items-center justify-center ${
-                                    i < waterGlasses
-                                       ? "text-white scale-110 drop-shadow-sm"
-                                       : "text-white/30 scale-100 hover:text-white/50"
-                                 }`}>
-                                 <Droplet
-                                    size={24}
-                                    strokeWidth={i < waterGlasses ? 0 : 2}
-                                    fill={i < waterGlasses ? "currentColor" : "none"}
-                                 />
-                              </motion.div>
-                           ))}
-                        </div>
-                     )}
-                  </AnimatePresence>
-               </div>
-
-               <div className="relative z-10 flex items-end justify-between w-full">
-                  <div className="flex flex-col">
-                     <span className="text-3xl font-display font-bold">
-                        {waterGlasses * 100}
-                        <span className="text-lg font-normal opacity-70 ml-1">
-                           ml
+                     <span className="text-[10px] font-bold text-gray-400 mt-0.5">
+                        / {targetCalories} kcal
+                     </span>
+                     <div className="flex items-center gap-1 mt-2">
+                        <Droplet size={12} className="text-water fill-water" />
+                        <span className="text-sm font-bold text-water">
+                           {waterGlasses}
                         </span>
-                     </span>
+                        <span className="text-[10px] text-gray-400">/ 10</span>
+                     </div>
                   </div>
+               </div>
+
+               <div className="flex gap-2 w-full mt-4">
+                  <Link
+                     to="/nutrition"
+                     className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary/20 active:scale-95 transition-colors">
+                     <Plus size={14} /> Comida
+                  </Link>
                   <button
                      onClick={handleWaterClick}
-                     ref={hydrationButtonRef}
-                     disabled={isCompletingWater}
-                     className={`w-10 h-10 bg-white text-water rounded-full flex items-center justify-center shadow-lg transition-all ${isCompletingWater ? "opacity-0 scale-50" : "group-hover:scale-110 active:scale-95"}`}>
-                     <Plus size={20} />
+                     className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold bg-water/10 text-water border border-water/20 rounded-xl hover:bg-water/20 active:scale-95 transition-colors">
+                     <Droplet size={14} /> Agua
                   </button>
                </div>
             </motion.section>
 
             {/* Entrenamiento card */}
-            <motion.section
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               transition={{ delay: 0.3 }}
-               onClick={() => navigate("/training")}
-               className="col-span-2 xl:col-span-1 bg-foreground rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px]">
+            <Link
+               to="/training"
+               className="col-span-2 xl:col-span-3 bg-foreground rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px]">
                <div className="absolute inset-0 right-0 bg-primary/10 z-0" />
                <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1">
@@ -265,19 +289,28 @@ export default function Home() {
                      <h3 className="font-bold text-sm text-background">Para hoy</h3>
                   </div>
                   <h4 className="text-lg font-display font-bold mb-0.5 line-clamp-1 text-background">
-                     Express Postura y Fuerza
+                     {workouts.find((w) => w.id === activeWorkoutId)?.name ??
+                        (workouts[0]?.name || "Crear Rutina")}
                   </h4>
                </div>
                <div className="relative z-20 flex items-center justify-between mt-1">
                   <div className="flex items-center gap-2 text-accent">
                      <CheckCircle size={14} />
-                     <span className="text-xs font-bold">200 XP</span>
+                     <span className="text-xs font-bold">
+                        {((workouts.find((w) => w.id === activeWorkoutId)?.exercises
+                           .length ??
+                           workouts[0]?.exercises.length) ||
+                           0) * 20 || 50}{" "}
+                        XP
+                     </span>
                   </div>
-                  <button className="w-10 h-10 bg-background text-foreground rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <button
+                     aria-label="Iniciar rutina"
+                     className="w-10 h-10 bg-background text-foreground rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                      <Play size={18} fill="currentColor" className="ml-0.5" />
                   </button>
                </div>
-            </motion.section>
+            </Link>
          </div>
       </div>
    )

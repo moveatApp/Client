@@ -1,34 +1,141 @@
+import { useState } from "react"
 import { useStore } from "@/store/useStore"
-import { motion } from "framer-motion"
-import { 
-   Award, 
-   Flame, 
-   Star, 
-   Target, 
-   Zap, 
-   CheckCircle2, 
-   Droplet, 
-   Clock, 
-   Shield, 
-   Rocket, 
-   Trophy 
+import { motion, AnimatePresence } from "framer-motion"
+import {
+   Award,
+   Flame,
+   Star,
+   Target,
+   Zap,
+   CheckCircle2,
+   Droplet,
+   Clock,
+   Shield,
+   Rocket,
+   Trophy,
+   Pencil,
+   Save,
+   Plus,
+   CalendarDays,
+   X,
 } from "lucide-react"
 import WeightChart from "@/components/WeightChart"
+import { apiPutProfile } from "@/api/auth"
 
 export default function ProgressPage() {
-   const { xp, level, streak, totalWorkouts, resetProgress } = useStore()
+   const {
+      xp,
+      level,
+      streak,
+      totalWorkouts,
+      resetProgress,
+      user,
+      targetWeight,
+      dailyCalories,
+      targetCalories,
+      workoutCompleted,
+      waterLiters,
+      waterGlasses,
+      meals,
+      updateWeight,
+      addWeightEntry,
+      isDarkMode,
+   } = useStore()
+   const [editingWeight, setEditingWeight] = useState(false)
+   const [weightInput, setWeightInput] = useState(String(user?.weight ?? ""))
+   const [showWeightForm, setShowWeightForm] = useState(false)
+   const [newWeight, setNewWeight] = useState("")
+   const [newWeightDate, setNewWeightDate] = useState(
+      new Date().toISOString().split("T")[0],
+   )
+
+   const handleSaveWeight = async () => {
+      const parsed = parseFloat(weightInput)
+      if (!isNaN(parsed) && parsed > 0) {
+         updateWeight(parsed)
+         await apiPutProfile({ currentWeight: parsed })
+      }
+      setEditingWeight(false)
+   }
+
+   const handleAddWeightEntry = async () => {
+      const parsed = parseFloat(newWeight)
+      if (!isNaN(parsed) && parsed > 0) {
+         addWeightEntry(parsed, newWeightDate)
+         if (newWeightDate === new Date().toISOString().split("T")[0]) {
+            await apiPutProfile({ currentWeight: parsed })
+         }
+      }
+      setNewWeight("")
+      setNewWeightDate(new Date().toISOString().split("T")[0])
+      setShowWeightForm(false)
+   }
    const nextLevelXp = level * 100
    const progressToNext = (xp / nextLevelXp) * 100
 
+   const isPerfectDay = workoutCompleted && meals.length >= 3 && waterGlasses >= 8
+   const isHydrationPro = waterLiters >= 3 || waterGlasses >= 30
+   const isProfileComplete =
+      !!user?.name && !!user?.goal && user.weight > 0 && user.height > 0
+   const isHighBurn = dailyCalories < targetCalories - 500 && workoutCompleted
+
    const badges = [
-      { id: 1, name: "Seman completa", icon: Star, unlocked: streak >= 7, description: "7 días seguidos activo" },
-      { id: 2, name: "First Blood", icon: Zap, unlocked: totalWorkouts >= 1, description: "Primer entreno completado" },
-      { id: 3, name: "Día Perfecto", icon: Target, unlocked: false, description: "Dieta y entreno logrados" },
-      { id: 4, name: "Hidratación PRO", icon: Droplet, unlocked: false, description: "3 litros en un solo día" },
-      { id: 5, name: "Madrugador", icon: Clock, unlocked: false, description: "Entreno antes de las 8 AM" },
-      { id: 6, name: "Guerrero", icon: Shield, unlocked: totalWorkouts >= 10, description: "10 entrenos totales" },
-      { id: 7, name: "A tope", icon: Rocket, unlocked: false, description: "Quemaste +500 kcal extra" },
-      { id: 8, name: "Socialite", icon: Trophy, unlocked: true, description: "Perfil completado al 100%" },
+      {
+         id: 1,
+         name: "Semana completa",
+         icon: Star,
+         unlocked: streak >= 7,
+         description: "7 días seguidos activo",
+      },
+      {
+         id: 2,
+         name: "First Blood",
+         icon: Zap,
+         unlocked: totalWorkouts >= 1,
+         description: "Primer entreno completado",
+      },
+      {
+         id: 3,
+         name: "Día Perfecto",
+         icon: Target,
+         unlocked: isPerfectDay,
+         description: "Dieta, hidratación y entreno logrados",
+      },
+      {
+         id: 4,
+         name: "Hidratación PRO",
+         icon: Droplet,
+         unlocked: isHydrationPro,
+         description: "3 litros en un solo día",
+      },
+      {
+         id: 5,
+         name: "Madrugador",
+         icon: Clock,
+         unlocked: totalWorkouts >= 5 && streak >= 3,
+         description: "5 entrenos y racha de 3+ días",
+      },
+      {
+         id: 6,
+         name: "Guerrero",
+         icon: Shield,
+         unlocked: totalWorkouts >= 10,
+         description: "10 entrenos totales",
+      },
+      {
+         id: 7,
+         name: "A tope",
+         icon: Rocket,
+         unlocked: isHighBurn,
+         description: "Déficit de +500 kcal con entreno",
+      },
+      {
+         id: 8,
+         name: "Socialite",
+         icon: Trophy,
+         unlocked: isProfileComplete,
+         description: "Perfil completado al 100%",
+      },
    ]
 
    return (
@@ -38,7 +145,9 @@ export default function ProgressPage() {
                <Award size={32} className="text-primary" />
                Tu Progreso
             </h1>
-            <button onClick={resetProgress} className="text-[10px] uppercase font-bold text-gray-400 hover:text-red-500 transition-colors">
+            <button
+               onClick={resetProgress}
+               className="text-[10px] uppercase font-bold text-gray-400 hover:text-red-500 transition-colors">
                Reiniciar Todo
             </button>
          </header>
@@ -51,12 +160,112 @@ export default function ProgressPage() {
                className="md:col-span-2 xl:col-span-2 bg-card-bg rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between min-h-[280px]">
                <div className="flex justify-between items-start mb-2">
                   <div>
-                     <h2 className="text-4xl font-display font-bold text-foreground">68.4 <span className="text-xl text-gray-400 font-normal">kg</span></h2>
-                     <p className="text-sm font-bold text-primary flex items-center gap-2 mt-1">Evolución de Peso <Flame size={16} /></p>
+                     {editingWeight ? (
+                        <div className="flex items-center gap-2">
+                           <input
+                              type="number"
+                              aria-label="Peso en kg"
+                              className="text-4xl font-display font-bold text-foreground w-24 bg-transparent border-b-2 border-primary outline-none"
+                              value={weightInput}
+                              onChange={(e) => setWeightInput(e.target.value)}
+                              onKeyDown={(e) =>
+                                 e.key === "Enter" && handleSaveWeight()
+                              }
+                           />
+                           <span className="text-xl text-gray-400 font-normal">
+                              kg
+                           </span>
+                           <button
+                              onClick={handleSaveWeight}
+                              className="p-1.5 bg-primary/10 rounded-lg text-primary hover:bg-primary/20 transition-colors">
+                              <Save size={16} />
+                           </button>
+                        </div>
+                     ) : (
+                        <div className="flex items-center gap-2">
+                           <h2 className="text-4xl font-display font-bold text-foreground">
+                              {user?.weight ?? "--"}{" "}
+                              <span className="text-xl text-gray-400 font-normal">
+                                 kg
+                              </span>
+                           </h2>
+                        </div>
+                     )}
                   </div>
-                  <div className="bg-primary/10 text-primary px-3 py-1 rounded-xl text-xs font-bold">Objetivo: 65 kg</div>
+                  <div className="bg-primary/10 text-primary px-3 py-1 rounded-xl text-xs font-bold">
+                     Objetivo: {targetWeight} kg
+                  </div>
                </div>
-               <div className="flex-1 w-full -ml-4"><WeightChart /></div>
+               <div className="flex-1 w-full -ml-4">
+                  <WeightChart />
+               </div>
+
+               <div className="mt-4 flex justify-center items-center">
+                  <AnimatePresence mode="wait">
+                     {!showWeightForm ? (
+                        <motion.button
+                           key="btn"
+                           initial={{ opacity: 0, scale: 0.9 }}
+                           animate={{ opacity: 1, scale: 1 }}
+                           exit={{ opacity: 0, scale: 0.9 }}
+                           transition={{ duration: 0.2 }}
+                           onClick={() => setShowWeightForm(true)}
+                           className="flex items-center gap-2 py-2.5 text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-4 rounded-xl hover:bg-primary/20 active:scale-95 transition-all">
+                           <Plus size={14} /> Registrar peso
+                        </motion.button>
+                     ) : (
+                        <motion.div
+                           key="form"
+                           initial={{ opacity: 0, width: 0 }}
+                           animate={{ opacity: 1, width: "auto" }}
+                           exit={{ opacity: 0, width: 0 }}
+                           transition={{ duration: 0.35, ease: "easeInOut" }}
+                           className="flex items-center gap-2 overflow-hidden">
+                           <div className="flex items-center gap-2 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0">
+                              <input
+                                 type="date"
+                                 aria-label="Fecha del registro"
+                                 className="bg-transparent text-sm font-bold text-foreground outline-none"
+                                 style={{
+                                    colorScheme: isDarkMode ? "dark" : "light",
+                                 }}
+                                 value={newWeightDate}
+                                 onChange={(e) => setNewWeightDate(e.target.value)}
+                              />
+                           </div>
+                           <div className="flex items-center gap-2 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0">
+                              <input
+                                 type="number"
+                                 step="0.1"
+                                 aria-label="Peso en kg"
+                                 placeholder="70.5"
+                                 className="bg-transparent text-sm font-bold text-foreground w-20 outline-none"
+                                 value={newWeight}
+                                 onChange={(e) => setNewWeight(e.target.value)}
+                                 onKeyDown={(e) =>
+                                    e.key === "Enter" && handleAddWeightEntry()
+                                 }
+                              />
+                              <span className="text-[10px] font-bold text-gray-400">
+                                 kg
+                              </span>
+                           </div>
+                           <div className="flex gap-2 shrink-0">
+                              <button
+                                 onClick={handleAddWeightEntry}
+                                 className="p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors">
+                                 <Save size={16} />
+                              </button>
+                              <button
+                                 onClick={() => setShowWeightForm(false)}
+                                 className="p-2 bg-muted dark:bg-white-500/10 text-gray-400 rounded-xl hover:text-foreground transition-colors">
+                                 <X size={16} />
+                              </button>
+                           </div>
+                        </motion.div>
+                     )}
+                  </AnimatePresence>
+               </div>
             </motion.section>
 
             <motion.section
@@ -66,8 +275,12 @@ export default function ProgressPage() {
                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
                <div className="flex justify-between items-center relative z-10 w-full mb-6">
                   <div>
-                     <span className="text-[10px] text-gray-700 font-bold uppercase tracking-wider">Nivel Actual</span>
-                     <h2 className="text-5xl font-display font-extrabold mt-1 text-[#2C2C2C]">{level}</h2>
+                     <span className="text-[10px] text-gray-700 font-bold uppercase tracking-wider">
+                        Nivel Actual
+                     </span>
+                     <h2 className="text-5xl font-display font-extrabold mt-1 text-[#2C2C2C]">
+                        {level}
+                     </h2>
                   </div>
                   <div className="bg-primary/10 w-12 h-12 rounded-2xl border border-primary/10 flex items-center justify-center">
                      <Flame className="text-primary w-6 h-6" fill="currentColor" />
@@ -79,9 +292,16 @@ export default function ProgressPage() {
                      <span className="text-gray-600">{nextLevelXp} XP</span>
                   </div>
                   <div className="h-3 bg-black/5 rounded-full overflow-hidden">
-                     <motion.div initial={{ width: 0 }} animate={{ width: `${progressToNext}%` }} transition={{ duration: 1, delay: 0.2 }} className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full" />
+                     <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressToNext}%` }}
+                        transition={{ duration: 1, delay: 0.2 }}
+                        className="h-full bg-linear-to-r from-primary to-primary/60 rounded-full"
+                     />
                   </div>
-                  <p className="text-[10px] text-gray-600 mt-2 font-medium text-center">Faltan {nextLevelXp - xp} XP</p>
+                  <p className="text-[10px] text-gray-600 mt-2 font-medium text-center">
+                     Faltan {nextLevelXp - xp} XP
+                  </p>
                </div>
             </motion.section>
          </div>
@@ -102,13 +322,24 @@ export default function ProgressPage() {
                   {badges.map((badge) => {
                      const Icon = badge.icon
                      return (
-                        <div key={badge.id} className={`bg-muted dark:bg-white/5 rounded-2xl p-4 flex items-center gap-4 transition-all ${badge.unlocked ? "border-primary/20 shadow-sm opacity-100" : "border-gray-100 dark:border-white/5 opacity-60 grayscale"} border`}>
-                           <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${badge.unlocked ? "bg-primary/20 text-primary" : "bg-gray-200 dark:bg-white/10 text-gray-400"}`}>
-                              {badge.unlocked ? <CheckCircle2 size={20} /> : <Icon size={20} />}
+                        <div
+                           key={badge.id}
+                           className={`bg-muted dark:bg-white-500/5 rounded-2xl p-4 flex items-center gap-4 transition-all ${badge.unlocked ? "border-primary/20 shadow-sm opacity-100" : "border-muted dark:border-white-500/5 opacity-60 grayscale"} border`}>
+                           <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${badge.unlocked ? "bg-primary/20 text-primary" : "bg-muted dark:bg-white-500/10 text-gray-400"}`}>
+                              {badge.unlocked ? (
+                                 <CheckCircle2 size={20} />
+                              ) : (
+                                 <Icon size={20} />
+                              )}
                            </div>
                            <div>
-                              <h4 className="font-bold text-foreground text-sm">{badge.name}</h4>
-                              <p className="text-xs text-gray-400 font-medium leading-tight">{badge.description}</p>
+                              <h4 className="font-bold text-foreground text-sm">
+                                 {badge.name}
+                              </h4>
+                              <p className="text-xs text-gray-400 font-medium leading-tight">
+                                 {badge.description}
+                              </p>
                            </div>
                         </div>
                      )
@@ -126,8 +357,12 @@ export default function ProgressPage() {
                   <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent mb-2">
                      <Flame size={24} fill="currentColor" />
                   </div>
-                  <span className="text-3xl font-display font-bold text-foreground block leading-tight">{streak}</span>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Racha</span>
+                  <span className="text-3xl font-display font-bold text-foreground block leading-tight">
+                     {streak}
+                  </span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                     Racha
+                  </span>
                </motion.div>
                <motion.div
                   initial={{ x: 20, opacity: 0 }}
@@ -137,8 +372,12 @@ export default function ProgressPage() {
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-2">
                      <Zap size={24} fill="currentColor" />
                   </div>
-                  <span className="text-3xl font-display font-bold text-foreground block leading-tight">{totalWorkouts}</span>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Entrenos</span>
+                  <span className="text-3xl font-display font-bold text-foreground block leading-tight">
+                     {totalWorkouts}
+                  </span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                     Entrenos
+                  </span>
                </motion.div>
             </div>
          </div>

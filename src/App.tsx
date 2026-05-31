@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 import Dashboard from '@/pages/Dashboard';
 import Nutrition from '@/pages/Nutrition';
@@ -11,27 +11,27 @@ import Onboarding from '@/pages/Onboarding';
 import { useStore } from '@/store/useStore';
 import { useWebHaptics } from 'web-haptics/react';
 
-// Premium iOS-like page transition variants
-const pageVariants = {
-  initial: { opacity: 0, y: 16, scale: 0.98 },
-  animate: {
-    opacity: 1, y: 0, scale: 1,
-    transition: {
-      duration: 0.45,
-      ease: [0.25, 0.46, 0.45, 0.94], // iOS spring-ish easing
-      staggerChildren: 0.08,
-      when: 'beforeChildren',
-    },
-  },
-  exit: {
-    opacity: 0, y: -10, scale: 0.99,
-    transition: { duration: 0.25, ease: [0.4, 0, 1, 1] },
-  },
-};
-
 function AnimatedRoutes() {
   const location = useLocation();
   const isOnboarding = location.pathname === '/onboarding';
+  const shouldReduceMotion = useReducedMotion();
+
+  const pageVariants = {
+    initial: { opacity: 0, y: shouldReduceMotion ? 0 : 16, scale: shouldReduceMotion ? 1 : 0.98 },
+    animate: {
+      opacity: 1, y: 0, scale: 1,
+      transition: {
+        duration: shouldReduceMotion ? 0 : 0.45,
+        ease: [0.25, 0.46, 0.45, 0.94], // iOS spring-ish easing
+        staggerChildren: shouldReduceMotion ? 0 : 0.08,
+        when: 'beforeChildren',
+      },
+    },
+    exit: {
+      opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : -10, scale: shouldReduceMotion ? 1 : 0.99,
+      transition: { duration: shouldReduceMotion ? 0 : 0.25, ease: [0.4, 0, 1, 1] },
+    },
+  };
 
   return (
     <AnimatePresence mode="wait">
@@ -61,15 +61,25 @@ function Layout() {
   const isOnboarding = pathname === '/onboarding';
   const isDarkMode = useStore((state) => state.isDarkMode);
   const themeColor = useStore((state) => state.themeColor);
+  const checkAndResetDaily = useStore((state) => state.checkAndResetDaily);
   const { trigger } = useWebHaptics({ debug: true });
+  const isInitialTheme = useRef(true);
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    checkAndResetDaily();
+  }, [checkAndResetDaily]);
+
+  useEffect(() => {
+    // Only apply dark class directly on initial mount (hydration).
+    // Subsequent toggles are handled by document.startViewTransition.
+    if (isInitialTheme.current) {
+      isInitialTheme.current = false;
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     }
-    
     document.documentElement.setAttribute('data-theme', themeColor);
   }, [isDarkMode, themeColor]);
 
@@ -91,7 +101,10 @@ function Layout() {
       <main className={`flex-1 w-full overflow-hidden ${isOnboarding ? 'flex justify-center bg-background' : 'overflow-y-auto pb-20 md:pb-0'}`}>
         {isOnboarding ? (
           // Onboarding: full-screen on all devices, slightly reduced max height
-          <div className="w-full max-w-md h-[100dvh] max-h-[820px] md:my-auto flex flex-col overflow-hidden">
+          <div
+            className="w-full max-w-md h-[100dvh] max-h-[820px] md:my-auto flex flex-col overflow-hidden"
+            style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
             <AnimatedRoutes />
           </div>
         ) : (

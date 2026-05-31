@@ -6,12 +6,19 @@ type Level = 'principiante' | 'intermedio' | 'avanzado';
 
 export interface UserProfile {
   name: string;
+  email?: string;
   goal: Goal;
   level: Level;
   weight: number;
+  height: number;
   workoutsPerWeek: number;
   timePerSession: number;
   preferences: string[];
+}
+
+export interface WeightEntry {
+  date: string; // ISO date string
+  weight: number;
 }
 
 export interface Meal {
@@ -31,6 +38,7 @@ export interface Meal {
   fat: number;
   sugar: number;
   time: string;
+  date: string; // ISO date string (YYYY-MM-DD)
 }
 
 export interface ExerciseSet {
@@ -55,6 +63,27 @@ export interface Workout {
   exercises: Exercise[];
 }
 
+function getTargetWeight(goal: Goal, currentWeight: number): number {
+  if (goal === 'baja_peso') return Math.round((currentWeight - 5) * 10) / 10;
+  if (goal === 'gana_masa') return Math.round((currentWeight + 3) * 10) / 10;
+  return currentWeight;
+}
+
+function getTargetCalories(goal: Goal): number {
+  if (goal === 'baja_peso') return 1800;
+  if (goal === 'gana_masa') return 2500;
+  return 2000;
+}
+
+function todayISO(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function todayCalories(meals: Meal[]): number {
+  const today = todayISO();
+  return meals.filter(m => m.date === today).reduce((sum, m) => sum + m.calories, 0);
+}
+
 interface AppState {
   isOnboarded: boolean;
   user: UserProfile | null;
@@ -69,12 +98,18 @@ interface AppState {
   workoutCompleted: boolean;
   isDarkMode: boolean;
   totalWorkouts: number;
+  workoutsCreated: number;
   workouts: Workout[];
   activeWorkoutId: string | null;
   themeColor: string;
-  
-  // Actions
-  completeOnboarding: (profile: UserProfile) => void;
+  weightHistory: WeightEntry[];
+  targetWeight: number;
+   lastWorkoutDate: string | null;
+   lastResetDate: string | null;
+   lastUserEmail: string | null;
+
+   // Actions
+   completeOnboarding: (profile: UserProfile) => void;
   addXP: (amount: number) => void;
   addMeal: (meal: Meal) => void;
   updateMealGrams: (id: string, newGrams: number) => void;
@@ -83,16 +118,20 @@ interface AppState {
   resetWater: () => void;
   setWorkoutCompleted: (completed: boolean) => void;
   resetDaily: () => void;
+  checkAndResetDaily: () => void;
   toggleDarkMode: () => void;
   setThemeColor: (theme: string) => void;
   resetProgress: () => void;
   updateUser: (updates: Partial<UserProfile>) => void;
-  
+  updateWeight: (weight: number) => void;
+  addWeightEntry: (weight: number, dateStr?: string) => void;
+  updateStreak: () => void;
+
   // Workout Actions
   addWorkout: (name: string) => void;
   deleteWorkout: (id: string) => void;
   setActiveWorkout: (id: string) => void;
-  
+
   // Exercise Actions
   addExercise: (workoutId: string) => void;
   updateExercise: (workoutId: string, exerciseId: string, fields: Partial<Exercise>) => void;
@@ -116,23 +155,57 @@ export const useStore = create<AppState>()(
       workoutCompleted: false,
       isDarkMode: false,
       totalWorkouts: 0,
-      workouts: [
-        {
-          id: 'w1',
-          name: 'Full Body Express',
-          exercises: [
-            { id: 'e1', name: 'Jumping Jacks', sets: 3, reps: '45s', rest: '15s', completed: false },
-            { id: 'e2', name: 'Squats', sets: 3, reps: '15', rest: '30s', completed: false },
-            { id: 'e3', name: 'Push-ups', sets: 3, reps: '10', rest: '30s', completed: false },
-            { id: 'e4', name: 'Plank', sets: 3, reps: '30s', rest: '30s', completed: false },
-          ]
-        }
-      ],
-      activeWorkoutId: 'w1',
+      workoutsCreated: 0,
+      workouts: [],
+      activeWorkoutId: null,
       themeColor: 'orange',
+      weightHistory: [],
+      targetWeight: 65,
+      lastWorkoutDate: null,
+      lastResetDate: null,
+      lastUserEmail: null,
       setThemeColor: (theme) => set({ themeColor: theme }),
 
-      completeOnboarding: (profile) => set({ isOnboarded: true, user: profile, targetCalories: profile.goal === 'baja_peso' ? 1800 : profile.goal === 'gana_masa' ? 2500 : 2000 }),
+      completeOnboarding: (profile) => {
+         const state = get();
+         const newEmail = profile.email || null;
+         const isNewUser = newEmail && newEmail !== state.lastUserEmail;
+         const today = new Date().toISOString().split('T')[0];
+
+         if (isNewUser) {
+           set({
+             isOnboarded: true,
+             user: profile,
+             lastUserEmail: newEmail,
+             targetCalories: getTargetCalories(profile.goal),
+             targetWeight: getTargetWeight(profile.goal, profile.weight),
+             weightHistory: [{ date: today, weight: profile.weight }],
+             xp: 0,
+             level: 1,
+             streak: 0,
+             dailyCalories: 0,
+             waterGlasses: 0,
+             waterLiters: 0,
+             meals: [],
+             workoutCompleted: false,
+             totalWorkouts: 0,
+             workoutsCreated: 0,
+             workouts: [],
+             activeWorkoutId: null,
+             lastWorkoutDate: null,
+             lastResetDate: null,
+           });
+         } else {
+           set({
+             isOnboarded: true,
+             user: profile,
+             lastUserEmail: newEmail,
+             targetCalories: getTargetCalories(profile.goal),
+             targetWeight: getTargetWeight(profile.goal, profile.weight),
+             weightHistory: [{ date: today, weight: profile.weight }],
+           });
+         }
+       },
       addXP: (amount) => set((state) => {
         const newXp = state.xp + amount;
         let newLevel = state.level;
@@ -144,15 +217,17 @@ export const useStore = create<AppState>()(
       addMeal: (meal) => {
         const state = get();
         state.addXP(20);
-        set({ 
-          meals: [meal, ...state.meals],
-          dailyCalories: state.dailyCalories + meal.calories
+        const mealWithDate = { ...meal, date: meal.date || todayISO() };
+        const newMeals = [mealWithDate, ...state.meals];
+        set({
+          meals: newMeals,
+          dailyCalories: todayCalories(newMeals),
         });
       },
       updateMealGrams: (id, newGrams) => set((state) => {
         const updatedMeals = state.meals.map(m => {
           if (m.id === id) {
-            const ratio = newGrams / 100; // Assuming base values are per 100g
+            const ratio = newGrams / 100;
             return {
               ...m,
               grams: newGrams,
@@ -165,40 +240,132 @@ export const useStore = create<AppState>()(
           }
           return m;
         });
-        const newDailyCalories = updatedMeals.reduce((acc, current) => acc + current.calories, 0);
-        return { meals: updatedMeals, dailyCalories: newDailyCalories };
+        return { meals: updatedMeals, dailyCalories: todayCalories(updatedMeals) };
       }),
       removeMeal: (id) => set((state) => {
         const updatedMeals = state.meals.filter(m => m.id !== id);
-        const newDailyCalories = updatedMeals.reduce((acc, current) => acc + current.calories, 0);
-        return { meals: updatedMeals, dailyCalories: newDailyCalories };
+        return { meals: updatedMeals, dailyCalories: todayCalories(updatedMeals) };
       }),
       addWater: () => set((state) => ({ waterGlasses: state.waterGlasses + 1 })),
-      resetWater: () => set((state) => ({ 
-        waterGlasses: 0, 
-        waterLiters: state.waterLiters + 1 
+      resetWater: () => set((state) => ({
+        waterGlasses: 0,
+        waterLiters: state.waterLiters + 1
       })),
       setWorkoutCompleted: (completed) => {
         const state = get();
         if (completed && !state.workoutCompleted) {
           state.addXP(50);
-          set({ totalWorkouts: state.totalWorkouts + 1 });
+          const today = new Date().toISOString().split('T')[0];
+          // Check if last workout was yesterday to maintain streak
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+          let newStreak = state.streak;
+          if (state.lastWorkoutDate === yesterdayStr || state.lastWorkoutDate === today) {
+            // Streak continues or already counted today
+          } else if (state.lastWorkoutDate !== today) {
+            newStreak = state.streak + 1;
+          }
+
+          set({
+            totalWorkouts: state.totalWorkouts + 1,
+            streak: newStreak,
+            lastWorkoutDate: today,
+          });
         }
         set({ workoutCompleted: completed });
       },
-      resetDaily: () => set((state) => ({ 
-        dailyCalories: 0, waterGlasses: 0, waterLiters: 0, meals: [], workoutCompleted: false,
-        workouts: state.workouts.map(w => ({ ...w, exercises: w.exercises.map(e => ({ ...e, completed: false })) }))
+      resetDaily: () => set((state) => ({
+        dailyCalories: 0, waterGlasses: 0, waterLiters: 0, workoutCompleted: false,
+        workouts: state.workouts.map(w => ({ ...w, exercises: w.exercises.map(e => ({ ...e, completed: false })) })),
+        lastResetDate: todayISO(),
       })),
+      checkAndResetDaily: () => {
+        const state = get();
+        const today = todayISO();
+        if (state.lastResetDate === today) return;
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        let newStreak = state.streak;
+        if (state.lastWorkoutDate && state.lastWorkoutDate !== today && state.lastWorkoutDate !== yesterdayStr) {
+          newStreak = 0;
+        }
+
+        set({
+          dailyCalories: todayCalories(state.meals),
+          waterGlasses: 0,
+          waterLiters: 0,
+          workoutCompleted: false,
+          workouts: state.workouts.map(w => ({ ...w, exercises: w.exercises.map(e => ({ ...e, completed: false })) })),
+          streak: newStreak,
+          lastResetDate: today,
+        });
+      },
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
-      resetProgress: () => set({ xp: 0, level: 1, streak: 0, totalWorkouts: 0, workoutCompleted: false, waterGlasses: 0, waterLiters: 0, dailyCalories: 0, meals: [] }),
-      updateUser: (updates) => set((state) => ({ 
-        user: state.user ? { ...state.user, ...updates } : null,
-        // Update target calories if goal changed
-        targetCalories: updates.goal 
-          ? (updates.goal === 'baja_peso' ? 1800 : updates.goal === 'gana_masa' ? 2500 : 2000)
-          : state.targetCalories
-      })),
+      resetProgress: () => set({ xp: 0, level: 1, streak: 0, totalWorkouts: 0, workoutCompleted: false, waterGlasses: 0, waterLiters: 0, dailyCalories: 0, meals: [], workouts: [], workoutsCreated: 0, activeWorkoutId: null, weightHistory: [], lastWorkoutDate: null, lastResetDate: null }),
+      updateUser: (updates) => set((state) => {
+        const newUser = state.user ? { ...state.user, ...updates } : null;
+        let newTargetWeight = state.targetWeight;
+        let newTargetCalories = state.targetCalories;
+        if (newUser) {
+          if (updates.goal) {
+            newTargetCalories = getTargetCalories(newUser.goal);
+            newTargetWeight = getTargetWeight(newUser.goal, newUser.weight);
+          }
+          if (updates.weight && !updates.goal) {
+            newTargetWeight = getTargetWeight(newUser.goal, newUser.weight);
+          }
+        }
+        return {
+          user: newUser,
+          targetCalories: newTargetCalories,
+          targetWeight: newTargetWeight,
+        };
+      }),
+      updateWeight: (weight) => set((state) => {
+        const today = new Date().toISOString().split('T')[0];
+        const existingIndex = state.weightHistory.findIndex(e => e.date === today);
+        let newHistory;
+        if (existingIndex >= 0) {
+          newHistory = state.weightHistory.map((e, i) => i === existingIndex ? { ...e, weight } : e);
+        } else {
+          newHistory = [...state.weightHistory, { date: today, weight }];
+        }
+        return {
+          user: state.user ? { ...state.user, weight } : null,
+          weightHistory: newHistory,
+          targetWeight: state.user ? getTargetWeight(state.user.goal, weight) : state.targetWeight,
+        };
+      }),
+      addWeightEntry: (weight, dateStr) => set((state) => {
+        const date = dateStr || new Date().toISOString().split('T')[0];
+        const existingIndex = state.weightHistory.findIndex(e => e.date === date);
+        let newHistory;
+        if (existingIndex >= 0) {
+          newHistory = state.weightHistory.map((e, i) => i === existingIndex ? { ...e, weight } : e);
+        } else {
+          newHistory = [...state.weightHistory, { date, weight }];
+        }
+        const isToday = date === new Date().toISOString().split('T')[0];
+        return {
+          user: isToday && state.user ? { ...state.user, weight } : state.user,
+          weightHistory: newHistory,
+          targetWeight: (isToday && state.user) ? getTargetWeight(state.user.goal, weight) : state.targetWeight,
+        };
+      }),
+      updateStreak: () => set((state) => {
+        const today = new Date().toISOString().split('T')[0];
+        if (state.lastWorkoutDate === today) return {};
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const newStreak = state.lastWorkoutDate === yesterdayStr ? state.streak + 1 : 1;
+        return { streak: newStreak, lastWorkoutDate: today };
+      }),
 
       // Workout Actions
       addWorkout: (name) => set((state) => {
@@ -207,11 +374,15 @@ export const useStore = create<AppState>()(
           name,
           exercises: []
         };
-        return { workouts: [...state.workouts, newWorkout], activeWorkoutId: newWorkout.id };
+        return {
+          workouts: [...state.workouts, newWorkout],
+          activeWorkoutId: newWorkout.id,
+          workoutsCreated: state.workoutsCreated + 1,
+        };
       }),
       deleteWorkout: (id) => set((state) => {
         const remaining = state.workouts.filter(w => w.id !== id);
-        return { 
+        return {
           workouts: remaining,
           activeWorkoutId: state.activeWorkoutId === id ? (remaining[0]?.id || null) : state.activeWorkoutId
         };

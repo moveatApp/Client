@@ -21,7 +21,9 @@ export default function Navigation() {
    return (
       <>
          {/* Mobile Bottom Navigation */}
-         <nav className="md:hidden fixed bottom-0 w-full bg-card-bg/90 backdrop-blur-md border-t border-card-border px-6 py-3 pb-7 flex justify-around items-center z-50 transition-colors">
+         <nav
+            className="md:hidden fixed bottom-0 w-full bg-card-bg/90 backdrop-blur-md border-t border-card-border px-6 pt-3 flex justify-around items-center z-50 transition-colors"
+            style={{ paddingBottom: "calc(1.75rem + env(safe-area-inset-bottom))" }}>
             {tabs.map((tab) => {
                const Icon = tab.icon
                const isActive = pathname === tab.path
@@ -29,8 +31,9 @@ export default function Navigation() {
                   <Link
                      key={tab.path}
                      to={tab.path}
+                     aria-label={tab.name}
                      onClick={() => trigger(isActive ? "selection" : "light")}
-                     className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all ${
+                     className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-colors duration-200 ${
                         isActive
                            ? "text-primary"
                            : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -58,8 +61,9 @@ export default function Navigation() {
                      <Link
                         key={tab.path}
                         to={tab.path}
+                        aria-label={tab.name}
                         onClick={() => trigger(isActive ? "selection" : "light")}
-                        className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all ${
+                        className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-colors duration-200 ${
                            isActive
                               ? "text-primary"
                               : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -71,17 +75,6 @@ export default function Navigation() {
                      </Link>
                   )
                })}
-            </div>
-
-            <div className="pb-8 flex justify-center">
-               <button
-                  onClick={() => {
-                     trigger("light")
-                     toggleDarkMode()
-                  }}
-                  className="w-12 h-12 bg-muted dark:bg-white/5 border border-card-border rounded-xl flex items-center justify-center text-gray-500 hover:text-primary transition-all">
-                  {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-               </button>
             </div>
          </nav>
       </>

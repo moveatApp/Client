@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useStore } from "@/store/useStore"
-import { apiLogout } from "@/api/auth"
+import { apiLogout, apiGetMeContext } from "@/api/auth"
 import {
    LogOut,
    User,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
+import { Button } from "@/components/ui"
 
 const GOALS = [
    { id: "baja_peso", label: "Bajar de peso" },
@@ -65,10 +66,36 @@ export default function ProfilePage() {
    const [expandedSection, setExpandedSection] = useState<string | null>(null)
    const [isLoggingOut, setIsLoggingOut] = useState(false)
 
+   useEffect(() => {
+      if (user && !user.email) {
+         apiGetMeContext().then((res) => {
+            if (res.ok && res.data.user.email) {
+               updateUser({ email: res.data.user.email })
+            }
+         })
+      }
+   }, [user, updateUser])
+
    if (!user) return null
 
    const toggleSection = (section: string) => {
       setExpandedSection((prev) => (prev === section ? null : section))
+   }
+
+   const handleToggleDarkMode = () => {
+      if (!(document as any).startViewTransition) {
+         toggleDarkMode()
+         return
+      }
+      const next = !isDarkMode
+      ;(document as any).startViewTransition(() => {
+         if (next) {
+            document.documentElement.classList.add("dark")
+         } else {
+            document.documentElement.classList.remove("dark")
+         }
+         useStore.setState({ isDarkMode: next })
+      })
    }
 
    return (
@@ -79,7 +106,7 @@ export default function ProfilePage() {
             </h1>
             <div className="flex items-center gap-2">
                <button
-                  onClick={toggleDarkMode}
+                  onClick={handleToggleDarkMode}
                   className="p-2 text-gray-400 hover:text-foreground transition-colors bg-card-bg rounded-full shadow-sm border border-card-border">
                   {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                </button>
@@ -97,6 +124,9 @@ export default function ProfilePage() {
                <h2 className="text-2xl font-bold text-foreground mb-1">
                   {user.name}
                </h2>
+               {user.email && (
+                  <p className="text-sm text-gray-400 font-medium">{user.email}</p>
+               )}
             </div>
          </motion.div>
 
@@ -112,32 +142,12 @@ export default function ProfilePage() {
             <div className="bg-card-bg rounded-3xl overflow-hidden shadow-sm border border-card-border flex flex-col">
                {/* Goal */}
                <div className="border-b border-card-border">
-                  <div
+                  <button
+                     aria-expanded={expandedSection === "goal"}
                      onClick={() => toggleSection("goal")}
-                     className="p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white/5 cursor-pointer transition-colors">
+                     className="w-full text-left p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white-500/5 transition-colors">
                      <div className="flex items-center gap-3">
-                        <div
-                           className="w-10 h-10 
-                        
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                       /*  CAMBIAR TODOS ESTOS, POR SUS VARIABLES DE TAILWIND */
-                        bg-gray-100 dark:bg-white/5
-                        
-                        
-                        text-gray-500 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-muted dark:bg-white-500/5 text-gray-500 rounded-xl flex items-center justify-center">
                            <Activity size={20} />
                         </div>
                         <span className="font-bold text-foreground">
@@ -153,7 +163,7 @@ export default function ProfilePage() {
                            className={`text-gray-400 transition-transform ${expandedSection === "goal" ? "rotate-180" : ""}`}
                         />
                      </div>
-                  </div>
+                  </button>
                   <AnimatePresence>
                      {expandedSection === "goal" && (
                         <motion.div
@@ -169,7 +179,7 @@ export default function ProfilePage() {
                                        updateUser({ goal: g.id as any })
                                        setExpandedSection(null)
                                     }}
-                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.goal === g.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/[0.02] text-foreground hover:bg-gray-100 dark:hover:bg-white/5"}`}>
+                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.goal === g.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white-500/5 text-foreground hover:bg-muted dark:hover:bg-white-500/5"}`}>
                                     {g.label}
                                  </button>
                               ))}
@@ -181,11 +191,12 @@ export default function ProfilePage() {
 
                {/* Activity Level */}
                <div className="border-b border-card-border">
-                  <div
+                  <button
+                     aria-expanded={expandedSection === "level"}
                      onClick={() => toggleSection("level")}
-                     className="p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white/5 cursor-pointer transition-colors">
+                     className="w-full text-left p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white-500/5 transition-colors">
                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 dark:bg-white/5 text-gray-500 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-muted dark:bg-white-500/5 text-gray-500 rounded-xl flex items-center justify-center">
                            <Dumbbell size={20} />
                         </div>
                         <span className="font-bold text-foreground">Nivel</span>
@@ -199,7 +210,7 @@ export default function ProfilePage() {
                            className={`text-gray-400 transition-transform ${expandedSection === "level" ? "rotate-180" : ""}`}
                         />
                      </div>
-                  </div>
+                  </button>
                   <AnimatePresence>
                      {expandedSection === "level" && (
                         <motion.div
@@ -215,7 +226,7 @@ export default function ProfilePage() {
                                        updateUser({ level: l.id as any })
                                        setExpandedSection(null)
                                     }}
-                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.level === l.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/[0.02] text-foreground hover:bg-gray-100 dark:hover:bg-white/5"}`}>
+                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.level === l.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white-500/5 text-foreground hover:bg-muted dark:hover:bg-white-500/5"}`}>
                                     {l.label}
                                  </button>
                               ))}
@@ -227,11 +238,12 @@ export default function ProfilePage() {
 
                {/* Time */}
                <div className="border-b border-card-border">
-                  <div
+                  <button
+                     aria-expanded={expandedSection === "time"}
                      onClick={() => toggleSection("time")}
-                     className="p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white/5 cursor-pointer transition-colors">
+                     className="w-full text-left p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white-500/5 transition-colors">
                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 dark:bg-white/5 text-gray-500 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-muted dark:bg-white-500/5 text-gray-500 rounded-xl flex items-center justify-center">
                            <Calendar size={20} />
                         </div>
                         <span className="font-bold text-foreground">Tiempo</span>
@@ -246,7 +258,7 @@ export default function ProfilePage() {
                            className={`text-gray-400 transition-transform ${expandedSection === "time" ? "rotate-180" : ""}`}
                         />
                      </div>
-                  </div>
+                  </button>
                   <AnimatePresence>
                      {expandedSection === "time" && (
                         <motion.div
@@ -262,7 +274,7 @@ export default function ProfilePage() {
                                        updateUser({ timePerSession: t.id })
                                        setExpandedSection(null)
                                     }}
-                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.timePerSession === t.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/[0.02] text-foreground hover:bg-gray-100 dark:hover:bg-white/5"}`}>
+                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.timePerSession === t.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white-500/5 text-foreground hover:bg-muted dark:hover:bg-white-500/5"}`}>
                                     {t.label}
                                  </button>
                               ))}
@@ -274,11 +286,12 @@ export default function ProfilePage() {
 
                {/* Diet */}
                <div className="border-b border-card-border">
-                  <div
+                  <button
+                     aria-expanded={expandedSection === "diet"}
                      onClick={() => toggleSection("diet")}
-                     className="p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white/5 cursor-pointer transition-colors">
+                     className="w-full text-left p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white-500/5 transition-colors">
                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 dark:bg-white/5 text-gray-500 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-muted dark:bg-white-500/5 text-gray-500 rounded-xl flex items-center justify-center">
                            <Utensils size={20} />
                         </div>
                         <span className="font-bold text-foreground">
@@ -302,7 +315,7 @@ export default function ProfilePage() {
                            className={`text-gray-400 transition-transform ${expandedSection === "diet" ? "rotate-180" : ""}`}
                         />
                      </div>
-                  </div>
+                  </button>
                   <AnimatePresence>
                      {expandedSection === "diet" && (
                         <motion.div
@@ -311,7 +324,7 @@ export default function ProfilePage() {
                            exit={{ height: 0, opacity: 0 }}
                            className="overflow-hidden">
                            <div className="flex flex-col">
-                              <div className="px-5 py-2 bg-muted/50 dark:bg-white/[0.02] border-t border-card-border">
+                              <div className="px-5 py-2 bg-muted/50 dark:bg-white-500/5 border-t border-card-border">
                                  <p className="text-xs text-gray-400 font-medium">
                                     Puedes elegir múltiples opciones
                                  </p>
@@ -342,7 +355,7 @@ export default function ProfilePage() {
                                        }
                                        updateUser({ preferences: newPrefs })
                                     }}
-                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.preferences.includes(p.id) ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/[0.02] text-foreground hover:bg-gray-100 dark:hover:bg-white/5"}`}>
+                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.preferences.includes(p.id) ? "bg-primary text-white" : "bg-muted/50 dark:bg-white-500/5 text-foreground hover:bg-muted dark:hover:bg-white-500/5"}`}>
                                     {p.label}
                                  </button>
                               ))}
@@ -354,11 +367,12 @@ export default function ProfilePage() {
 
                {/* Theme */}
                <div>
-                  <div
+                  <button
+                     aria-expanded={expandedSection === "theme"}
                      onClick={() => toggleSection("theme")}
-                     className="p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white/5 cursor-pointer transition-colors">
+                     className="w-full text-left p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white-500/5 transition-colors">
                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 dark:bg-white/5 text-gray-500 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-muted dark:bg-white-500/5 text-gray-500 rounded-xl flex items-center justify-center">
                            <Palette size={20} />
                         </div>
                         <span className="font-bold text-foreground">
@@ -375,7 +389,7 @@ export default function ProfilePage() {
                            className={`text-gray-400 transition-transform ${expandedSection === "theme" ? "rotate-180" : ""}`}
                         />
                      </div>
-                  </div>
+                  </button>
                   <AnimatePresence>
                      {expandedSection === "theme" && (
                         <motion.div
@@ -391,7 +405,7 @@ export default function ProfilePage() {
                                        setThemeColor(t.id)
                                        setExpandedSection(null)
                                     }}
-                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border flex items-center gap-3 ${themeColor === t.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/[0.02] text-foreground hover:bg-gray-100 dark:hover:bg-white/5"}`}>
+                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border flex items-center gap-3 ${themeColor === t.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white-500/5 text-foreground hover:bg-muted dark:hover:bg-white-500/5"}`}>
                                     <div
                                        className="w-4 h-4 rounded-full"
                                        style={{ backgroundColor: t.color }}></div>
@@ -406,10 +420,8 @@ export default function ProfilePage() {
             </div>
          </motion.div>
 
-         <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
+         <Button
+            variant="danger"
             disabled={isLoggingOut}
             onClick={async () => {
                setIsLoggingOut(true)
@@ -418,14 +430,13 @@ export default function ProfilePage() {
                } catch {
                   // ignore: always clear local state even if server fails
                }
-                 useStore.setState({ isOnboarded: false })
-               resetProgress()
+               useStore.setState({ user: null, isOnboarded: false })
                navigate("/onboarding")
             }}
-            className="w-full py-4 text-sm font-bold text-red-500 bg-red-50 dark:bg-red-500/10 rounded-2xl flex justify-center items-center gap-2 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all shadow-sm active:scale-95 border border-transparent dark:border-red-500/20 disabled:opacity-60 disabled:active:scale-100">
+            className="w-full flex justify-center items-center gap-2">
             <LogOut size={16} />
             {isLoggingOut ? "Cerrando sesion..." : "Cerrar sesion"}
-         </motion.button>
+         </Button>
       </div>
    )
 }
