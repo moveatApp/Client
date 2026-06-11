@@ -17,8 +17,7 @@ if (typeof window !== "undefined") {
 
 import { GoogleOAuthProvider } from "@react-oauth/google"
 
-// TODO: Reemplazar este ID con el Google Client ID real de tu consola de Google Cloud
-const GOOGLE_CLIENT_ID = "TU_GOOGLE_CLIENT_ID"
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 createRoot(document.getElementById("root")!).render(
    <StrictMode>

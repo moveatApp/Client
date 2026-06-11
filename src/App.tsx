@@ -70,16 +70,18 @@ function Layout() {
   }, [checkAndResetDaily]);
 
   useEffect(() => {
-    // Only apply dark class directly on initial mount (hydration).
-    // Subsequent toggles are handled by document.startViewTransition.
+    // Aplicamos la clase dark en el HTML siempre que cambie isDarkMode
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
+    // Si isInitialTheme.current es true, significa que es la primera carga (evitamos hacer transición aquí)
     if (isInitialTheme.current) {
       isInitialTheme.current = false;
-      if (isDarkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
     }
+    
     document.documentElement.setAttribute('data-theme', themeColor);
   }, [isDarkMode, themeColor]);
 

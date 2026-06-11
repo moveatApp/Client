@@ -362,31 +362,31 @@ export default function Onboarding() {
             })
          }
 
-         const profileRes = await apiGetProfile()
+         if (isLoginMode) {
+            let weight = existing?.weight ?? 70
 
-         let weight = existing?.weight ?? 70
-         if (profileRes.ok) {
-            weight = profileRes.data.profile.currentWeight || weight
+            useStore.setState({
+               isOnboarded: true,
+               user: existing
+                  ? { ...existing, name, weight, email: loginUser.email }
+                  : {
+                       name,
+                       email: loginUser.email,
+                       goal: "mantiene" as any,
+                       level: "principiante" as any,
+                       weight,
+                       height: 170,
+                       workoutsPerWeek: 2,
+                       timePerSession: 30,
+                       preferences: ["ninguna"],
+                    },
+            })
+
+            navigate("/")
+         } else {
+            setForm((prev) => ({ ...prev, name }))
+            go(1)
          }
-
-         useStore.setState({
-            isOnboarded: true,
-            user: existing
-               ? { ...existing, name, weight, email: loginUser.email }
-               : {
-                    name,
-                    email: loginUser.email,
-                    goal: "mantiene" as any,
-                    level: "principiante" as any,
-                    weight,
-                    height: 170,
-                    workoutsPerWeek: 2,
-                    timePerSession: 30,
-                    preferences: ["ninguna"],
-                 },
-         })
-
-         navigate("/")
       } else {
          setAuthError(res.message)
          trigger("rigid")
@@ -1000,7 +1000,7 @@ export default function Onboarding() {
                                  }}
                                  className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
                                     !isLoginMode
-                                       ? "bg-white dark:bg-white-500/10 text-muted shadow-sm"
+                                       ? "bg-white dark:bg-white-500/10 text-foreground shadow-sm"
                                        : "text-gray-400"
                                  }`}>
                                  Registrarse
@@ -1012,7 +1012,7 @@ export default function Onboarding() {
                                  }}
                                  className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
                                     isLoginMode
-                                       ? "bg-white dark:bg-white-500/10 text-muted shadow-sm"
+                                       ? "bg-white dark:bg-white-500/10 text-foreground shadow-sm"
                                        : "text-gray-400"
                                  }`}>
                                  Iniciar sesión
@@ -1152,6 +1152,7 @@ export default function Onboarding() {
                                  }}
                                  theme={isDarkMode ? "filled_black" : "outline"}
                                  size="large"
+                                 shape="pill"
                                  text={isLoginMode ? "signin_with" : "signup_with"}
                                  width="100%"
                               />
