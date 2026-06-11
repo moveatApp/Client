@@ -133,6 +133,32 @@ export async function apiLogin(payload: LoginPayload): Promise<LoginResult | Aut
    }
 }
 
+// ─── POST /v1/auth/google ─────────────────────────────────────────────────────
+
+export interface GoogleLoginPayload {
+   idToken: string
+}
+
+export async function apiGoogleLogin(payload: GoogleLoginPayload): Promise<LoginResult | AuthError> {
+   try {
+      const res = await fetch(`${BASE_URL}/google`, {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify(payload),
+         credentials: "include",
+      })
+
+      if (res.ok) return { ok: true, data: await res.json() }
+
+      let data: unknown
+      try { data = await res.json() } catch { data = {} }
+
+      return { ok: false, message: parseErrorMessage(res, data) }
+   } catch {
+      return { ok: false, message: "Error de conexión" }
+   }
+}
+
 // ─── GET /v1/me ───────────────────────────────────────────────────────────────
 
 export interface MeUser {
