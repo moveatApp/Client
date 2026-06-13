@@ -340,9 +340,9 @@ export default function Home() {
                                ÚLTIMA COMIDA
                             </span>
                          </div>
-                         <h4 className="text-base font-display font-bold line-clamp-1 text-background">
-                            {lastMeal ? lastMeal.name.toUpperCase() : "SIN COMIDAS REGISTRADAS"}
-                         </h4>
+                          <h4 className="text-base font-display font-bold line-clamp-1 text-background">
+                             {lastMeal ? lastMeal.name.replace(/\b\w/g, (l) => l.toUpperCase()) : "SIN COMIDAS REGISTRADAS"}
+                          </h4>
                       </div>
                       <div className="relative z-20 flex items-center justify-between mt-2">
                          {lastMeal ? (
