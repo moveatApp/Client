@@ -47,4 +47,4 @@
 
 2.  **Install dependencies:**
     ```bash
-    npm install
+    pnpm install

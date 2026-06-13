@@ -16,12 +16,11 @@ import {
    Plus,
    ChevronDown,
 } from "lucide-react"
-import { useNavigate, Link } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { useWebHaptics } from "web-haptics/react"
 import { Button, Modal } from "@/components/ui"
 
 export default function TrainingPage() {
-   const navigate = useNavigate()
    const { trigger } = useWebHaptics()
    const {
       workouts,
@@ -35,6 +34,7 @@ export default function TrainingPage() {
       toggleExerciseCompletion,
       setWorkoutCompleted,
       workoutCompleted,
+      resetWorkoutProgress,
    } = useStore()
 
    const [showCelebration, setShowCelebration] = useState(false)
@@ -125,29 +125,44 @@ export default function TrainingPage() {
    const progress =
       exercises.length > 0 ? (completedCount / exercises.length) * 100 : 0
 
-   if (showCelebration || workoutCompleted) {
-      return (
-         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center p-6 h-[85vh] text-center">
-            <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-green-200">
-               <CheckCircle2 size={48} />
-            </div>
-            <h2 className="text-3xl font-display font-bold text-foreground mb-2">
-               ¡Increíble!
-            </h2>
-            <p className="text-gray-500 mb-8">Has completado tu rutina.</p>
-            <Button onClick={() => navigate("/")} className="w-full">
-               Finalizar
-            </Button>
-         </motion.div>
-      )
-   }
+    useEffect(() => {
+       if (showCelebration) {
+          const timer = setTimeout(() => setShowCelebration(false), 4000)
+          return () => clearTimeout(timer)
+       }
+    }, [showCelebration])
 
-   return (
-      <div className="p-4 md:p-6 pb-32 animate-fade-in font-sans flex flex-col min-h-screen">
-         <header className="mb-6 flex flex-col items-start justify-between">
+    return (
+       <div className="p-4 md:p-6 pb-32 animate-fade-in font-sans flex flex-col min-h-screen relative">
+          <AnimatePresence>
+             {showCelebration && (
+                <motion.div
+                   initial={{ opacity: 0, y: -40, scale: 0.9 }}
+                   animate={{ opacity: 1, y: 0, scale: 1 }}
+                   exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                   transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+                   className="mb-4 w-full bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-[28px] p-4 flex items-center gap-4 shadow-lg shadow-green-100/50">
+                   <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+                      className="w-12 h-12 bg-green-100 dark:bg-green-500/20 text-green-600 rounded-full flex items-center justify-center shrink-0">
+                      <CheckCircle2 size={28} />
+                   </motion.div>
+                   <div className="flex-1">
+                      <h3 className="font-bold text-green-800 dark:text-green-200 text-lg">¡Rutina completada!</h3>
+                      <p className="text-green-700 dark:text-green-300/80 text-sm font-medium">Sigue así, puedes seguir editando o reiniciar cuando quieras.</p>
+                   </div>
+                   <button
+                      onClick={() => setShowCelebration(false)}
+                      className="p-2 rounded-xl hover:bg-green-100 dark:hover:bg-green-500/20 text-green-600 transition-colors">
+                      <ChevronDown size={20} className="rotate-180" />
+                   </button>
+                </motion.div>
+             )}
+          </AnimatePresence>
+
+          <header className="mb-6 flex flex-col items-start justify-between">
             <div className="flex items-center gap-2 mb-2">
                <Link
                   to="/"
@@ -183,18 +198,34 @@ export default function TrainingPage() {
                   <h2 className="text-2xl font-bold text-foreground">
                      {activeWorkout.name}
                   </h2>
-                  <button
-                     onClick={() => {
-                        showConfirm(
-                           "Eliminar Rutina",
-                           "¿Seguro que quieres eliminar esta rutina completa?",
-                           () => deleteWorkout(activeWorkout.id),
-                        )
-                     }}
-                     className="text-red-500 p-2 bg-red-50 dark:bg-red-500/10 rounded-xl hover:bg-red-100 transition-colors">
-                     <Trash2 size={20} />
-                  </button>
-               </div>
+                   <div className="flex items-center gap-2">
+                      {completedCount > 0 && (
+                         <button
+                            onClick={() => {
+                               showConfirm(
+                                  "Reiniciar Rutina",
+                                  "¿Quieres marcar todos los ejercicios como pendientes?",
+                                  () => resetWorkoutProgress(activeWorkout.id),
+                               )
+                            }}
+                            className="text-primary p-2 bg-primary/10 rounded-xl hover:bg-primary/20 transition-colors"
+                            title="Reiniciar rutina">
+                            <Circle size={20} />
+                         </button>
+                      )}
+                      <button
+                         onClick={() => {
+                            showConfirm(
+                               "Eliminar Rutina",
+                               "¿Seguro que quieres eliminar esta rutina completa?",
+                               () => deleteWorkout(activeWorkout.id),
+                            )
+                         }}
+                         className="text-red-500 p-2 bg-red-50 dark:bg-red-500/10 rounded-xl hover:bg-red-100 transition-colors">
+                         <Trash2 size={20} />
+                      </button>
+                   </div>
+                </div>
 
                {/* Header Progress */}
                <div className="bg-card-bg rounded-[32px] p-5 shadow-sm border border-card-border mb-8 flex items-center gap-5">

@@ -22,14 +22,14 @@ function AnimatedRoutes() {
       opacity: 1, y: 0, scale: 1,
       transition: {
         duration: shouldReduceMotion ? 0 : 0.45,
-        ease: [0.25, 0.46, 0.45, 0.94], // iOS spring-ish easing
+        ease: [0.25, 0.46, 0.45, 0.94] as const, // iOS spring-ish easing
         staggerChildren: shouldReduceMotion ? 0 : 0.08,
         when: 'beforeChildren',
       },
     },
     exit: {
       opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : -10, scale: shouldReduceMotion ? 1 : 0.99,
-      transition: { duration: shouldReduceMotion ? 0 : 0.25, ease: [0.4, 0, 1, 1] },
+      transition: { duration: shouldReduceMotion ? 0 : 0.25, ease: [0.4, 0, 1, 1] as const },
     },
   };
 
@@ -104,7 +104,7 @@ function Layout() {
         {isOnboarding ? (
           // Onboarding: full-screen on all devices, slightly reduced max height
           <div
-            className="w-full max-w-md h-[100dvh] max-h-[820px] md:my-auto flex flex-col overflow-hidden"
+            className="w-full max-w-md h-dvh max-h-[820px] md:my-auto flex flex-col overflow-hidden"
             style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             <AnimatedRoutes />

@@ -137,6 +137,7 @@ interface AppState {
   updateExercise: (workoutId: string, exerciseId: string, fields: Partial<Exercise>) => void;
   deleteExercise: (workoutId: string, exerciseId: string) => void;
   toggleExerciseCompletion: (workoutId: string, exerciseId: string) => void;
+  resetWorkoutProgress: (workoutId: string) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -446,6 +447,22 @@ export const useStore = create<AppState>()(
                 }
                 return e;
               })
+            };
+          }
+          return w;
+        })
+      })),
+      resetWorkoutProgress: (workoutId) => set((state) => ({
+        workoutCompleted: false,
+        workouts: state.workouts.map(w => {
+          if (w.id === workoutId) {
+            return {
+              ...w,
+              exercises: w.exercises.map(e => ({
+                ...e,
+                completed: false,
+                setDetails: e.setDetails?.map(s => ({ ...s, completed: false }))
+              }))
             };
           }
           return w;

@@ -1154,7 +1154,6 @@ export default function Onboarding() {
                                  size="large"
                                  shape="pill"
                                  text={isLoginMode ? "signin_with" : "signup_with"}
-                                 width="100%"
                               />
                            </div>
                         </div>

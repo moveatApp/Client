@@ -196,9 +196,15 @@ export default function ProgressPage() {
                      Objetivo: {targetWeight} kg
                   </div>
                </div>
-               <div className="flex-1 w-full -ml-4">
-                  <WeightChart />
-               </div>
+                <div className="flex-1 w-full -ml-4">
+                   <WeightChart
+                      onPointClick={(date, weight) => {
+                         setNewWeightDate(date)
+                         setNewWeight(weight !== null ? String(weight) : "")
+                         setShowWeightForm(true)
+                      }}
+                   />
+                </div>
 
                <div className="mt-4 flex justify-center items-center">
                   <AnimatePresence mode="wait">

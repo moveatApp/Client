@@ -157,7 +157,11 @@ function getPeriodRange(
    return { start: addMonths(today, -1), end: today }
 }
 
-export default function WeightChart() {
+interface WeightChartProps {
+   onPointClick?: (date: string, weight: number | null) => void
+}
+
+export default function WeightChart({ onPointClick }: WeightChartProps = {}) {
    const { weightHistory, addWeightEntry } = useStore()
    const [period, setPeriod] = useState<Period>("month")
    const [selectedPoint, setSelectedPoint] = useState<{
@@ -184,9 +188,13 @@ export default function WeightChart() {
    }, [grid])
 
    const handleDotClick = useCallback((date: string, weight: number | null) => {
+      if (onPointClick) {
+         onPointClick(date, weight)
+         return
+      }
       setSelectedPoint({ date, weight })
       setEditWeight(weight !== null ? String(weight) : "")
-   }, [])
+   }, [onPointClick])
 
    const handleChartClick = useCallback(
       (state: any) => {
@@ -435,8 +443,8 @@ export default function WeightChart() {
             )}
          </div>
 
-         {/* Inline weight editor */}
-         {selectedPoint && (
+          {/* Inline weight editor */}
+          {!onPointClick && selectedPoint && (
             <div className="mt-3 bg-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center justify-between animate-fade-in">
                <div className="flex items-center gap-3">
                   <Pencil size={16} className="text-primary" />
