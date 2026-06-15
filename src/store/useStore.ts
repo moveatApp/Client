@@ -120,7 +120,13 @@ function getTargetCalories(goal: Goal): number {
 }
 
 function todayISO(): string {
-  return new Date().toISOString().split('T')[0];
+  // Local calendar date (YYYY-MM-DD). Using UTC would shift the day in non-UTC
+  // timezones and mismatch the backend's localDate strings (clobbering dailyCalories).
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function todayCalories(meals: Meal[]): number {

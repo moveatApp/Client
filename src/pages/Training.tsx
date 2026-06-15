@@ -150,6 +150,7 @@ export default function TrainingPage() {
    const upsertRoutine = useStore((s) => s.upsertRoutine)
    const removeRoutine = useStore((s) => s.removeRoutine)
    const setWorkoutCompleted = useStore((s) => s.setWorkoutCompleted)
+   const workoutCompleted = useStore((s) => s.workoutCompleted)
 
    const activeRoutine = useMemo(
       () => routines.find((r) => r.id === activeRoutineId) ?? routines[0] ?? null,
@@ -235,19 +236,19 @@ export default function TrainingPage() {
 
    const toggleSet = (exerciseId: string, idx: number) => {
       if (!activeRoutine) return
-      setProgress((prev) => {
-         const arr = [...(prev[exerciseId] ?? [])]
-         arr[idx] = !arr[idx]
-         const next = { ...prev, [exerciseId]: arr }
 
-         // All sets across all exercises completed?
-         const done = activeRoutine.exercises.every((ex) =>
-            (next[ex.id] ?? []).slice(0, ex.targetSets).every(Boolean),
-         )
-         if (done) void logSession(activeRoutine)
-         return next
-      })
+      const arr = [...(progress[exerciseId] ?? [])]
+      arr[idx] = !arr[idx]
+      const next = { ...progress, [exerciseId]: arr }
+      setProgress(next)
       trigger("nudge")
+
+      // Fire the session log once, outside the state updater (keeping it pure),
+      // when every set of every exercise is complete.
+      const done = activeRoutine.exercises.every((ex) =>
+         (next[ex.id] ?? []).slice(0, ex.targetSets).every(Boolean),
+      )
+      if (done && !workoutCompleted) void logSession(activeRoutine)
    }
 
    const resetSession = () => {

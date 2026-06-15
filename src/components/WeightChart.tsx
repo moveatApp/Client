@@ -12,7 +12,6 @@ import {
    ReferenceArea,
    ReferenceLine,
 } from "recharts"
-import { Save, X, Pencil } from "lucide-react"
 
 type Period = "month" | "6m" | "year" | "all"
 
@@ -182,14 +181,8 @@ interface WeightChartProps {
 }
 
 export default function WeightChart({ onPointClick, targetWeight }: WeightChartProps = {}) {
-   const { weightHistory, addWeightEntry, isDarkMode } = useStore()
+   const { weightHistory } = useStore()
    const [period, setPeriod] = useState<Period>("month")
-   const [selectedPoint, setSelectedPoint] = useState<{
-      date: string
-      weight: number | null
-   } | null>(null)
-   const [editWeight, setEditWeight] = useState("")
-   const [editDate, setEditDate] = useState("")
 
    const { grid, spans, hasAnyData } = useMemo(() => {
       const { start, end } = getPeriodRange(period, weightHistory)
@@ -219,15 +212,12 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
        return [yMin, yMax]
     }, [grid, targetWeight])
 
-   const handleDotClick = useCallback((date: string, weight: number | null) => {
-      if (onPointClick) {
-         onPointClick(date, weight)
-         return
-      }
-      setSelectedPoint({ date, weight })
-      setEditWeight(weight !== null ? String(weight) : "")
-      setEditDate(date)
-   }, [onPointClick])
+   const handleDotClick = useCallback(
+      (date: string, weight: number | null) => {
+         onPointClick?.(date, weight)
+      },
+      [onPointClick],
+   )
 
    const handleChartClick = useCallback(
       (state: any) => {
@@ -273,19 +263,6 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
       },
       [handleDotClick, grid],
    )
-
-   const handleSave = useCallback(() => {
-      if (!selectedPoint) return
-      const parsed = parseFloat(editWeight)
-      if (!isNaN(parsed) && parsed > 0) {
-         addWeightEntry(parsed, editDate || selectedPoint.date)
-      }
-      setSelectedPoint(null)
-      setEditWeight("")
-      setEditDate("")
-   }, [selectedPoint, editWeight, editDate, addWeightEntry])
-
-    const isEditing = selectedPoint?.weight !== null
 
    return (
       <div className="w-full h-full flex flex-col">
@@ -485,93 +462,24 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
             )}
          </div>
 
-            {/* Inline weight editor */}
-            {!onPointClick && selectedPoint && (
-              <div className="mt-3 bg-primary/5 border border-primary/20 rounded-2xl p-4 animate-fade-in">
-                 <div className="flex items-center gap-2 mb-2">
-                    <Pencil size={16} className="text-primary shrink-0" />
-                     <span className="text-caption text-primary">
-                        {isEditing ? "Editar peso" : "Registrar peso"}
-                     </span>
-                 </div>
-                 <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                       <div className="flex items-center gap-2 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-card-border flex-1">
-                          <input
-                             type="date"
-                             aria-label="Fecha del registro"
-                             className="bg-transparent text-sm font-bold text-foreground outline-none w-full"
-                             style={{ colorScheme: isDarkMode ? "dark" : "light" }}
-                             value={editDate}
-                             onChange={(e) => setEditDate(e.target.value)}
-                          />
-                       </div>
-                           <button
-                              aria-label="Cancelar"
-                              onClick={() => {
-                                 setSelectedPoint(null)
-                                 setEditWeight("")
-                                 setEditDate("")
-                              }}
-                              className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-muted text-subtle rounded-xl hover:text-foreground transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                              <X size={16} />
-                           </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                       <div className="flex items-center gap-2 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-card-border flex-1">
-                          <input
-                             type="number"
-                             step="0.1"
-                             aria-label="Peso en kg"
-                             className="bg-transparent text-sm font-bold text-foreground w-full outline-none"
-                             value={editWeight}
-                             onChange={(e) => setEditWeight(e.target.value)}
-                             onKeyDown={(e) => e.key === "Enter" && handleSave()}
-                             placeholder="--"
-                          />
-                          <span className="text-xs text-subtle font-bold">kg</span>
-                       </div>
-                        <button
-                           aria-label="Guardar peso"
-                           onClick={handleSave}
-                           className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                           <Save size={16} />
-                        </button>
-                    </div>
-                 </div>
-              </div>
-           )}
-
           <div className="flex max-[415px]:grid max-[415px]:grid-cols-2 mx-auto mt-4 px-3 bg-white/5 rounded-2xl sm:rounded-full py-2 w-full sm:w-auto text-xs font-bold text-subtle gap-2 sm:gap-5 max-[415px]:gap-2">
              <button
-                onClick={() => {
-                   setPeriod("month")
-                   setSelectedPoint(null)
-                }}
+                onClick={() => setPeriod("month")}
                 className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "month" ? "bg-primary text-white" : ""}`}>
                 Este mes
              </button>
              <button
-                onClick={() => {
-                   setPeriod("6m")
-                   setSelectedPoint(null)
-                }}
+                onClick={() => setPeriod("6m")}
                 className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "6m" ? "bg-primary text-white" : ""}`}>
                 6 Meses
              </button>
              <button
-                onClick={() => {
-                   setPeriod("year")
-                   setSelectedPoint(null)
-                }}
+                onClick={() => setPeriod("year")}
                 className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "year" ? "bg-primary text-white" : ""}`}>
                 Este año
              </button>
              <button
-                onClick={() => {
-                   setPeriod("all")
-                   setSelectedPoint(null)
-                }}
+                onClick={() => setPeriod("all")}
                 className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "all" ? "bg-primary text-white" : ""}`}>
                 Todo
              </button>

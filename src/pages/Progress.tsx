@@ -13,14 +13,12 @@ import {
    Shield,
    Rocket,
    Trophy,
-   Pencil,
    Save,
    Plus,
-   CalendarDays,
    X,
 } from "lucide-react"
 import WeightChart from "@/components/WeightChart"
-import { apiCreateWeightLog } from "@/api/weight"
+import { logWeight } from "@/lib/weightLog"
 import { todayLocalISO } from "@/api/client"
 import { DatePicker } from "@/components/ui"
 
@@ -40,8 +38,6 @@ export default function ProgressPage() {
        waterGlasses,
        waterStreak,
        meals,
-      updateWeight,
-      addWeightEntry,
       isDarkMode,
    } = useStore()
    const [editingWeight, setEditingWeight] = useState(false)
@@ -52,27 +48,10 @@ export default function ProgressPage() {
       new Date().toISOString().split("T")[0],
    )
 
-   const persistWeightLog = async (weight: number, dateISO: string) => {
-      // Never log a weight in the future; clamp to today.
-      const today = todayLocalISO()
-      const date = dateISO > today ? today : dateISO
-      // A weight log against a non-today date is timestamped at local noon.
-      const loggedAt =
-         date === today
-            ? undefined
-            : new Date(`${date}T12:00:00`).toISOString()
-      const res = await apiCreateWeightLog({ weight, loggedAt })
-      if (res.ok && res.data.nutrition) {
-         // Logging weight can recalculate calorie targets server-side.
-         useStore.setState({ targetCalories: res.data.nutrition.dailyCalorieTarget })
-      }
-   }
-
    const handleSaveWeight = async () => {
       const parsed = parseFloat(weightInput)
       if (!isNaN(parsed) && parsed > 0) {
-         updateWeight(parsed)
-         await persistWeightLog(parsed, todayLocalISO())
+         await logWeight(parsed, todayLocalISO())
       }
       setEditingWeight(false)
    }
@@ -80,8 +59,7 @@ export default function ProgressPage() {
    const handleAddWeightEntry = async () => {
       const parsed = parseFloat(newWeight)
       if (!isNaN(parsed) && parsed > 0) {
-         addWeightEntry(parsed, newWeightDate)
-         await persistWeightLog(parsed, newWeightDate)
+         await logWeight(parsed, newWeightDate)
       }
       setNewWeight("")
       setNewWeightDate(todayLocalISO())

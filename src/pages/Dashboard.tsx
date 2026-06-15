@@ -3,24 +3,19 @@ import { useNavigate, Link } from "react-router-dom"
 import { useStore } from "@/store/useStore"
 import { useWebHaptics } from "web-haptics/react"
 import {
-   CheckCircle,
    Flame,
    Plus,
-   Play,
    Droplet,
-   Sparkles,
    Save,
-   CalendarDays,
    X,
    UtensilsCrossed,
    ArrowRight,
    TrendingUp,
-   Zap,
    Dumbbell,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import WeightChart from "@/components/WeightChart"
-import { apiCreateWeightLog } from "@/api/weight"
+import { logWeight } from "@/lib/weightLog"
 import { todayLocalISO } from "@/api/client"
 import { DatePicker } from "@/components/ui"
 
@@ -34,8 +29,6 @@ export default function Home() {
       dailyCalories,
       waterGlasses,
       addWater,
-      updateWeight,
-      addWeightEntry,
       isDarkMode,
       meals,
       streak,
@@ -60,18 +53,7 @@ export default function Home() {
    const handleDashWeightSave = async () => {
       const parsed = parseFloat(dashWeight)
       if (!isNaN(parsed) && parsed > 0) {
-         // Never log a weight in the future; clamp the date to today.
-         const today = todayLocalISO()
-         const date = dashWeightDate > today ? today : dashWeightDate
-         addWeightEntry(parsed, date)
-         const loggedAt =
-            date === today
-               ? undefined
-               : new Date(`${date}T12:00:00`).toISOString()
-         const res = await apiCreateWeightLog({ weight: parsed, loggedAt })
-         if (res.ok && res.data.nutrition) {
-            useStore.setState({ targetCalories: res.data.nutrition.dailyCalorieTarget })
-         }
+         await logWeight(parsed, dashWeightDate)
          setDashWeight("")
          setDashWeightDate(todayLocalISO())
          setShowDashWeightForm(false)
@@ -203,31 +185,6 @@ export default function Home() {
                                  onClick={() => setShowDashWeightForm(false)}
                                  className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-muted text-subtle rounded-xl hover:text-foreground transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                                  <X size={16} />
-                              </button>
-                           </div>
-                           <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-2 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-card-border flex-1">
-                                 <input
-                                    type="number"
-                                    step="0.1"
-                                    aria-label="Peso en kg"
-                                    placeholder="70.5"
-                                    className="bg-transparent text-sm font-bold text-foreground w-full outline-none"
-                                    value={dashWeight}
-                                    onChange={(e) => setDashWeight(e.target.value)}
-                                    onKeyDown={(e) =>
-                                       e.key === "Enter" && handleDashWeightSave()
-                                    }
-                                 />
-                                 <span className="text-xs text-subtle font-bold">
-                                    kg
-                                 </span>
-                              </div>
-                              <button
-                                 aria-label="Guardar peso"
-                                 onClick={handleDashWeightSave}
-                                 className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                                 <Save size={16} />
                               </button>
                            </div>
                         </motion.div>
