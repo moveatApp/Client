@@ -16,35 +16,35 @@ export default function SliderCard({
    onChange,
 }: SliderCardProps) {
    return (
-      <div className="bg-card-bg border border-card-border rounded-3xl p-6 shadow-sm">
-         <div className="flex justify-between items-center mb-4">
-            <span className="font-bold text-sm text-gray-400 uppercase tracking-wider">
-               {label}
-            </span>
-            <div className="flex items-baseline gap-1">
-               <span className="text-4xl font-display font-extrabold text-primary tabular-nums">
-                  {value}
-               </span>
-               <span className="text-gray-400 font-bold">{unit}</span>
-            </div>
-         </div>
-          <input
-             type="range"
-             aria-label={`${label}: ${value} ${unit}`}
-             min={min}
-             max={max}
-             value={value}
-             onChange={(e) => onChange(parseInt(e.target.value))}
-             className="w-full accent-primary h-2"
-          />
-         <div className="flex justify-between mt-1 text-xs text-gray-300 font-bold">
-            <span>
-               {min} {unit}
-            </span>
-            <span>
-               {max} {unit}
-            </span>
-         </div>
+      <div className="bg-card-bg/40 border border-card-border rounded-card p-card shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+             <span className="text-label text-subtle">
+                {label}
+             </span>
+             <div className="flex items-baseline gap-1">
+                <span className="text-display text-primary tabular-nums">
+                   {value}
+                </span>
+                <span className="text-secondary text-subtle font-bold">{unit}</span>
+             </div>
+          </div>
+           <input
+              type="range"
+              aria-label={`${label}: ${value} ${unit}`}
+              min={min}
+              max={max}
+              value={value}
+              onChange={(e) => onChange(parseInt(e.target.value))}
+              className="w-full accent-primary h-2"
+           />
+          <div className="flex justify-between mt-1 text-caption text-muted-foreground">
+             <span>
+                {min} {unit}
+             </span>
+             <span>
+                {max} {unit}
+             </span>
+          </div>
       </div>
    )
 }

@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-14T16:00:00.000Z",
+  "title": "Design System: MovEat",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Naranja Vitamina",
+        "canonical": "#f97316",
+        "tonalRamp": ["#431407", "#9a3412", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#fff7ed"],
+        "themeAliases": {
+          "orange": "#f97316",
+          "green": "#636a4e",
+          "blue": "#3b82f6",
+          "purple": "#8b5cf6"
+        }
+      },
+      "secondary": {
+        "role": "secondary",
+        "displayName": "Naranja Quemado",
+        "canonical": "#ea580c",
+        "tonalRamp": ["#431407", "#9a3412", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#fff7ed"]
+      },
+      "accent": {
+        "role": "accent",
+        "displayName": "Naranja Suave",
+        "canonical": "#fb923c",
+        "tonalRamp": ["#431407", "#9a3412", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#fff7ed"]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Fondo Cálido",
+        "canonical": "#fff7ed",
+        "tonalRamp": ["#431407", "#9a3412", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#fff7ed"]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Texto Oscuro Térmico",
+        "canonical": "#431407",
+        "tonalRamp": ["#431407", "#9a3412", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#fff7ed"]
+      },
+      "card-bg": {
+        "role": "neutral",
+        "displayName": "Superficie Tarjeta",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#000000", "#1a1a1a", "#333333", "#555555", "#777777", "#aaaaaa", "#dddddd", "#ffffff"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Apagado",
+        "canonical": "#ffedd5",
+        "tonalRamp": ["#431407", "#9a3412", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#fff7ed"]
+      },
+      "subtle": {
+        "role": "neutral",
+        "displayName": "Sutil",
+        "canonical": "#fb923c",
+        "tonalRamp": ["#431407", "#9a3412", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#fff7ed"]
+      },
+      "danger": {
+        "role": "danger",
+        "displayName": "Peligro",
+        "canonical": "#cf4141",
+        "tonalRamp": ["#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"]
+      },
+      "water": {
+        "role": "info",
+        "displayName": "Agua",
+        "canonical": "#93c5e6",
+        "tonalRamp": ["#172554", "#1e40af", "#2563eb", "#3b82f6", "#60a5fa", "#93c5e6", "#bfdbfe", "#eff6ff"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Títulos grandes de onboarding y valores destacados." },
+      "headline": { "displayName": "Headline", "purpose": "Encabezados de página en la app." },
+      "title": { "displayName": "Title", "purpose": "Títulos de tarjetas, modales y secciones." },
+      "body": { "displayName": "Body", "purpose": "Párrafos, descripciones y contenido legible." },
+      "label": { "displayName": "Label", "purpose": "Etiquetas funcionales en mayúsculas." }
+    },
+    "shadows": [
+      { "name": "ambient-low", "value": "0 1px 2px 0 color-mix(in oklab, var(--color-primary, #f97316) 5%, transparent)", "purpose": "Separación sutil de controles pequeños." },
+      { "name": "lifted", "value": "0 10px 15px -3px color-mix(in oklab, var(--color-primary, #f97316) 10%, transparent), 0 4px 6px -4px color-mix(in oklab, var(--color-primary, #f97316) 10%, transparent)", "purpose": "Tarjetas y botones primarios." },
+      { "name": "modal", "value": "0 20px 25px -5px color-mix(in oklab, var(--color-primary, #f97316) 10%, transparent), 0 8px 10px -6px color-mix(in oklab, var(--color-primary, #f97316) 10%, transparent)", "purpose": "Modales y overlays flotantes." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.25, 0.46, 0.45, 0.94)", "purpose": "Transiciones de página y estados." },
+      { "name": "ease-expo-out", "value": "linear(...)", "purpose": "Curva personalizada expo-out para view transitions." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" }
+    ],
+    "spacing": [
+      { "name": "page", "value": "1rem", "purpose": "Padding de página en móvil." },
+      { "name": "page-md", "value": "1.5rem", "purpose": "Padding de página en tablet." },
+      { "name": "page-lg", "value": "2rem", "purpose": "Padding de página en desktop." },
+      { "name": "card", "value": "1.5rem", "purpose": "Padding interno de tarjetas principales." },
+      { "name": "card-sm", "value": "1.25rem", "purpose": "Padding interno de tarjetas compactas." },
+      { "name": "section", "value": "1.5rem", "purpose": "Separación entre secciones en móvil." },
+      { "name": "section-lg", "value": "2rem", "purpose": "Separación entre secciones en desktop." }
+    ],
+    "radius": [
+      { "name": "button", "value": "1rem", "purpose": "Botones, inputs, badges y tarjetas de opción." },
+      { "name": "card", "value": "1.5rem", "purpose": "Tarjetas principales y sliders." },
+      { "name": "card-lg", "value": "2rem", "purpose": "Modales y barra de navegación móvil." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Botón de acción principal con sombra tinted del tema.",
+      "html": "<button class=\"ds-btn-primary\">Continuar</button>",
+      "css": ".ds-btn-primary { background: var(--color-primary, #f97316); color: #fff; padding: 16px 24px; border-radius: 16px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 1rem; border: none; cursor: pointer; box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--color-primary, #f97316) 20%, transparent), 0 4px 6px -4px color-mix(in oklab, var(--color-primary, #f97316) 20%, transparent); transition: background 0.2s, transform 0.2s; } .ds-btn-primary:hover { background: var(--color-secondary, #ea580c); } .ds-btn-primary:active { transform: scale(0.95); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Contenedor principal de contenido con esquinas muy redondeadas.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Título</h3><p class=\"ds-card-body\">Contenido de la tarjeta</p></div>",
+      "css": ".ds-card { background: var(--color-card-bg, #ffffff); border-radius: 32px; padding: 24px; border: 1px solid var(--color-card-border, rgba(0,0,0,0.06)); box-shadow: 0 1px 2px 0 color-mix(in oklab, var(--color-primary, #f97316) 5%, transparent); } .ds-card-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--color-foreground, #431407); margin: 0 0 8px; } .ds-card-body { font-family: Inter, sans-serif; font-size: 1rem; color: var(--color-foreground, #431407); margin: 0; line-height: 1.5; }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo de texto con fondo de tarjeta y borde sutil.",
+      "html": "<input class=\"ds-input\" placeholder=\"Escribe aquí\" />",
+      "css": ".ds-input { background: var(--color-card-bg, #ffffff); color: var(--color-foreground, #431407); border: 1px solid var(--color-card-border, rgba(0,0,0,0.06)); border-radius: 16px; padding: 16px 24px; font-family: Inter, sans-serif; font-size: 1rem; outline: none; transition: border-color 0.2s; width: 100%; box-sizing: border-box; } .ds-input:focus { border-color: var(--color-primary, #f97316); } .ds-input::placeholder { color: var(--color-muted-foreground, #fdba74); }"
+    },
+    {
+      "name": "Mobile Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Ítem activo de la navegación inferior flotante.",
+      "html": "<a href=\"#\" class=\"ds-nav-item ds-nav-item--active\" aria-label=\"Inicio\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/></svg></a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 9999px; color: var(--color-subtle, #fb923c); transition: all 0.2s; text-decoration: none; } .ds-nav-item--active { position: relative; top: -12px; background: var(--color-primary, #f97316); color: #fff; box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--color-primary, #f97316) 30%, transparent); } .ds-icon { width: 24px; height: 24px; }"
+    },
+    {
+      "name": "Option Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Tarjeta seleccionable usada en onboarding.",
+      "html": "<button class=\"ds-option-card ds-option-card--selected\"><div class=\"ds-iconbadge\">★</div><span class=\"ds-option-label\">Opción</span></button>",
+      "css": ".ds-option-card { display: flex; align-items: center; gap: 16px; width: 100%; padding: 20px; text-align: left; border-radius: 16px; border: 2px solid var(--color-card-border, rgba(0,0,0,0.06)); background: var(--color-card-bg, #ffffff); transition: all 0.2s; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; } .ds-option-card:hover { border-color: color-mix(in oklab, var(--color-primary, #f97316) 30%, transparent); } .ds-option-card--selected { border-color: var(--color-primary, #f97316); background: color-mix(in oklab, var(--color-primary, #f97316) 5%, transparent); box-shadow: 0 4px 6px -1px color-mix(in oklab, var(--color-primary, #f97316) 10%, transparent); } .ds-iconbadge { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--color-muted, #ffedd5); color: var(--color-subtle, #fb923c); font-size: 20px; } .ds-option-card--selected .ds-iconbadge { background: var(--color-primary, #f97316); color: #fff; } .ds-option-label { font-weight: 700; color: var(--color-foreground, #431407); }"
+    },
+    {
+      "name": "Icon Badge",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Badge cuadrado redondeado para iconos en tarjetas de opción.",
+      "html": "<div class=\"ds-iconbadge\">★</div>",
+      "css": ".ds-iconbadge { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--color-muted, #ffedd5); color: var(--color-subtle, #fb923c); font-size: 20px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El Compañero de Fitness",
+    "overview": "MovEat se siente como un compañero de entrenamiento en el bolsillo: cercano, motivador y siempre disponible. La interfaz prioriza la claridad sobre la densidad, usando tarjetas redondeadas, colores cálidos y microinteracciones suaves para acompañar al usuario sin abrumarlo. La tipografía se organiza en tokens semánticos (caption, secondary, body, subheading, heading, display, hero) para mantener jerarquía sin depender de clases arbitrarias. El sistema visual rechaza lo corporativo gris, lo agresivo y lo sobrecargado.",
+    "keyCharacteristics": [
+      "Mobile-first con targets táctiles generosos.",
+      "Paleta temática con 4 acentos posibles (naranja, verde, azul, violeta), todos con rampas 50–950.",
+      "Tipografía display audaz (Plus Jakarta Sans) para títulos, Inter para lectura; carga con display=swap.",
+      "Tokens semánticos de tipografía centralizados en src/index.css.",
+      "Superficies suavemente elevadas mediante sombras con tinte del color primario.",
+      "Componentes refinados y contenidos, con estados claros pero sin exageración."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "El color primario nunca cubre más del ~10% de una pantalla; su función es acentuar, no dominar.", "section": "colors" },
+      { "name": "The Theme-Locked Rule", "body": "Cuando el usuario cambia de tema, todas las superficies (background, muted, borders, shadows) deben venir de la misma escala 50–950 que el acento. Nunca mezclar rampas entre temas.", "section": "colors" },
+      { "name": "The One Display Rule", "body": "Solo Plus Jakarta Sans en extrabold se usa para display/headline; nunca en body.", "section": "typography" },
+      { "name": "The Uppercase Label Rule", "body": "Las etiquetas funcionales siempre van en mayúsculas, tracking amplio y tamaño pequeño.", "section": "typography" },
+      { "name": "The Tinted Shadow Rule", "body": "Todas las sombras usan el color primario del tema como tinte, nunca gris puro.", "section": "elevation" },
+      { "name": "The Flat-By-Default Rule", "body": "Las superficies en reposo son planas; las sombras aparecen como respuesta a jerarquía (tarjetas, botones, modales).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do usar el tema activo de forma consistente: primary, background, muted y shadows de la misma escala 50–950.",
+      "Do mantener generosos espacios internos en tarjetas (24px) y targets táctiles mínimos de 44px.",
+      "Do usar Plus Jakarta Sans extrabold para display y Inter para body.",
+      "Do usar sombras con tinte del color primario para mantener la atmósfera cálida.",
+      "Do respetar prefers-reduced-motion y asegurar contraste suficiente.",
+      "Do usar el token danger para errores, acciones destructivas y estados de exceso."
+    ],
+    "donts": [
+      "Don't usar interfaces fitness agresivas, oscuras o sobrecargadas de notificaciones/charts.",
+      "Don't caer en una estética corporativa gris/monótona sin personalidad.",
+      "Don't priorizar métricas crudas sobre claridad y emoción.",
+      "Don't usar modales, upsells o badges excesivos que interrumpan el flujo.",
+      "Don't mezclar rampas de color entre temas.",
+      "Don't cargar fuentes que no formen parte del sistema tipográfico activo.",
+      "Don't usar clases Tailwind inválidas (p. ej. bg-white-500/5); usar bg-white/5 o tokens semánticos."
+    ]
+  }
+}

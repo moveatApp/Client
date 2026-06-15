@@ -108,7 +108,7 @@ export default function DatePicker({
 
    if (variant === "card") {
       const selectClass =
-         "appearance-none w-full bg-card-bg dark:bg-white-500/5 border border-card-border rounded-xl pl-3 pr-8 py-3 text-sm font-bold text-foreground outline-none cursor-pointer transition-colors hover:border-primary/40 focus:border-primary/60 capitalize"
+         "appearance-none w-full bg-card-bg dark:bg-white/5 border border-card-border rounded-xl pl-3 pr-8 py-3 text-sm font-bold text-foreground outline-none cursor-pointer transition-colors hover:border-primary/40 focus:border-primary/60 capitalize"
 
       const cardSelect = (
          widthClass: string,
@@ -127,21 +127,21 @@ export default function DatePicker({
             </select>
             <ChevronDown
                size={16}
-               className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+               className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-subtle"
             />
          </div>
       )
 
       return (
          <div
-            className="w-full bg-muted dark:bg-white-500/5 border border-card-border rounded-2xl p-4 flex flex-col gap-3"
+            className="w-full bg-muted dark:bg-white/5 border border-card-border rounded-2xl p-4 flex flex-col gap-3"
             style={{ colorScheme: isDarkMode ? "dark" : "light" }}>
             {label && (
                <div className="flex items-center gap-3">
                   <div className="w-10 h-10 shrink-0 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                      <CalendarDays size={20} />
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-subtle">
                      {label}
                   </span>
                </div>
@@ -158,11 +158,11 @@ export default function DatePicker({
    // inline pill
    const inlineSelectClass =
       "appearance-none bg-transparent text-sm font-bold text-foreground outline-none cursor-pointer capitalize text-center"
-   const separator = <span className="text-gray-400 text-xs">/</span>
+   const separator = <span className="text-subtle text-xs">/</span>
 
    return (
       <div
-         className="flex items-center gap-1.5 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0"
+         className="flex items-center gap-1.5 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0"
          style={{ colorScheme: isDarkMode ? "dark" : "light" }}>
          <select
             aria-label="Día"

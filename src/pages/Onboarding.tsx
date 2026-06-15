@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { useStore } from "@/store/useStore"
+import { useStore, type Goal, type Level } from "@/store/useStore"
 import {
    apiSignup,
    apiLogin,
@@ -541,10 +541,11 @@ export default function Onboarding() {
       completeOnboarding({
          name: form.name || "Usuario",
          email: email.trim() || undefined,
-         goal: (form.goal || "bienestar") as any,
-         level: (form.level || "principiante") as any,
+         goal: (form.goal || "bienestar") as Goal,
+         level: (form.level || "principiante") as Level,
          weight: form.weight,
          height: form.height,
+         targetWeight: form.targetWeight,
          workoutsPerWeek:
             form.level === "principiante" ? 2 : form.level === "intermedio" ? 3 : 5,
          timePerSession: form.timePerSession,
@@ -591,7 +592,7 @@ export default function Onboarding() {
             <button
                aria-label="Alternar tema"
                onClick={toggleDarkMode}
-               className="w-10 h-10 rounded-full bg-card-bg border border-card-border flex items-center justify-center text-foreground shadow-sm hover:bg-muted dark:hover:bg-white-500/5 transition-colors">
+               className="w-10 h-10 rounded-full bg-card-bg/40 border border-card-border flex items-center justify-center text-foreground shadow-sm hover:bg-muted dark:hover:bg-white/5 transition-colors">
                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
          </div>
@@ -602,7 +603,7 @@ export default function Onboarding() {
                <button
                   aria-label="Volver"
                   onClick={() => go(-1)}
-                  className="w-10 h-10 rounded-full border border-card-border bg-card-bg flex items-center justify-center text-foreground shadow-sm">
+                  className="w-10 h-10 rounded-full border border-card-border bg-card-bg/40 flex items-center justify-center text-foreground shadow-sm">
                   <ArrowLeft size={18} />
                </button>
 
@@ -648,7 +649,7 @@ export default function Onboarding() {
                            <h1 className="text-5xl font-display font-extrabold text-foreground tracking-tight leading-none mb-3">
                               Bienvenido a MovEat
                            </h1>
-                           <p className="text-gray-400 font-medium text-base max-w-[260px] mx-auto leading-relaxed">
+                           <p className="text-subtle font-medium text-base max-w-[260px] mx-auto leading-relaxed">
                               Tu compañero de entrenamiento, nutrición y bienestar.
                               Vamos a personalizar tu experiencia.
                            </p>
@@ -658,7 +659,7 @@ export default function Onboarding() {
                            {WELCOME_FEATURES.map(({ icon: Icon, text }) => (
                               <div
                                  key={text}
-                                 className="flex items-center gap-3 bg-card-bg border border-card-border rounded-2xl px-4 py-3 shadow-sm">
+                                 className="flex items-center gap-3 bg-card-bg/40 border border-card-border rounded-2xl px-4 py-3 shadow-sm">
                                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                                     <Icon size={16} className="text-primary" />
                                  </div>
@@ -726,7 +727,7 @@ export default function Onboarding() {
                            <div className="text-8xl font-display font-extrabold text-primary tabular-nums">
                               {ageFromBirthDate(form.birthDate)}
                            </div>
-                           <div className="text-gray-400 font-bold">años</div>
+                           <div className="text-subtle font-bold">años</div>
                            <DatePicker
                               variant="card"
                               value={form.birthDate}
@@ -749,7 +750,7 @@ export default function Onboarding() {
                   {/* ══ METRICS ══════════════════════════════════════════════ */}
                   {step === "metrics" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
-                        <StepHeader tag="Tu cuerpo" title="Peso y altura" />
+                        <StepHeader tag="Tu cuerpo" title="Peso, altura y objetivo" />
                         <div className="flex flex-col gap-6">
                            <SliderCard
                               label="Peso"
@@ -889,8 +890,8 @@ export default function Onboarding() {
                            subtitle="Escribí algo y probá como funciona el registro."
                         />
 
-                        <div className="bg-card-bg border border-card-border rounded-3xl p-5 shadow-sm">
-                           <div className="flex items-center gap-3 bg-muted dark:bg-white-500/5 rounded-2xl px-4 mb-4">
+                        <div className="bg-card-bg/40 border border-card-border rounded-3xl p-5 shadow-sm">
+                           <div className="flex items-center gap-3 bg-muted dark:bg-white/5 rounded-2xl px-4 mb-4">
                               <span className="text-2xl">🍽️</span>
                               <input
                                  type="text"
@@ -918,7 +919,7 @@ export default function Onboarding() {
                                     <div className="font-bold text-sm text-foreground capitalize">
                                        {demoFood}
                                     </div>
-                                    <div className="text-xs text-gray-400">
+                                    <div className="text-xs text-subtle">
                                        ~
                                        {Math.round(
                                           estimateMacros(demoFood).baseCalories * 2,
@@ -937,7 +938,7 @@ export default function Onboarding() {
                         </div>
 
                         {demoAdded && (
-                           <p className="text-center text-sm text-gray-400 font-medium">
+                           <p className="text-center text-sm text-subtle font-medium">
                               ¡Exactamente así de fácil! 🎉
                            </p>
                         )}
@@ -962,12 +963,12 @@ export default function Onboarding() {
                            <h2 className="text-3xl font-display font-extrabold text-foreground mb-1">
                               ¡Todo listo, {form.name.split(" ")[0]}!
                            </h2>
-                           <p className="text-gray-400 text-sm font-medium">
+                           <p className="text-subtle text-sm font-medium">
                               Confirmá tu perfil antes de empezar.
                            </p>
                         </div>
 
-                        <div className="bg-card-bg border border-card-border rounded-3xl p-5 space-y-4 shadow-sm">
+                        <div className="bg-card-bg/40 border border-card-border rounded-3xl p-5 space-y-4 shadow-sm">
                            {[
                               {
                                  label: "Objetivo",
@@ -993,7 +994,7 @@ export default function Onboarding() {
                               <div
                                  key={row.label}
                                  className="flex justify-between items-center py-1 border-b border-card-border/50 last:border-none">
-                                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                                 <span className="text-xs font-bold uppercase tracking-wider text-subtle">
                                     {row.label}
                                  </span>
                                  <span className="font-bold text-sm text-foreground text-right max-w-[160px]">
@@ -1003,7 +1004,7 @@ export default function Onboarding() {
                            ))}
                         </div>
 
-                        <p className="text-center text-xs text-gray-400 font-medium">
+                        <p className="text-center text-xs text-subtle font-medium">
                            Podés actualizar todo esto más adelante en tu perfil.
                         </p>
                         <AnimatedError message={onboardingError} />
@@ -1031,7 +1032,7 @@ export default function Onboarding() {
                                  ? "Bienvenido de nuevo"
                                  : "Crea tu cuenta"}
                            </h2>
-                           <p className="text-gray-400 text-sm font-medium px-4">
+                           <p className="text-subtle text-sm font-medium px-4">
                               Guardá tu progreso y conectá tu perfil con la nube para
                               no perder nunca tus datos.
                            </p>
@@ -1039,37 +1040,37 @@ export default function Onboarding() {
 
                         <div className="w-full max-w-sm mt-6">
                            {/* Toggle registro/login */}
-                           <div className="flex bg-muted dark:bg-white-500/5 rounded-2xl p-1 mb-5">
+                           <div className="flex bg-muted dark:bg-white/5 rounded-2xl p-1 mb-5">
                               <button
                                  onClick={() => {
                                     setIsLoginMode(false)
                                     setAuthError("")
                                  }}
-                                 className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                                    !isLoginMode
-                                       ? "bg-white dark:bg-white-500/10 text-foreground shadow-sm"
-                                       : "text-gray-400"
-                                 }`}>
-                                 Registrarse
-                              </button>
-                              <button
-                                 onClick={() => {
-                                    setIsLoginMode(true)
-                                    setAuthError("")
-                                 }}
-                                 className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                                    isLoginMode
-                                       ? "bg-white dark:bg-white-500/10 text-foreground shadow-sm"
-                                       : "text-gray-400"
-                                 }`}>
-                                 Iniciar sesión
+                                  className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                                     !isLoginMode
+                                        ? "bg-card-bg/40 text-foreground shadow-sm"
+                                        : "text-subtle"
+                                  }`}>
+                                  Registrarse
+                               </button>
+                               <button
+                                  onClick={() => {
+                                     setIsLoginMode(true)
+                                     setAuthError("")
+                                  }}
+                                  className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                                     isLoginMode
+                                        ? "bg-card-bg/40 text-foreground shadow-sm"
+                                      : "text-subtle"
+                               }`}>
+                                   Iniciar sesión
                               </button>
                            </div>
 
                            <div className="flex flex-col gap-3 mb-4">
                               <AnimatedError
                                  message={emailError}
-                                 className="text-xs font-bold text-red-500 px-1 -mt-1"
+                                  className="text-xs font-bold text-danger px-1 -mt-1"
                               />
                               <input
                                  type="email"
@@ -1077,7 +1078,7 @@ export default function Onboarding() {
                                  placeholder="Tu correo electrónico"
                                  autoComplete="email"
                                  spellCheck={false}
-                                 className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm outline-none focus:border-primary"
+                                 className="w-full bg-card-bg/40 border border-card-border text-foreground font-bold py-4 px-6 rounded-2xl shadow-sm outline-none focus:border-primary"
                                  value={email}
                                  onChange={(e) => {
                                     setEmail(e.target.value)
@@ -1097,7 +1098,7 @@ export default function Onboarding() {
                                           aria-label="Nombre"
                                           placeholder="Nombre"
                                           autoComplete="given-name"
-                                          className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 px-5 rounded-2xl shadow-sm outline-none focus:border-primary"
+                                          className="w-full bg-card-bg/40 border border-card-border text-foreground font-bold py-4 px-5 rounded-2xl shadow-sm outline-none focus:border-primary"
                                           value={signupFirstName}
                                           onChange={(e) =>
                                              setSignupFirstName(e.target.value)
@@ -1108,7 +1109,7 @@ export default function Onboarding() {
                                           aria-label="Apellido"
                                           placeholder="Apellido"
                                           autoComplete="family-name"
-                                          className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 px-5 rounded-2xl shadow-sm outline-none focus:border-primary"
+                                          className="w-full bg-card-bg/40 border border-card-border text-foreground font-bold py-4 px-5 rounded-2xl shadow-sm outline-none focus:border-primary"
                                           value={signupLastName}
                                           onChange={(e) =>
                                              setSignupLastName(e.target.value)
@@ -1126,7 +1127,7 @@ export default function Onboarding() {
                                     isLoginMode ? "current-password" : "new-password"
                                  }
                                  spellCheck={false}
-                                 className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-sm outline-none focus:border-primary"
+                                 className="w-full bg-card-bg/40 border border-card-border text-foreground font-bold py-4 px-6 rounded-2xl shadow-sm outline-none focus:border-primary"
                                  value={password}
                                  onChange={(e) => setPassword(e.target.value)}
                               />
@@ -1143,10 +1144,10 @@ export default function Onboarding() {
                                              return (
                                                 <p
                                                    key={label}
-                                                   className={`text-xs font-bold flex items-center gap-1.5 transition-all ${ok ? "text-green-500 line-through" : "text-red-500"}`}>
-                                                   <span
-                                                      className={`w-3 h-3 rounded-full border-2 shrink-0 transition-all ${ok ? "bg-green-500 border-green-500" : "border-red-500"}`}
-                                                   />
+                                                    className={`text-xs font-bold flex items-center gap-1.5 transition-all ${ok ? "text-primary line-through" : "text-danger"}`}>
+                                                    <span
+                                                       className={`w-3 h-3 rounded-full border-2 shrink-0 transition-all ${ok ? "bg-primary border-primary" : "border-danger"}`}
+                                                    />
                                                    {label}
                                                 </p>
                                              )
@@ -1158,7 +1159,7 @@ export default function Onboarding() {
 
                               <AnimatedError
                                  message={authError}
-                                 className="text-xs font-bold text-red-500 px-1 mb-2 text-center"
+                                  className="text-xs font-bold text-danger px-1 mb-2 text-center"
                               />
 
                               <PrimaryButton
@@ -1182,18 +1183,18 @@ export default function Onboarding() {
                            </div>
 
                            <div className="relative flex py-2 items-center mb-4">
-                              <div className="grow border-t border-gray-200"></div>
-                              <span className="shrink-0 mx-4 text-gray-400 text-xs font-bold uppercase">
+                              <div className="grow border-t border-card-border"></div>
+                              <span className="shrink-0 mx-4 text-subtle text-xs font-bold uppercase">
                                  o
                               </span>
-                              <div className="grow border-t border-gray-200"></div>
+                              <div className="grow border-t border-card-border"></div>
                            </div>
 
                            <div className="w-full flex justify-center">
                               <GoogleLogin
                                  onSuccess={handleGoogleSuccess}
                                  onError={() => {
-                                    console.log("Google Login Failed")
+
                                     setAuthError("Fallo el inicio de sesión con Google")
                                     trigger("rigid")
                                  }}

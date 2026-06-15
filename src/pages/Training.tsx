@@ -345,21 +345,21 @@ export default function TrainingPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -20, scale: 0.95 }}
                   transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-                  className="mb-4 w-full bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-[28px] p-4 flex items-center gap-4 shadow-lg">
-                  <div className="w-12 h-12 bg-green-100 dark:bg-green-500/20 text-green-600 rounded-full flex items-center justify-center shrink-0">
+                  className="mb-4 w-full bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-[28px] p-4 flex items-center gap-4 shadow-lg shadow-primary/10">
+                  <div className="w-12 h-12 bg-primary/10 dark:bg-primary/20 text-primary rounded-full flex items-center justify-center shrink-0">
                      <CheckCircle2 size={28} />
                   </div>
                   <div className="flex-1">
-                     <h3 className="font-bold text-green-800 dark:text-green-200 text-lg">
+                     <h3 className="font-bold text-foreground text-lg">
                         ¡Rutina completada!
                      </h3>
-                     <p className="text-green-700 dark:text-green-300/80 text-sm font-medium">
+                     <p className="text-subtle dark:text-muted-foreground text-sm font-medium">
                         Quedó registrada tu sesión. ¡Seguí así!
                      </p>
                   </div>
                   <button
                      onClick={() => setShowCelebration(false)}
-                     className="p-2 rounded-xl hover:bg-green-100 dark:hover:bg-green-500/20 text-green-600 transition-colors">
+                     className="p-2 rounded-xl hover:bg-primary/10 dark:hover:bg-primary/20 text-primary transition-colors">
                      <ChevronDown size={20} className="rotate-180" />
                   </button>
                </motion.div>
@@ -371,7 +371,7 @@ export default function TrainingPage() {
                <Link
                   to="/"
                   aria-label="Volver al inicio"
-                  className="p-2 bg-muted dark:bg-white-500/5 rounded-xl">
+                  className="p-2 bg-muted dark:bg-white/5 rounded-xl">
                   <ChevronLeft size={20} />
                </Link>
                <h1 className="text-3xl font-display font-extrabold text-foreground flex items-center gap-2">
@@ -392,7 +392,7 @@ export default function TrainingPage() {
                         setEditing(false)
                         setActiveRoutine(r.id)
                      }}
-                     className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all snap-start ${activeRoutine?.id === r.id ? "bg-gray-900 text-white dark:bg-white dark:text-black shadow-md" : "bg-card-bg text-gray-500 border border-card-border hover:bg-muted"}`}>
+                     className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all snap-start ${activeRoutine?.id === r.id ? "bg-primary text-white shadow-md" : "bg-card-bg/40 text-subtle border border-card-border hover:bg-muted"}`}>
                      {r.name}
                   </button>
                ))}
@@ -400,8 +400,8 @@ export default function TrainingPage() {
          </header>
 
          {!activeRoutine ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-               <Dumbbell size={64} className="mb-4 text-gray-200 dark:text-white/10" />
+            <div className="flex-1 flex flex-col items-center justify-center text-subtle">
+               <Dumbbell size={64} className="mb-4 text-muted-foreground dark:text-white/10" />
                <p className="font-bold text-lg mb-1 text-foreground">No hay rutinas creadas</p>
                <p className="text-sm mb-6 text-center max-w-xs">
                   Creá tu primera rutina (Push, Pull, Legs…) para empezar a planificar y
@@ -438,7 +438,7 @@ export default function TrainingPage() {
                      <button
                         onClick={() => startEditing(activeRoutine)}
                         title="Editar rutina"
-                        className="text-gray-500 p-2 bg-muted dark:bg-white-500/5 rounded-xl hover:text-foreground transition-colors">
+                        className="text-subtle p-2 bg-muted dark:bg-white/5 rounded-xl hover:text-foreground transition-colors">
                         <Settings2 size={20} />
                      </button>
                      <button
@@ -454,7 +454,7 @@ export default function TrainingPage() {
                   <div className="w-14 h-14 relative shrink-0">
                      <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
                         <path
-                           className="text-muted dark:text-white-500/5"
+                           className="text-muted dark:text-white/5"
                            strokeWidth="4"
                            stroke="currentColor"
                            fill="none"
@@ -490,13 +490,13 @@ export default function TrainingPage() {
                      return (
                         <div
                            key={ex.id}
-                           className={`rounded-[32px] border-2 transition-all p-5 ${done ? "bg-muted dark:bg-white-500/5 opacity-70 border-transparent" : "bg-card-bg border-card-border"}`}>
+                           className={`rounded-[32px] border-2 transition-all p-5 ${done ? "bg-muted dark:bg-white/5 opacity-70 border-transparent" : "bg-card-bg border-card-border"}`}>
                            <div className="flex items-start justify-between gap-3 mb-4">
                               <div>
                                  <h4 className="font-bold text-lg text-foreground">
                                     {ex.exerciseName}
                                  </h4>
-                                 <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-tight flex items-center gap-1.5">
+                                 <p className="text-xs text-subtle font-bold mt-1 uppercase tracking-tight flex items-center gap-1.5">
                                     {planSummary(ex)}
                                     {ex.usesWeight && (
                                        <Weight size={12} className="text-primary" />
@@ -511,7 +511,7 @@ export default function TrainingPage() {
                                     <button
                                        key={i}
                                        onClick={() => toggleSet(ex.id, i)}
-                                       className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm transition-all active:scale-90 ${checked ? "bg-primary text-white shadow-md shadow-primary/20" : "bg-muted dark:bg-white-500/5 text-gray-400 hover:text-foreground"}`}>
+                                       className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm transition-all active:scale-90 ${checked ? "bg-primary text-white shadow-md shadow-primary/20" : "bg-muted dark:bg-white/5 text-subtle hover:text-foreground"}`}>
                                        {checked ? <CheckCircle2 size={18} /> : i + 1}
                                     </button>
                                  )
@@ -549,10 +549,10 @@ export default function TrainingPage() {
                </div>
             }>
             {modal.type === "confirm" && (
-               <p className="text-sm text-gray-500 font-medium mb-6">{modal.message}</p>
+               <p className="text-sm text-subtle font-medium mb-6">{modal.message}</p>
             )}
             {modal.type === "prompt" && (
-               <div className="bg-muted dark:bg-white-500/5 p-4 rounded-2xl border border-card-border mb-6">
+               <div className="bg-muted dark:bg-white/5 p-4 rounded-2xl border border-card-border mb-6">
                   <input
                      aria-label="Nombre de la rutina"
                      className="w-full bg-transparent font-bold text-foreground outline-none text-base"
@@ -650,14 +650,14 @@ function RoutineEditor({
                         <button
                            key={u.id}
                            onClick={() => onUpdate(ex.key, { unit: u.id })}
-                           className={`flex-1 px-3 py-2 font-bold text-xs transition-all ${ex.unit === u.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white-500/5 text-foreground hover:bg-muted"}`}>
+                           className={`flex-1 px-3 py-2 font-bold text-xs transition-all ${ex.unit === u.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/5 text-foreground hover:bg-muted"}`}>
                            {u.label}
                         </button>
                      ))}
                   </div>
 
                   {/* Weight (optional) */}
-                  <div className="flex items-center justify-between bg-muted/50 dark:bg-white-500/5 rounded-2xl px-4 py-3">
+                  <div className="flex items-center justify-between bg-muted/50 dark:bg-white/5 rounded-2xl px-4 py-3">
                      <div className="flex items-center gap-2">
                         <Weight size={16} className="text-primary" />
                         <span className="text-sm font-bold text-foreground">Usa peso</span>
@@ -666,7 +666,7 @@ function RoutineEditor({
                         role="switch"
                         aria-checked={ex.usesWeight}
                         onClick={() => onUpdate(ex.key, { usesWeight: !ex.usesWeight })}
-                        className={`w-11 h-6 rounded-full transition-colors relative ${ex.usesWeight ? "bg-primary" : "bg-gray-300 dark:bg-white/15"}`}>
+                        className={`w-11 h-6 rounded-full transition-colors relative ${ex.usesWeight ? "bg-primary" : "bg-muted-foreground"}`}>
                         <span
                            className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${ex.usesWeight ? "left-[22px]" : "left-0.5"}`}
                         />
@@ -687,7 +687,7 @@ function RoutineEditor({
 
             <button
                onClick={onAdd}
-               className="w-full py-5 border-2 border-dashed border-gray-200 dark:border-white/20 text-gray-400 font-bold rounded-[28px] flex items-center justify-center gap-2 hover:bg-muted dark:hover:bg-white-500/5 transition-colors active:scale-95">
+               className="w-full py-5 border-2 border-dashed border-card-border text-subtle font-bold rounded-[28px] flex items-center justify-center gap-2 hover:bg-muted dark:hover:bg-white/5 transition-colors active:scale-95">
                <Plus size={20} /> Añadir ejercicio
             </button>
          </div>
@@ -713,8 +713,8 @@ function RoutineEditor({
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
    return (
-      <div className="bg-muted/50 dark:bg-white-500/5 rounded-xl px-3 py-2 flex flex-col">
-         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+      <div className="bg-muted/50 dark:bg-white/5 rounded-xl px-3 py-2 flex flex-col">
+         <span className="text-[10px] font-bold text-subtle uppercase tracking-wider">
             {label}
          </span>
          {children}
