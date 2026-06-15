@@ -51,8 +51,8 @@ import {
    SliderCard,
    AnimatedError,
    PrimaryButton,
-   DateOfBirthPicker,
 } from "@/components/onboarding"
+import { DatePicker } from "@/components/ui"
 import {
    validateEmail,
    validateSignupPassword,
@@ -727,14 +727,17 @@ export default function Onboarding() {
                               {ageFromBirthDate(form.birthDate)}
                            </div>
                            <div className="text-gray-400 font-bold">años</div>
-                           <DateOfBirthPicker
+                           <DatePicker
+                              variant="card"
                               value={form.birthDate}
                               onChange={(iso) =>
                                  setForm({ ...form, birthDate: iso })
                               }
                               minYear={Number(MIN_BIRTHDATE.slice(0, 4))}
                               maxYear={Number(MAX_BIRTHDATE.slice(0, 4))}
+                              maxDate={MAX_BIRTHDATE}
                               label="Fecha de nacimiento"
+                              isDarkMode={isDarkMode}
                            />
                            <AnimatedError
                               message={validateBirthDate(form.birthDate) ?? ""}

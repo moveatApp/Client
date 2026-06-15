@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import WeightChart from "@/components/WeightChart"
 import { apiCreateWeightLog } from "@/api/weight"
 import { todayLocalISO } from "@/api/client"
-import InlineDatePicker from "@/components/ui/InlineDatePicker"
+import { DatePicker } from "@/components/ui"
 
 export default function Home() {
    const navigate = useNavigate()
@@ -157,7 +157,8 @@ export default function Home() {
                            exit={{ opacity: 0, width: 0 }}
                            transition={{ duration: 0.35, ease: "easeInOut" }}
                            className="flex items-center gap-2 overflow-hidden">
-                           <InlineDatePicker
+                           <DatePicker
+                              variant="inline"
                               value={dashWeightDate}
                               onChange={setDashWeightDate}
                               minYear={new Date().getFullYear() - 10}

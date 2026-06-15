@@ -22,7 +22,7 @@ import {
 import WeightChart from "@/components/WeightChart"
 import { apiCreateWeightLog } from "@/api/weight"
 import { todayLocalISO } from "@/api/client"
-import InlineDatePicker from "@/components/ui/InlineDatePicker"
+import { DatePicker } from "@/components/ui"
 
 export default function ProgressPage() {
    const {
@@ -243,7 +243,8 @@ export default function ProgressPage() {
                            exit={{ opacity: 0, width: 0 }}
                            transition={{ duration: 0.35, ease: "easeInOut" }}
                            className="flex items-center gap-2 overflow-hidden">
-                           <InlineDatePicker
+                           <DatePicker
+                              variant="inline"
                               value={newWeightDate}
                               onChange={setNewWeightDate}
                               minYear={new Date().getFullYear() - 10}
