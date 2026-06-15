@@ -13,18 +13,18 @@ export default function Button({
    className = "",
    ...props
 }: ButtonProps) {
-   const baseStyles =
-      "font-bold rounded-2xl transition-colors duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+    const baseStyles =
+       "font-bold rounded-button transition-colors duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 
    const variants = {
       primary:
          "bg-primary text-white shadow-lg shadow-primary/20 hover:bg-secondary",
       secondary: "bg-secondary text-white",
-      danger: "bg-red-500 text-white hover:bg-red-600",
+       danger: "bg-danger text-white hover:brightness-90",
       outline:
-         "border border-card-border bg-transparent text-foreground hover:bg-muted/100 dark:hover:bg-white-500/5",
-      ghost: "bg-transparent text-foreground hover:bg-muted/100 dark:hover:bg-white-500/5",
-      muted: "bg-muted/100 dark:bg-white-500/5 text-foreground hover:bg-muted/80 dark:hover:bg-white-500/10",
+         "border border-card-border bg-transparent text-foreground hover:bg-muted",
+      ghost: "bg-transparent text-foreground hover:bg-muted",
+      muted: "bg-muted text-foreground hover:bg-on-subtle",
    }
 
    const sizes = {

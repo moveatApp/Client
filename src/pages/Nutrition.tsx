@@ -115,79 +115,79 @@ export default function NutritionPage() {
             </h1>
          </header>
 
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-6">
-            <motion.section className="bg-primary/10 border border-primary/20 rounded-[32px] p-6 min-h-[140px] flex flex-col justify-center">
-               <div className="flex justify-between items-center mb-4">
-                  <div>
-                     <span className="text-4xl font-display font-extrabold text-primary">
-                        {dailyCalories}
-                     </span>
-                     <span className="text-gray-400 font-medium ml-1">
-                        / {targetCalories} kcal
-                     </span>
-                  </div>
-                  {dailyCalories >= targetCalories ? (
-                     <motion.div
-                        animate={
-                           shouldReduceMotion
-                              ? undefined
-                              : { scale: [1, 1.15, 1], rotate: [0, 3, -3, 0] }
-                        }
-                        transition={{
-                           repeat: shouldReduceMotion ? 0 : Infinity,
-                           duration: 1.5,
-                           ease: "easeInOut",
-                        }}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold text-green-500 border border-green-500/30 bg-green-500/10">
-                        <CheckCircle size={12} /> Completado!
-                     </motion.div>
-                  ) : (
-                     <div className="bg-white/50 dark:bg-gray-400/20 px-3 py-1.5 rounded-xl border border-gray-400/30 text-[10px] font-bold text-primary">
-                        {targetCalories - dailyCalories} restantes
-                     </div>
-                  )}
-               </div>
-               <div className="h-2 bg-muted dark:bg-white-500/5 rounded-full overflow-hidden shadow-inner">
-                  <motion.div
-                     initial={{ width: 0 }}
-                     animate={{ width: `${progress}%` }}
-                     className={`h-full ${progress > 100 ? "bg-red-400" : "bg-primary"}`}
-                  />
-               </div>
-            </motion.section>
+          <div className="flex flex-col gap-4 lg:gap-6 mb-6">
+             <motion.section className="bg-primary/10 border border-primary/20 rounded-[32px] p-6 min-h-[140px] flex flex-col justify-center">
+                <div className="flex justify-between items-center mb-4">
+                   <div>
+                      <span className="text-4xl font-display font-extrabold text-primary">
+                         {dailyCalories}
+                      </span>
+                       <span className="text-subtle font-medium ml-1">
+                         / {targetCalories} kcal
+                      </span>
+                   </div>
+                   {dailyCalories >= targetCalories ? (
+                      <motion.div
+                         animate={
+                            shouldReduceMotion
+                               ? undefined
+                               : { scale: [1, 1.15, 1], rotate: [0, 3, -3, 0] }
+                         }
+                         transition={{
+                            repeat: shouldReduceMotion ? 0 : Infinity,
+                            duration: 1.5,
+                            ease: "easeInOut",
+                         }}
+                           className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-caption text-primary border border-primary/30 bg-primary/10">
+                         <CheckCircle size={12} /> Completado!
+                      </motion.div>
+                   ) : (
+                        <div className="bg-muted/70 dark:bg-muted px-3 py-1.5 rounded-xl border border-card-border text-caption text-primary">
+                         {targetCalories - dailyCalories} restantes
+                      </div>
+                   )}
+                </div>
+                 <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner">
+                   <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                       className={`h-full ${progress > 100 ? "bg-danger" : "bg-primary"}`}
+                   />
+                </div>
+             </motion.section>
 
-            <motion.section className="bg-card-bg rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-center">
-               <form
-                  onSubmit={handleAIAnalyze}
-                  className="relative ring-1 ring-black/5 dark:ring-white/10 rounded-2xl overflow-hidden focus-within:ring-primary/40 transition-all">
-                  <div className="flex items-center bg-muted dark:bg-white-500/5">
-                     <div className="p-3 text-gray-400">
-                        <ImageIcon size={18} />
-                     </div>
-                     <input
-                        type="text"
-                        aria-label="Buscar comida"
-                        placeholder="Bowl de avena…"
-                        autoComplete="off"
-                        spellCheck={false}
-                         className="flex-1 min-w-0 py-3 outline-none bg-transparent font-medium text-sm text-foreground"
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        disabled={isAnalyzing || suggestedMeal}
-                     />
-                     <button
-                        type="submit"
-                        className="p-2 mr-1.5 bg-primary text-white rounded-xl active:scale-95 transition-transform">
-                        {isAnalyzing ? (
-                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                           <Send size={16} />
-                        )}
-                     </button>
-                  </div>
-               </form>
-            </motion.section>
-         </div>
+             <motion.section className="bg-card-bg/40 rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-center max-w-xl mx-auto w-full">
+                <form
+                   onSubmit={handleAIAnalyze}
+                    className="relative ring-1 ring-card-border rounded-2xl overflow-hidden focus-within:ring-primary/40 transition-all">
+                   <div className="flex items-center bg-muted">
+                      <div className="p-3 text-subtle">
+                         <ImageIcon size={18} />
+                      </div>
+                      <input
+                         type="text"
+                         aria-label="Buscar comida"
+                         placeholder="Bowl de avena…"
+                         autoComplete="off"
+                         spellCheck={false}
+                          className="flex-1 min-w-0 py-3 outline-none bg-transparent font-medium text-sm text-foreground"
+                         value={inputText}
+                         onChange={(e) => setInputText(e.target.value)}
+                         disabled={isAnalyzing || suggestedMeal}
+                      />
+                       <button
+                          type="submit"
+                          className="min-w-11 min-h-11 flex items-center justify-center mr-1.5 bg-primary text-white rounded-xl active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+                          {isAnalyzing ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                         ) : (
+                            <Send size={16} />
+                         )}
+                      </button>
+                   </div>
+                </form>
+             </motion.section>
+          </div>
 
          <AnimatePresence>
             {suggestedMeal && (
@@ -205,9 +205,9 @@ export default function NutritionPage() {
                            <span className="block text-2xl font-display font-bold">
                               {suggestedMeal.calories} kcal
                            </span>
-                           <span className="text-[10px] opacity-70 font-bold uppercase">
-                              Estimación {suggestedMeal.grams}g
-                           </span>
+                            <span className="text-caption opacity-70">
+                               Estimación {suggestedMeal.grams}g
+                            </span>
                         </div>
                      </div>
                      <div className="flex gap-2">
@@ -233,26 +233,26 @@ export default function NutritionPage() {
          </AnimatePresence>
 
          <section className="flex-1">
-            <h3 className="font-bold text-base mb-4 flex items-center gap-2">
-               <History size={18} className="text-primary" /> Historial
-            </h3>
+             <h2 className="font-bold text-base mb-4 flex items-center gap-2">
+                <History size={18} className="text-primary" /> Historial
+             </h2>
             {sortedDates.length === 0 ? (
-               <div className="text-center py-10 text-gray-400 border-2 border-dashed border-card-border rounded-[32px]">
+               <div className="text-center py-10 text-subtle border-2 border-dashed border-card-border rounded-[32px]">
                   Sin registros aún
                </div>
             ) : (
                <div className="space-y-6">
                   {sortedDates.map((date) => (
                      <div key={date}>
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">
-                           {dateLabel(date)}
-                        </h4>
+                         <h3 className="text-xs font-bold uppercase tracking-wider text-subtle mb-3">
+                            {dateLabel(date)}
+                         </h3>
                         <div className="space-y-3">
                            {groupedMeals[date].map((meal) => (
                               <motion.div
                                  key={meal.id}
                                  layout
-                                 className={`bg-card-bg border border-card-border overflow-hidden transition-all ${expandedMealId === meal.id ? "rounded-[32px] shadow-lg" : "rounded-[24px]"}`}>
+                                 className={`bg-card-bg/40 border border-card-border overflow-hidden transition-all ${expandedMealId === meal.id ? "rounded-[32px] shadow-lg" : "rounded-[24px]"}`}>
                                  <div
                                     className="p-4 flex items-center justify-between cursor-pointer"
                                     onClick={() =>
@@ -270,9 +270,7 @@ export default function NutritionPage() {
                                           <h4 className="font-bold text-sm capitalize">
                                              {meal.name}
                                           </h4>
-                                          <span className="text-[10px] text-gray-400 font-medium">
-                                             {meal.time}
-                                          </span>
+                                           <span className="text-xs text-subtle font-medium">{meal.time}</span>
                                        </div>
                                     </div>
                                     <div className="flex items-center gap-4">
@@ -280,9 +278,7 @@ export default function NutritionPage() {
                                           <span className="block font-bold text-base leading-none">
                                              {meal.calories}
                                           </span>
-                                          <span className="text-[9px] text-gray-400 font-bold uppercase">
-                                             Kcal
-                                          </span>
+                                            <span className="text-caption text-subtle">Kcal</span>
                                        </div>
                                        {expandedMealId === meal.id ? (
                                           <ChevronUp size={16} />
@@ -302,14 +298,14 @@ export default function NutritionPage() {
                                           {/* Quantity Edit Section */}
                                           <div className="py-4 border-b border-card-border/30 mb-2">
                                              <div className="flex items-center justify-between mb-2">
-                                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                                <span className="text-xs font-bold text-subtle uppercase tracking-wider">
                                                    Cantidad consumida
                                                 </span>
                                              </div>
-                                             <div className="flex items-center gap-3 bg-muted/50 dark:bg-white-500/5 p-3 rounded-2xl">
+                                              <div className="flex items-center gap-3 bg-muted p-3 rounded-2xl">
                                                 <Scale
                                                    size={18}
-                                                   className="text-gray-400"
+                                                   className="text-subtle"
                                                 />
                                                 <input
                                                    type="range"
@@ -317,7 +313,7 @@ export default function NutritionPage() {
                                                    min="10"
                                                    max="1000"
                                                    step="10"
-                                                   className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full appearance-none cursor-pointer accent-primary"
+                                                    className="flex-1 h-1.5 bg-on-subtle rounded-full appearance-none cursor-pointer accent-primary"
                                                    value={meal.grams}
                                                    onChange={(e) =>
                                                       updateMealGrams(
@@ -358,23 +354,19 @@ export default function NutritionPage() {
                                                    val: meal.carbs,
                                                    color: "text-accent",
                                                 },
+                                                 {
+                                                    label: "Grasas",
+                                                    val: meal.fat,
+                                                    color: "text-secondary",
+                                                 },
                                                 {
-                                                   label: "Grasas",
-                                                   val: meal.fat,
-                                                   color: "text-orange-400",
-                                                },
-                                                {
-                                                   label: "Azúcar",
-                                                   val: meal.sugar,
-                                                   color: "text-pink-400",
+                                                    label: "Azúcar",
+                                                    val: meal.sugar,
+                                                    color: "text-sugar",
                                                 },
                                              ].map((m) => (
-                                                <div
-                                                   key={m.label}
-                                                   className="bg-muted dark:bg-white-500/5 p-3 rounded-2xl border border-black/5">
-                                                   <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">
-                                                      {m.label}
-                                                   </span>
+                                                 <div key={m.label} className="bg-muted p-3 rounded-2xl border border-card-border">
+                                                     <span className="text-caption text-subtle block mb-0.5">{m.label}</span>
                                                    <span
                                                       className={`text-base font-display font-bold ${m.color}`}>
                                                       {m.val}g

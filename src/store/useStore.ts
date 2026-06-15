@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type Goal = 'baja_peso' | 'gana_masa' | 'mantiene' | 'bienestar';
-type Level = 'principiante' | 'intermedio' | 'avanzado';
+export type Goal = 'baja_peso' | 'gana_masa' | 'mantiene' | 'bienestar';
+export type Level = 'principiante' | 'intermedio' | 'avanzado';
 
 export interface UserProfile {
   name: string;
@@ -11,6 +11,7 @@ export interface UserProfile {
   level: Level;
   weight: number;
   height: number;
+  targetWeight: number;
   workoutsPerWeek: number;
   timePerSession: number;
   preferences: string[];
@@ -19,6 +20,12 @@ export interface UserProfile {
 export interface WeightEntry {
   date: string; // ISO date string
   weight: number;
+}
+
+export interface WorkoutHistoryEntry {
+  date: string;
+  workoutId: string;
+  workoutName: string;
 }
 
 export interface Meal {
@@ -63,7 +70,8 @@ export interface Workout {
   exercises: Exercise[];
 }
 
-function getTargetWeight(goal: Goal, currentWeight: number): number {
+function getTargetWeight(goal: Goal, currentWeight: number, userTarget?: number): number {
+  if (userTarget != null && userTarget > 0) return userTarget;
   if (goal === 'baja_peso') return Math.round((currentWeight - 5) * 10) / 10;
   if (goal === 'gana_masa') return Math.round((currentWeight + 3) * 10) / 10;
   return currentWeight;
@@ -92,21 +100,25 @@ interface AppState {
   streak: number;
   dailyCalories: number;
   targetCalories: number;
-  waterGlasses: number;
-  waterLiters: number;
-  meals: Meal[];
-  workoutCompleted: boolean;
-  isDarkMode: boolean;
-  totalWorkouts: number;
-  workoutsCreated: number;
-  workouts: Workout[];
-  activeWorkoutId: string | null;
-  themeColor: string;
-  weightHistory: WeightEntry[];
-  targetWeight: number;
-   lastWorkoutDate: string | null;
-   lastResetDate: string | null;
-   lastUserEmail: string | null;
+   waterGlasses: number;
+   waterLiters: number;
+   waterStreak: number;
+   lastHydrationStreakDate: string | null;
+   meals: Meal[];
+   workoutCompleted: boolean;
+   isDarkMode: boolean;
+   animationsEnabled: boolean;
+   totalWorkouts: number;
+   workoutsCreated: number;
+   workouts: Workout[];
+   activeWorkoutId: string | null;
+   themeColor: string;
+   weightHistory: WeightEntry[];
+   targetWeight: number;
+   workoutHistory: WorkoutHistoryEntry[];
+    lastWorkoutDate: string | null;
+    lastResetDate: string | null;
+    lastUserEmail: string | null;
 
    // Actions
    completeOnboarding: (profile: UserProfile) => void;
@@ -119,8 +131,9 @@ interface AppState {
   setWorkoutCompleted: (completed: boolean) => void;
   resetDaily: () => void;
   checkAndResetDaily: () => void;
-  toggleDarkMode: () => void;
-  setThemeColor: (theme: string) => void;
+   toggleDarkMode: () => void;
+   toggleAnimations: () => void;
+   setThemeColor: (theme: string) => void;
   resetProgress: () => void;
   updateUser: (updates: Partial<UserProfile>) => void;
   updateWeight: (weight: number) => void;
@@ -152,16 +165,33 @@ export const useStore = create<AppState>()(
       targetCalories: 2000,
       waterGlasses: 0,
       waterLiters: 0,
+      waterStreak: 0,
+      lastHydrationStreakDate: null,
       meals: [],
       workoutCompleted: false,
       isDarkMode: false,
+      animationsEnabled: true,
       totalWorkouts: 0,
       workoutsCreated: 0,
-      workouts: [],
-      activeWorkoutId: null,
+              workouts: [{
+                id: 'default-suggested',
+                name: 'Caminata rápida',
+                exercises: [
+                  {
+                    id: 'default-ex-1',
+                    name: 'Caminata ligera',
+                    sets: 1,
+                    reps: '30 min',
+                    rest: '0s',
+                    completed: false,
+                  }
+                ]
+              }],
+              activeWorkoutId: 'default-suggested',
       themeColor: 'orange',
       weightHistory: [],
       targetWeight: 65,
+      workoutHistory: [],
       lastWorkoutDate: null,
       lastResetDate: null,
       lastUserEmail: null,
@@ -179,30 +209,33 @@ export const useStore = create<AppState>()(
              user: profile,
              lastUserEmail: newEmail,
              targetCalories: getTargetCalories(profile.goal),
-             targetWeight: getTargetWeight(profile.goal, profile.weight),
+              targetWeight: getTargetWeight(profile.goal, profile.weight, profile.targetWeight),
              weightHistory: [{ date: today, weight: profile.weight }],
              xp: 0,
              level: 1,
              streak: 0,
              dailyCalories: 0,
-             waterGlasses: 0,
-             waterLiters: 0,
-             meals: [],
-             workoutCompleted: false,
-             totalWorkouts: 0,
-             workoutsCreated: 0,
-             workouts: [],
-             activeWorkoutId: null,
-             lastWorkoutDate: null,
-             lastResetDate: null,
-           });
+              waterGlasses: 0,
+              waterLiters: 0,
+              waterStreak: 0,
+              lastHydrationStreakDate: null,
+              meals: [],
+              workoutCompleted: false,
+              totalWorkouts: 0,
+              workoutsCreated: 0,
+              workouts: [],
+              activeWorkoutId: null,
+              workoutHistory: [],
+              lastWorkoutDate: null,
+              lastResetDate: null,
+            });
          } else {
            set({
              isOnboarded: true,
              user: profile,
              lastUserEmail: newEmail,
              targetCalories: getTargetCalories(profile.goal),
-             targetWeight: getTargetWeight(profile.goal, profile.weight),
+              targetWeight: getTargetWeight(profile.goal, profile.weight, profile.targetWeight),
              weightHistory: [{ date: today, weight: profile.weight }],
            });
          }
@@ -247,36 +280,68 @@ export const useStore = create<AppState>()(
         const updatedMeals = state.meals.filter(m => m.id !== id);
         return { meals: updatedMeals, dailyCalories: todayCalories(updatedMeals) };
       }),
-      addWater: () => set((state) => ({ waterGlasses: state.waterGlasses + 1 })),
+      addWater: () => set((state) => {
+        const nextGlasses = state.waterGlasses + 1;
+        const today = todayISO();
+        let newWaterStreak = state.waterStreak;
+        let newLastHydrationStreakDate = state.lastHydrationStreakDate;
+        if (nextGlasses >= 10) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          if (state.lastHydrationStreakDate === today) {
+            // Ya registrado hoy
+          } else if (state.lastHydrationStreakDate === yesterdayStr) {
+            newWaterStreak = state.waterStreak + 1;
+            newLastHydrationStreakDate = today;
+          } else {
+            newWaterStreak = 1;
+            newLastHydrationStreakDate = today;
+          }
+        }
+        return {
+          waterGlasses: nextGlasses,
+          waterStreak: newWaterStreak,
+          lastHydrationStreakDate: newLastHydrationStreakDate,
+        };
+      }),
       resetWater: () => set((state) => ({
         waterGlasses: 0,
         waterLiters: state.waterLiters + 1
       })),
       setWorkoutCompleted: (completed) => {
-        const state = get();
-        if (completed && !state.workoutCompleted) {
-          state.addXP(50);
-          const today = new Date().toISOString().split('T')[0];
-          // Check if last workout was yesterday to maintain streak
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
+         const state = get();
+         if (completed && !state.workoutCompleted) {
+           state.addXP(50);
+           const today = new Date().toISOString().split('T')[0];
+           // Check if last workout was yesterday to maintain streak
+           const yesterday = new Date();
+           yesterday.setDate(yesterday.getDate() - 1);
+           const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-          let newStreak = state.streak;
-          if (state.lastWorkoutDate === yesterdayStr || state.lastWorkoutDate === today) {
-            // Streak continues or already counted today
-          } else if (state.lastWorkoutDate !== today) {
-            newStreak = state.streak + 1;
-          }
+           let newStreak = state.streak;
+           if (state.lastWorkoutDate === yesterdayStr || state.lastWorkoutDate === today) {
+             // Streak continues or already counted today
+           } else if (state.lastWorkoutDate !== today) {
+             newStreak = state.streak + 1;
+           }
 
-          set({
-            totalWorkouts: state.totalWorkouts + 1,
-            streak: newStreak,
-            lastWorkoutDate: today,
-          });
-        }
-        set({ workoutCompleted: completed });
-      },
+           const activeWorkout = state.workouts.find(w => w.id === state.activeWorkoutId);
+           const newHistoryEntry = activeWorkout
+             ? { date: today, workoutId: activeWorkout.id, workoutName: activeWorkout.name }
+             : null;
+
+           set({
+             totalWorkouts: state.totalWorkouts + 1,
+             streak: newStreak,
+             lastWorkoutDate: today,
+             workoutHistory: newHistoryEntry
+               ? [newHistoryEntry, ...state.workoutHistory]
+               : state.workoutHistory,
+           });
+         }
+         set({ workoutCompleted: completed });
+       },
       resetDaily: () => set((state) => ({
         dailyCalories: 0, waterGlasses: 0, waterLiters: 0, workoutCompleted: false,
         workouts: state.workouts.map(w => ({ ...w, exercises: w.exercises.map(e => ({ ...e, completed: false })) })),
@@ -296,6 +361,11 @@ export const useStore = create<AppState>()(
           newStreak = 0;
         }
 
+        let newWaterStreak = state.waterStreak;
+        if (state.lastHydrationStreakDate !== today && state.lastHydrationStreakDate !== yesterdayStr) {
+          newWaterStreak = 0;
+        }
+
         set({
           dailyCalories: todayCalories(state.meals),
           waterGlasses: 0,
@@ -303,61 +373,61 @@ export const useStore = create<AppState>()(
           workoutCompleted: false,
           workouts: state.workouts.map(w => ({ ...w, exercises: w.exercises.map(e => ({ ...e, completed: false })) })),
           streak: newStreak,
+          waterStreak: newWaterStreak,
           lastResetDate: today,
         });
       },
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
-      resetProgress: () => set({ xp: 0, level: 1, streak: 0, totalWorkouts: 0, workoutCompleted: false, waterGlasses: 0, waterLiters: 0, dailyCalories: 0, meals: [], workouts: [], workoutsCreated: 0, activeWorkoutId: null, weightHistory: [], lastWorkoutDate: null, lastResetDate: null }),
-      updateUser: (updates) => set((state) => {
-        const newUser = state.user ? { ...state.user, ...updates } : null;
-        let newTargetWeight = state.targetWeight;
-        let newTargetCalories = state.targetCalories;
-        if (newUser) {
-          if (updates.goal) {
-            newTargetCalories = getTargetCalories(newUser.goal);
-            newTargetWeight = getTargetWeight(newUser.goal, newUser.weight);
-          }
-          if (updates.weight && !updates.goal) {
-            newTargetWeight = getTargetWeight(newUser.goal, newUser.weight);
-          }
-        }
-        return {
-          user: newUser,
-          targetCalories: newTargetCalories,
-          targetWeight: newTargetWeight,
-        };
-      }),
-      updateWeight: (weight) => set((state) => {
-        const today = new Date().toISOString().split('T')[0];
-        const existingIndex = state.weightHistory.findIndex(e => e.date === today);
-        let newHistory;
-        if (existingIndex >= 0) {
-          newHistory = state.weightHistory.map((e, i) => i === existingIndex ? { ...e, weight } : e);
-        } else {
-          newHistory = [...state.weightHistory, { date: today, weight }];
-        }
-        return {
-          user: state.user ? { ...state.user, weight } : null,
-          weightHistory: newHistory,
-          targetWeight: state.user ? getTargetWeight(state.user.goal, weight) : state.targetWeight,
-        };
-      }),
-      addWeightEntry: (weight, dateStr) => set((state) => {
-        const date = dateStr || new Date().toISOString().split('T')[0];
-        const existingIndex = state.weightHistory.findIndex(e => e.date === date);
-        let newHistory;
-        if (existingIndex >= 0) {
-          newHistory = state.weightHistory.map((e, i) => i === existingIndex ? { ...e, weight } : e);
-        } else {
-          newHistory = [...state.weightHistory, { date, weight }];
-        }
-        const isToday = date === new Date().toISOString().split('T')[0];
-        return {
-          user: isToday && state.user ? { ...state.user, weight } : state.user,
-          weightHistory: newHistory,
-          targetWeight: (isToday && state.user) ? getTargetWeight(state.user.goal, weight) : state.targetWeight,
-        };
-      }),
+      toggleAnimations: () => set((state) => ({ animationsEnabled: !state.animationsEnabled })),
+      resetProgress: () => set({ xp: 0, level: 1, streak: 0, totalWorkouts: 0, workoutCompleted: false, waterGlasses: 0, waterLiters: 0, waterStreak: 0, lastHydrationStreakDate: null, dailyCalories: 0, meals: [], workouts: [], workoutsCreated: 0, activeWorkoutId: null, weightHistory: [], workoutHistory: [], lastWorkoutDate: null, lastResetDate: null }),
+       updateUser: (updates) => set((state) => {
+         const newUser = state.user ? { ...state.user, ...updates } : null;
+         let newTargetWeight = state.targetWeight;
+         let newTargetCalories = state.targetCalories;
+         if (newUser) {
+           if (updates.goal) {
+             newTargetCalories = getTargetCalories(newUser.goal);
+             newTargetWeight = getTargetWeight(newUser.goal, newUser.weight, newUser.targetWeight);
+           }
+           if (updates.weight && !updates.goal) {
+             newTargetWeight = getTargetWeight(newUser.goal, newUser.weight, newUser.targetWeight);
+           }
+         }
+         return {
+           user: newUser,
+           targetCalories: newTargetCalories,
+           targetWeight: newTargetWeight,
+         };
+       }),
+       updateWeight: (weight) => set((state) => {
+         const today = new Date().toISOString().split('T')[0];
+         const existingIndex = state.weightHistory.findIndex(e => e.date === today);
+         let newHistory;
+         if (existingIndex >= 0) {
+           newHistory = state.weightHistory.map((e, i) => i === existingIndex ? { ...e, weight } : e);
+         } else {
+           newHistory = [...state.weightHistory, { date: today, weight }];
+         }
+         return {
+           user: state.user ? { ...state.user, weight } : null,
+           weightHistory: newHistory,
+         };
+       }),
+       addWeightEntry: (weight, dateStr) => set((state) => {
+         const date = dateStr || new Date().toISOString().split('T')[0];
+         const existingIndex = state.weightHistory.findIndex(e => e.date === date);
+         let newHistory;
+         if (existingIndex >= 0) {
+           newHistory = state.weightHistory.map((e, i) => i === existingIndex ? { ...e, weight } : e);
+         } else {
+           newHistory = [...state.weightHistory, { date, weight }];
+         }
+         const isToday = date === new Date().toISOString().split('T')[0];
+         return {
+           user: isToday && state.user ? { ...state.user, weight } : state.user,
+           weightHistory: newHistory,
+         };
+       }),
       updateStreak: () => set((state) => {
         const today = new Date().toISOString().split('T')[0];
         if (state.lastWorkoutDate === today) return {};

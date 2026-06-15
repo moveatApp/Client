@@ -16,6 +16,7 @@ import {
    ArrowRight,
    TrendingUp,
    Zap,
+   Dumbbell,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import WeightChart from "@/components/WeightChart"
@@ -67,12 +68,16 @@ export default function Home() {
 
    const todayProgress = Math.min((dailyCalories / targetCalories) * 100, 100)
 
+   const suggestedWorkout =
+      workouts.length > 0
+         ? workouts.find((w) => w.id === activeWorkoutId) || workouts[0]
+         : null
+
    const handleWaterClick = (e: React.MouseEvent) => {
       e.stopPropagation()
       if (waterGlasses >= 10) return
-      const nextGlasses = waterGlasses + 1
       addWater()
-      if (nextGlasses === 10) {
+      if (waterGlasses + 1 === 10) {
          trigger("success")
       }
    }
@@ -99,31 +104,32 @@ export default function Home() {
             </div>
          </header>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4 w-full">
+         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4 w-full">
             {/* Chart card */}
-             <motion.section
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="col-span-1 sm:col-span-2 xl:col-span-2 bg-card-bg rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between min-h-[280px]">
+            <motion.section
+               initial={{ y: 20, opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               className="col-span-1 sm:col-span-2 xl:col-span-2 bg-card-bg/40 rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between min-h-[280px]">
                <div className="flex justify-between items-start mb-2">
                   <h2 className="text-4xl font-display font-bold text-foreground">
                      {user?.weight ?? "--"}{" "}
-                     <span className="text-xl text-gray-400 font-normal">kg</span>
+                     <span className="text-xl text-subtle font-normal">kg</span>
                   </h2>
                   <div className="bg-primary/10 text-primary px-3 py-1 rounded-xl text-xs font-bold">
                      Objetivo: {targetWeight} kg
                   </div>
                </div>
 
-                <div className="flex-1 w-full">
-                   <WeightChart
-                      onPointClick={(date, weight) => {
-                         setDashWeightDate(date)
-                         setDashWeight(weight !== null ? String(weight) : "")
-                         setShowDashWeightForm(true)
-                      }}
-                   />
-                </div>
+               <div className="flex-1 w-full">
+                  <WeightChart
+                     targetWeight={targetWeight}
+                     onPointClick={(date, weight) => {
+                        setDashWeightDate(date)
+                        setDashWeight(weight !== null ? String(weight) : "")
+                        setShowDashWeightForm(true)
+                     }}
+                  />
+               </div>
                <div className="mt-3 flex justify-center items-center">
                   <AnimatePresence mode="wait">
                      {!showDashWeightForm ? (
@@ -144,48 +150,52 @@ export default function Home() {
                            animate={{ opacity: 1, width: "auto" }}
                            exit={{ opacity: 0, width: 0 }}
                            transition={{ duration: 0.35, ease: "easeInOut" }}
-                           className="flex items-center gap-2 overflow-hidden">
-                           <div className="flex items-center gap-2 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0">
-                              <input
-                                 type="date"
-                                 aria-label="Fecha del registro"
-                                 className="bg-transparent text-sm font-bold text-foreground outline-none"
-                                 style={{
-                                    colorScheme: isDarkMode ? "dark" : "light",
-                                 }}
-                                 value={dashWeightDate}
-                                 onChange={(e) => setDashWeightDate(e.target.value)}
-                              />
-                           </div>
-                           <div className="flex items-center gap-2 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0">
-                              <input
-                                 type="number"
-                                 step="0.1"
-                                 aria-label="Peso en kg"
-                                 placeholder="70.5"
-                                 className="bg-transparent text-sm font-bold text-foreground w-20 outline-none"
-                                 value={dashWeight}
-                                 onChange={(e) => setDashWeight(e.target.value)}
-                                 onKeyDown={(e) =>
-                                    e.key === "Enter" && handleDashWeightSave()
-                                 }
-                              />
-                              <span className="text-[10px] font-bold text-gray-400">
-                                 kg
-                              </span>
-                           </div>
-                           <div className="flex gap-2 shrink-0">
-                              <button
-                                 aria-label="Guardar peso"
-                                 onClick={handleDashWeightSave}
-                                 className="p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors">
-                                 <Save size={16} />
-                              </button>
+                           className="flex flex-col gap-2 overflow-hidden w-full">
+                           <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-card-border flex-1">
+                                 <input
+                                    type="date"
+                                    aria-label="Fecha del registro"
+                                    className="bg-transparent text-sm font-bold text-foreground outline-none w-full"
+                                    style={{
+                                       colorScheme: isDarkMode ? "dark" : "light",
+                                    }}
+                                    value={dashWeightDate}
+                                    onChange={(e) =>
+                                       setDashWeightDate(e.target.value)
+                                    }
+                                 />
+                              </div>
                               <button
                                  aria-label="Cancelar"
                                  onClick={() => setShowDashWeightForm(false)}
-                                 className="p-2 bg-muted dark:bg-white-500/10 text-gray-400 rounded-xl hover:text-foreground transition-colors">
+                                 className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-muted text-subtle rounded-xl hover:text-foreground transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                                  <X size={16} />
+                              </button>
+                           </div>
+                           <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-card-border flex-1">
+                                 <input
+                                    type="number"
+                                    step="0.1"
+                                    aria-label="Peso en kg"
+                                    placeholder="70.5"
+                                    className="bg-transparent text-sm font-bold text-foreground w-full outline-none"
+                                    value={dashWeight}
+                                    onChange={(e) => setDashWeight(e.target.value)}
+                                    onKeyDown={(e) =>
+                                       e.key === "Enter" && handleDashWeightSave()
+                                    }
+                                 />
+                                 <span className="text-xs text-subtle font-bold">
+                                    kg
+                                 </span>
+                              </div>
+                              <button
+                                 aria-label="Guardar peso"
+                                 onClick={handleDashWeightSave}
+                                 className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+                                 <Save size={16} />
                               </button>
                            </div>
                         </motion.div>
@@ -195,15 +205,13 @@ export default function Home() {
             </motion.section>
 
             {/* Daily circular progress — Apple Watch rings */}
-             <motion.section
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="col-span-1 bg-card-bg rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between items-center text-center min-h-[320px] md:min-h-[380px]">
+            <motion.section
+               initial={{ y: 20, opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               transition={{ delay: 0.1 }}
+               className="col-span-1 bg-card-bg/40 rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between items-center text-center min-h-[320px] md:min-h-[380px]">
                <div className="w-full flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                     Progreso de Hoy
-                  </span>
+                  <span className="text-caption text-subtle">Progreso de Hoy</span>
                </div>
 
                <div className="relative w-56 h-56 md:w-72 md:h-72 lg:w-80 lg:h-80 flex items-center justify-center flex-1">
@@ -250,7 +258,7 @@ export default function Home() {
                         cy="20"
                         r="13"
                         fill="none"
-                        stroke="#38BDF8"
+                        stroke="var(--water)"
                         strokeWidth="2.5"
                         strokeLinecap="round"
                         strokeDasharray={`${Math.min((waterGlasses / 10) * 81.6, 81.6)}, 81.6`}
@@ -263,15 +271,15 @@ export default function Home() {
                      <span className="text-2xl font-display font-extrabold text-foreground leading-none">
                         {dailyCalories}
                      </span>
-                     <span className="text-[10px] font-bold text-gray-400 mt-0.5">
+                     <span className="text-xs text-subtle font-bold mt-0.5">
                         / {targetCalories} kcal
                      </span>
                      <div className="flex items-center gap-1 mt-2">
                         <Droplet size={12} className="text-water fill-water" />
                         <span className="text-sm font-bold text-water">
-                           {waterGlasses}
+                           {waterGlasses * 200}ml
                         </span>
-                        <span className="text-[10px] text-gray-400">/ 10</span>
+                        <span className="text-xs text-subtle">/ 2000ml</span>
                      </div>
                   </div>
                </div>
@@ -279,94 +287,172 @@ export default function Home() {
                <div className="flex gap-2 w-full mt-4">
                   <Link
                      to="/nutrition"
-                     className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary/20 active:scale-95 transition-colors">
+                     className="flex-1 flex items-center justify-center gap-1.5 min-h-11 py-3 text-xs font-bold bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary/20 active:scale-95 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                      <Plus size={14} /> Comida
                   </Link>
                   <button
                      onClick={handleWaterClick}
-                     className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold bg-water/10 text-water border border-water/20 rounded-xl hover:bg-water/20 active:scale-95 transition-colors">
+                     className="flex-1 flex items-center justify-center gap-1.5 min-h-11 py-3 text-xs font-bold bg-water/10 text-water border border-water/20 rounded-xl hover:bg-water/20 active:scale-95 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                      <Droplet size={14} /> Agua
                   </button>
                </div>
             </motion.section>
 
-             {/* Streak card */}
-             <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="col-span-1 bg-gradient-to-br from-orange-500 to-red-500 rounded-[32px] p-5 shadow-sm flex flex-col justify-between min-h-[140px] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8" />
-                <div className="relative z-10">
-                   <div className="flex items-center gap-2 mb-2">
-                      <Flame size={16} className="text-white" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/80">
-                         Racha Actual
-                      </span>
-                   </div>
-                   <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-display font-extrabold text-white leading-none">
-                         {streak}
-                      </span>
-                      <span className="text-sm font-bold text-white/70">
-                         {streak === 1 ? "día" : "días"}
-                      </span>
-                   </div>
-                </div>
-                <div className="relative z-10 flex items-center gap-2 mt-3">
-                   <TrendingUp size={14} className="text-white/70" />
-                   <span className="text-xs font-bold text-white/70">
-                      {streak > 0 ? "¡Sigue así!" : "Empieza hoy"}
-                   </span>
-                </div>
-             </motion.div>
+            {/* Meal / Workout row */}
+            <div className="col-span-1 sm:col-span-2 xl:col-span-3 grid grid-cols-2 gap-3 lg:gap-4">
+               {/* Last meal card */}
+               {(() => {
+                  const lastMeal =
+                     meals.length > 0
+                        ? [...meals].sort(
+                             (a, b) =>
+                                new Date(b.date + "T" + b.time).getTime() -
+                                new Date(a.date + "T" + a.time).getTime(),
+                          )[0]
+                        : null
+                  return (
+                     <div className="col-span-1 flex flex-col h-full bg-level-card-bg border border-card-border rounded-[32px] shadow-sm overflow-hidden relative">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
+                        <Link
+                           to="/nutrition"
+                           className="flex-1 flex flex-col justify-between group cursor-pointer relative z-10 p-6">
+                           <div className="flex flex-col items-center text-center">
+                              <div className="flex items-center justify-center gap-2 mb-2">
+                                 <UtensilsCrossed
+                                    size={20}
+                                    className="text-primary"
+                                 />
+                                 <span className="text-xs font-bold uppercase tracking-widest text-subtle">
+                                    ÚLTIMA COMIDA
+                                 </span>
+                              </div>
+                              <h3 className="text-lg font-display font-bold line-clamp-1 text-foreground">
+                                 {lastMeal
+                                    ? lastMeal.name.replace(/\b\w/g, (l) =>
+                                         l.toUpperCase(),
+                                      )
+                                    : "SIN COMIDAS REGISTRADAS"}
+                              </h3>
+                           </div>
+                           <div className="flex flex-col items-center text-center mt-3 gap-1">
+                              {lastMeal ? (
+                                 <>
+                                    <span className="text-xs font-bold uppercase tracking-wider text-subtle/80">
+                                       {lastMeal.calories} KCAL
+                                    </span>
+                                    <span className="text-xs font-bold uppercase tracking-wider text-subtle">
+                                       {lastMeal.grams}G
+                                    </span>
+                                 </>
+                              ) : (
+                                 <div className="flex items-center justify-center gap-2 text-subtle">
+                                    <Plus size={16} />
+                                    <span className="text-xs font-bold uppercase tracking-wider">
+                                       REGISTRAR
+                                    </span>
+                                 </div>
+                              )}
+                           </div>
+                        </Link>
+                        <Link
+                           to="/nutrition"
+                           className="relative z-10 bg-card-bg/40 text-primary border-t border-card-border py-3 flex items-center justify-center gap-2 hover:bg-card-bg/60 active:scale-95 transition-colors cursor-pointer">
+                           <span className="text-xs font-bold uppercase tracking-wider">
+                              Ver más
+                           </span>
+                           <ArrowRight size={16} />
+                        </Link>
+                     </div>
+                  )
+               })()}
 
-             {/* Last meal card */}
-             {(() => {
-                const lastMeal = meals.length > 0
-                   ? [...meals].sort((a, b) =>
-                        new Date(b.date + "T" + b.time).getTime() - new Date(a.date + "T" + a.time).getTime()
-                     )[0]
-                   : null
-                return (
-                   <Link
-                      to="/nutrition"
-                      className="col-span-1 sm:col-span-2 xl:col-span-1 bg-foreground rounded-[32px] p-5 shadow-sm flex flex-col justify-between group cursor-pointer relative overflow-hidden min-h-[140px]">
-                      <div className="absolute inset-0 right-0 bg-primary/10 z-0" />
-                      <div className="relative z-10">
-                         <div className="flex items-center gap-2 mb-1">
-                            <UtensilsCrossed size={16} className="text-accent" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
-                               ÚLTIMA COMIDA
-                            </span>
-                         </div>
-                          <h4 className="text-base font-display font-bold line-clamp-1 text-background">
-                             {lastMeal ? lastMeal.name.replace(/\b\w/g, (l) => l.toUpperCase()) : "SIN COMIDAS REGISTRADAS"}
-                          </h4>
-                      </div>
-                      <div className="relative z-20 flex items-center justify-between mt-2">
-                         {lastMeal ? (
-                            <div className="flex items-center gap-2">
-                               <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
-                                  {lastMeal.calories} KCAL
-                               </span>
-                               <span className="text-[10px] font-bold uppercase tracking-wider text-background/60">
-                                  {lastMeal.grams}G
-                               </span>
-                            </div>
-                         ) : (
-                            <div className="flex items-center gap-2 text-accent">
-                               <Plus size={14} />
-                               <span className="text-[10px] font-bold uppercase tracking-wider">REGISTRAR</span>
-                            </div>
-                         )}
-                         <div className="w-8 h-8 bg-background text-foreground rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                            <ArrowRight size={14} className="text-foreground" />
-                         </div>
-                      </div>
-                   </Link>
-                )
-             })()}
+               {/* Suggested workout card */}
+               <div className="col-span-1 flex flex-col h-full bg-level-card-bg border border-card-border rounded-[32px] shadow-sm overflow-hidden relative">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
+                  <Link
+                     to="/training"
+                     className="flex-1 flex flex-col justify-between group cursor-pointer relative z-10 p-6">
+                     <div className="flex flex-col items-center text-center">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                           <Dumbbell size={20} className="text-primary" />
+                           <span className="text-xs font-bold uppercase tracking-widest text-subtle">
+                              ENTRENAMIENTO
+                           </span>
+                        </div>
+                        <h3 className="text-lg font-display font-bold line-clamp-1 text-foreground">
+                           {suggestedWorkout
+                              ? suggestedWorkout.name
+                              : "SIN ENTRENAMIENTOS"}
+                        </h3>
+                     </div>
+                     <div className="flex flex-col items-center text-center mt-3 gap-1">
+                        {suggestedWorkout ? (
+                           <>
+                              <span className="text-xs font-bold uppercase tracking-wider text-subtle/80">
+                                 {suggestedWorkout.exercises.length} EJERCICIOS
+                              </span>
+                              <span className="text-xs font-bold uppercase tracking-wider text-subtle">
+                                 {suggestedWorkout.exercises.reduce((sum, ex) => {
+                                    const repsNum = parseInt(ex.reps) || 0
+                                    return sum + repsNum
+                                 }, 0)}{" "}
+                                 MIN
+                              </span>
+                           </>
+                        ) : (
+                           <div className="flex items-center justify-center gap-2 text-subtle">
+                              <Plus size={16} />
+                              <span className="text-xs font-bold uppercase tracking-wider">
+                                 CREAR
+                              </span>
+                           </div>
+                        )}
+                     </div>
+                  </Link>
+                  <Link
+                     to="/training"
+                     className="relative z-10 bg-card-bg/40 text-primary border-t border-card-border py-3 flex items-center justify-center gap-2 hover:bg-card-bg/60 active:scale-95 transition-colors cursor-pointer">
+                     <span className="text-xs font-bold uppercase tracking-wider">
+                        Ver más
+                     </span>
+                     <ArrowRight size={16} />
+                  </Link>
+               </div>
+            </div>
+
+            {/* Streak row */}
+            <motion.div
+               initial={{ y: 20, opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               transition={{ delay: 0.2 }}
+               className="col-span-1 sm:col-span-2 xl:col-span-3 bg-level-card-bg dark:border dark:border-card-border rounded-[32px] p-6 shadow-sm flex flex-col justify-between min-h-[160px] relative overflow-hidden">
+               <div className="absolute inset-0 bg-linear-to-br from-primary to-secondary dark:hidden" />
+               <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8 dark:hidden" />
+               <div className="absolute inset-0 pointer-events-none bg-linear-to-b from-white/25 via-white/5 to-transparent dark:hidden" />
+               <div className="hidden dark:block absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
+               <div className="relative z-10 flex flex-col items-center text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                     <Flame size={20} className="text-white dark:text-primary" />
+                     <span className="text-xs font-bold uppercase tracking-widest text-white/80 dark:text-subtle">
+                        Racha Actual
+                     </span>
+                  </div>
+                  <div className="flex items-baseline justify-center gap-1">
+                     <span className="text-5xl font-display font-extrabold text-white dark:text-foreground leading-none">
+                        {streak}
+                     </span>
+                     <span className="text-base font-bold text-white/70 dark:text-subtle">
+                        {streak === 1 ? "día" : "días"}
+                     </span>
+                  </div>
+               </div>
+               <div className="relative z-10 flex items-center justify-center gap-2 mt-3">
+                  <TrendingUp size={16} className="text-white/70 dark:text-subtle" />
+                  <span className="text-sm font-bold text-white/70 dark:text-subtle">
+                     {streak > 0 ? "¡Sigue así!" : "Empieza hoy"}
+                  </span>
+               </div>
+            </motion.div>
          </div>
       </div>
    )

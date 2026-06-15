@@ -7,7 +7,7 @@ interface AnimatedErrorProps {
 
 export default function AnimatedError({
    message,
-   className = "text-center text-xs font-bold text-red-500 px-4",
+   className = "text-center text-xs font-bold text-danger px-4",
 }: AnimatedErrorProps) {
    return (
       <AnimatePresence>

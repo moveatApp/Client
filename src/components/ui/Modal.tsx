@@ -34,10 +34,10 @@ export default function Modal({
                   initial={{ scale: 0.9, y: 20 }}
                   animate={{ scale: 1, y: 0 }}
                   exit={{ scale: 0.9, y: 20 }}
-                  className="bg-card-bg rounded-[32px] border border-card-border p-6 w-full max-w-sm shadow-xl flex flex-col"
+                   className="bg-card-bg/40 rounded-card-lg border border-card-border p-card w-full max-w-sm shadow-xl flex flex-col"
                   onClick={(e) => e.stopPropagation()}
                >
-                  <h3 id={titleId} className="text-xl font-bold text-foreground mb-2">{title}</h3>
+                   <h3 id={titleId} className="text-subheading text-foreground mb-2">{title}</h3>
                   <div className="flex-1">
                      {children}
                   </div>

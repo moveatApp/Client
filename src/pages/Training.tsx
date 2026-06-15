@@ -141,21 +141,21 @@ export default function TrainingPage() {
                    animate={{ opacity: 1, y: 0, scale: 1 }}
                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
                    transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-                   className="mb-4 w-full bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-[28px] p-4 flex items-center gap-4 shadow-lg shadow-green-100/50">
+                    className="mb-4 w-full bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/20 rounded-[28px] p-4 flex items-center gap-4 shadow-lg shadow-primary/10">
                    <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-                      className="w-12 h-12 bg-green-100 dark:bg-green-500/20 text-green-600 rounded-full flex items-center justify-center shrink-0">
+                       className="w-12 h-12 bg-primary/10 dark:bg-primary/20 text-primary rounded-full flex items-center justify-center shrink-0">
                       <CheckCircle2 size={28} />
                    </motion.div>
                    <div className="flex-1">
-                      <h3 className="font-bold text-green-800 dark:text-green-200 text-lg">¡Rutina completada!</h3>
-                      <p className="text-green-700 dark:text-green-300/80 text-sm font-medium">Sigue así, puedes seguir editando o reiniciar cuando quieras.</p>
+                       <h3 className="font-bold text-foreground text-lg">¡Rutina completada!</h3>
+                       <p className="text-subtle dark:text-muted-foreground text-sm font-medium">Sigue así, puedes seguir editando o reiniciar cuando quieras.</p>
                    </div>
                    <button
                       onClick={() => setShowCelebration(false)}
-                      className="p-2 rounded-xl hover:bg-green-100 dark:hover:bg-green-500/20 text-green-600 transition-colors">
+                       className="p-2 rounded-xl hover:bg-primary/10 dark:hover:bg-primary/20 text-primary transition-colors">
                       <ChevronDown size={20} className="rotate-180" />
                    </button>
                 </motion.div>
@@ -167,7 +167,7 @@ export default function TrainingPage() {
                <Link
                   to="/"
                   aria-label="Volver al inicio"
-                  className="p-2 bg-muted dark:bg-white-500/5 rounded-xl">
+                  className="p-2 bg-muted dark:bg-white/5 rounded-xl">
                   <ChevronLeft size={20} />
                </Link>
                <h1 className="text-3xl font-display font-extrabold text-foreground flex items-center gap-2">
@@ -185,7 +185,7 @@ export default function TrainingPage() {
                   <button
                      key={w.id}
                      onClick={() => setActiveWorkout(w.id)}
-                     className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all snap-start ${activeWorkoutId === w.id ? "bg-gray-900 text-white dark:bg-white dark:text-black shadow-md" : "bg-card-bg text-gray-500 border border-card-border hover:bg-muted"}`}>
+                     className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all snap-start                                                    ${activeWorkoutId === w.id ? "bg-primary text-white shadow-md" : "bg-card-bg/40 text-subtle border border-card-border hover:bg-muted"}`}>
                      {w.name}
                   </button>
                ))}
@@ -200,41 +200,41 @@ export default function TrainingPage() {
                   </h2>
                    <div className="flex items-center gap-2">
                       {completedCount > 0 && (
-                         <button
-                            onClick={() => {
-                               showConfirm(
-                                  "Reiniciar Rutina",
-                                  "¿Quieres marcar todos los ejercicios como pendientes?",
-                                  () => resetWorkoutProgress(activeWorkout.id),
-                               )
-                            }}
-                            className="text-primary p-2 bg-primary/10 rounded-xl hover:bg-primary/20 transition-colors"
-                            title="Reiniciar rutina">
-                            <Circle size={20} />
-                         </button>
-                      )}
-                      <button
-                         onClick={() => {
-                            showConfirm(
-                               "Eliminar Rutina",
-                               "¿Seguro que quieres eliminar esta rutina completa?",
-                               () => deleteWorkout(activeWorkout.id),
-                            )
-                         }}
-                         className="text-red-500 p-2 bg-red-50 dark:bg-red-500/10 rounded-xl hover:bg-red-100 transition-colors">
-                         <Trash2 size={20} />
-                      </button>
+                          <button
+                             onClick={() => {
+                                showConfirm(
+                                   "Reiniciar Rutina",
+                                   "¿Quieres marcar todos los ejercicios como pendientes?",
+                                   () => resetWorkoutProgress(activeWorkout.id),
+                                )
+                             }}
+                             className="min-w-11 min-h-11 flex items-center justify-center text-primary p-2 bg-primary/10 rounded-xl hover:bg-primary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                             title="Reiniciar rutina">
+                             <Circle size={20} />
+                          </button>
+                       )}
+                       <button
+                          onClick={() => {
+                             showConfirm(
+                                "Eliminar Rutina",
+                                "¿Seguro que quieres eliminar esta rutina completa?",
+                                () => deleteWorkout(activeWorkout.id),
+                             )
+                          }}
+                           className="min-w-11 min-h-11 flex items-center justify-center text-danger p-2 bg-danger/10 dark:bg-danger/10 rounded-xl hover:bg-danger/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+                          <Trash2 size={20} />
+                       </button>
                    </div>
                 </div>
 
                {/* Header Progress */}
-               <div className="bg-card-bg rounded-[32px] p-5 shadow-sm border border-card-border mb-8 flex items-center gap-5">
+               <div className="bg-card-bg/40 rounded-[32px] p-5 shadow-sm border border-card-border mb-8 flex items-center gap-5">
                   <div className="w-14 h-14 relative shrink-0">
                      <svg
                         viewBox="0 0 36 36"
                         className="w-full h-full transform -rotate-90">
                         <path
-                           className="text-muted dark:text-white-500/5"
+                           className="text-muted dark:text-white/10"
                            strokeWidth="4"
                            stroke="currentColor"
                            fill="none"
@@ -288,18 +288,19 @@ export default function TrainingPage() {
                            key={ex.id}
                            className={`rounded-[32px] border-2 transition-all ${
                               ex.completed
-                                 ? "bg-muted dark:bg-white-500/5 opacity-60 border-transparent"
+                                 ? "bg-muted dark:bg-white/5 opacity-60 border-transparent"
                                  : isActive
-                                   ? "bg-card-bg border-primary shadow-lg ring-4 ring-primary/5"
-                                   : "bg-card-bg border-card-border hover:border-gray-200"
+                                   ? "bg-card-bg/40 border-primary shadow-lg ring-4 ring-primary/5"
+                                    : "bg-card-bg/40 border-card-border hover:border-muted-foreground"
                            }`}>
                            <div className="p-5 flex items-center gap-4">
-                              <button
-                                 onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleComplete(ex.id, idx)
-                                 }}
-                                 className="shrink-0 transition-transform active:scale-90">
+                               <button
+                                  onClick={(e) => {
+                                     e.stopPropagation()
+                                     handleComplete(ex.id, idx)
+                                  }}
+                                  aria-label={ex.completed ? "Marcar como pendiente" : "Marcar como completado"}
+                                  className="min-w-11 min-h-11 flex items-center justify-center shrink-0 transition-transform active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full">
                                  {ex.completed ? (
                                     <CheckCircle2
                                        size={32}
@@ -311,7 +312,7 @@ export default function TrainingPage() {
                                        className={
                                           isActive
                                              ? "text-primary"
-                                             : "text-gray-200 dark:text-white/10"
+                                             : "text-muted-foreground"
                                        }
                                     />
                                  )}
@@ -341,7 +342,7 @@ export default function TrainingPage() {
                                  )}
 
                                  {!isEditing && (
-                                    <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-tight">
+                                    <p className="text-xs text-subtle font-bold mt-1 uppercase tracking-tight">
                                        {ex.sets} Sets •{" "}
                                        {ex.reps.replace(/[^0-9]/g, "")}{" "}
                                        {ex.reps.includes("s")
@@ -360,8 +361,8 @@ export default function TrainingPage() {
                                        e.stopPropagation()
                                        setEditingExId(isEditing ? null : ex.id)
                                     }}
-                                    className={`p-2.5 rounded-xl transition-colors ${isEditing ? "bg-muted dark:bg-white-500/10 text-primary" : "bg-muted dark:bg-white-500/5 text-gray-400 hover:text-foreground"}`}>
-                                    <Settings2 size={18} />
+                                     className={`min-w-11 min-h-11 flex items-center justify-center p-2.5 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isEditing ? "bg-muted text-primary" : "bg-muted text-subtle hover:text-foreground"}`}>
+                                     <Settings2 size={18} />
                                  </button>
                               </div>
                            </div>
@@ -373,19 +374,19 @@ export default function TrainingPage() {
                                     animate={{ height: "auto", opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
                                     className="px-5 pb-5 overflow-hidden">
-                                    <div className="flex flex-col gap-2 pt-2 border-t border-muted dark:border-white-500/5">
+                                    <div className="flex flex-col gap-2 pt-2 border-t border-muted dark:border-white/5">
                                        {getSetsArray().map((setDetail, setIdx) => (
                                           <div
                                              key={setDetail.id}
                                              className="flex items-center gap-3">
-                                             <div className="w-6 text-center text-xs font-bold text-gray-400">
+                                             <div className="w-6 text-center text-xs font-bold text-subtle">
                                                 {setIdx + 1}
                                              </div>
-                                             <div className="flex-1 bg-muted dark:bg-white-500/5 rounded-xl px-4 py-3 flex items-center gap-2 border border-transparent focus-within:border-primary/30">
+                                             <div className="flex-1 bg-muted dark:bg-white/5 rounded-xl px-4 py-3 flex items-center gap-2 border border-transparent focus-within:border-primary/30">
                                                 <input
                                                    type="number"
                                                    aria-label="Repeticiones"
-                                                   className={`w-full bg-transparent font-bold outline-none text-sm ${setDetail.completed ? "text-gray-400 line-through" : "text-foreground"}`}
+                                                   className={`w-full bg-transparent font-bold outline-none text-sm ${setDetail.completed ? "text-subtle line-through" : "text-foreground"}`}
                                                    value={setDetail.reps.replace(
                                                       /[^0-9]/g,
                                                       "",
@@ -414,7 +415,7 @@ export default function TrainingPage() {
                                                    /[0-9]/g,
                                                    "",
                                                 ) && (
-                                                   <span className="text-xs font-bold text-gray-400 shrink-0">
+                                                   <span className="text-xs font-bold text-subtle shrink-0">
                                                       {setDetail.reps.includes("s")
                                                          ? "seg"
                                                          : "min"}
@@ -485,7 +486,7 @@ export default function TrainingPage() {
                                                       }
                                                    }
                                                 }}
-                                                className={`p-2 rounded-xl transition-colors ${setDetail.completed ? "bg-green-100 text-green-600" : "bg-muted dark:bg-white-500/10 text-gray-400 hover:text-foreground"}`}>
+                                                 className={`p-2 rounded-xl transition-colors ${setDetail.completed ? "bg-primary/10 text-primary" : "bg-muted text-subtle hover:text-foreground"}`}>
                                                 <CheckCircle2 size={18} />
                                              </button>
                                           </div>
@@ -501,10 +502,10 @@ export default function TrainingPage() {
                                     exit={{ height: 0, opacity: 0 }}
                                     className="px-6 pb-6 overflow-hidden">
                                      <div className="grid grid-cols-3 gap-3 mb-4 mt-2 items-start">
-                                        <div className="bg-muted dark:bg-white-500/5 py-1 px-2 rounded-xl border border-muted dark:border-white-500/5 inline-flex flex-col">
-                                           <span className="text-[10px] font-bold text-gray-400 uppercase block leading-none">
-                                              Sets
-                                           </span>
+                                        <div className="bg-muted dark:bg-white/5 py-1 px-2 rounded-xl border border-muted dark:border-white/5 inline-flex flex-col">
+                                            <span className="text-caption text-subtle block leading-none">
+                                               Sets
+                                            </span>
                                            <input
                                               type="number"
                                               aria-label="Sets"
@@ -539,10 +540,10 @@ export default function TrainingPage() {
                                               }}
                                            />
                                         </div>
-                                        <div className="bg-muted dark:bg-white-500/5 py-1 px-2 rounded-xl border border-muted dark:border-white-500/5 inline-flex flex-col">
-                                           <span className="text-[10px] font-bold text-gray-400 uppercase block leading-none">
-                                              Cantidad
-                                           </span>
+                                        <div className="bg-muted dark:bg-white/5 py-1 px-2 rounded-xl border border-muted dark:border-white/5 inline-flex flex-col">
+                                            <span className="text-caption text-subtle block leading-none">
+                                               Cantidad
+                                            </span>
                                            <input
                                               type="number"
                                               aria-label="Cantidad"
@@ -573,7 +574,7 @@ export default function TrainingPage() {
                                               }}
                                            />
                                         </div>
-                                        <div className="rounded-xl border border-muted dark:border-white-500/5 overflow-hidden flex flex-col">
+                                        <div className="rounded-xl border border-muted dark:border-white/5 overflow-hidden flex flex-col">
                                           {[
                                              { value: "reps", label: "Reps" },
                                              { value: "s", label: "Segundos" },
@@ -617,10 +618,10 @@ export default function TrainingPage() {
                                                          },
                                                       )
                                                    }}
-                                                   className={`px-3 py-2 font-bold text-xs text-left transition-all w-full border-t first:border-t-0 border-muted dark:border-white-500/5 ${
+                                                   className={`px-3 py-2 font-bold text-xs text-left transition-all w-full border-t first:border-t-0 border-muted dark:border-white/5 ${
                                                       isSelected
                                                          ? "bg-primary text-white"
-                                                         : "bg-muted/50 dark:bg-white-500/5 text-foreground hover:bg-muted dark:hover:bg-white-500/5"
+                                                         : "bg-muted/50 dark:bg-white/5 text-foreground hover:bg-muted dark:hover:bg-white/5"
                                                    }`}>
                                                    {opt.label}
                                                 </button>
@@ -633,7 +634,7 @@ export default function TrainingPage() {
                                           onClick={() =>
                                              deleteExercise(activeWorkout.id, ex.id)
                                           }
-                                          className="flex-1 py-4 bg-red-50 dark:bg-red-500/10 text-red-500 font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">
+                                           className="flex-1 py-4 bg-danger/10 dark:bg-danger/10 text-danger font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-danger/20 dark:hover:bg-danger/20 transition-colors">
                                           <Trash2 size={18} /> Eliminar
                                        </button>
                                        <button
@@ -651,16 +652,16 @@ export default function TrainingPage() {
 
                   <button
                      onClick={() => addExercise(activeWorkout.id)}
-                     className="w-full py-5 mt-4 border-2 border-dashed border-gray-200 dark:border-white/20 text-gray-400 font-bold rounded-[32px] flex items-center justify-center gap-2 hover:bg-muted dark:hover:bg-white-500/5 transition-colors active:scale-95">
+                     className="w-full py-5 mt-4 border-2 border-dashed border-card-border text-subtle font-bold rounded-[32px] flex items-center justify-center gap-2 hover:bg-muted transition-colors active:scale-95">
                      <Plus size={20} /> Añadir Ejercicio
                   </button>
                </div>
             </>
          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+            <div className="flex-1 flex flex-col items-center justify-center text-subtle">
                <Dumbbell
                   size={64}
-                  className="mb-4 text-gray-200 dark:text-white/10"
+                  className="mb-4 text-muted-foreground"
                />
                <p className="font-bold text-lg mb-1 text-foreground">
                   No hay rutinas creadas
@@ -707,12 +708,12 @@ export default function TrainingPage() {
                </div>
             }>
             {modal.type === "confirm" && (
-               <p className="text-sm text-gray-500 font-medium mb-6">
+               <p className="text-sm text-subtle font-medium mb-6">
                   {modal.message}
                </p>
             )}
             {modal.type === "prompt" && (
-               <div className="bg-muted dark:bg-white-500/5 p-4 rounded-2xl border border-muted dark:border-white-500/5 mb-6">
+               <div className="bg-muted dark:bg-white/5 p-4 rounded-2xl border border-muted dark:border-white/5 mb-6">
                   <input
                      aria-label="Valor"
                      className="w-full bg-transparent font-bold text-foreground outline-none text-base"

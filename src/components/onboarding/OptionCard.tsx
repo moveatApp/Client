@@ -20,19 +20,19 @@ export default function OptionCard({
    onClick,
    layout = "row",
 }: OptionCardProps) {
-   const base = `rounded-2xl border-2 transition-all ${
+   const base = `rounded-button border-2 transition-all ${
       selected
          ? "border-primary bg-primary/5 shadow-md shadow-primary/10"
-         : "border-card-border bg-card-bg hover:border-primary/30"
+         : "border-card-border bg-card-bg/40 hover:border-primary/30"
    }`
 
    if (layout === "col") {
       return (
          <button
             onClick={onClick}
-            className={`${base} py-6 flex flex-col items-center gap-3`}>
+            className={`${base} py-card flex flex-col items-center gap-3`}>
             <IconBadge icon={icon} selected={selected} />
-            <span className="font-bold text-sm text-foreground">{label}</span>
+            <span className="text-secondary text-foreground font-bold">{label}</span>
          </button>
       )
    }
@@ -40,14 +40,14 @@ export default function OptionCard({
    return (
       <button
          onClick={onClick}
-         className={`${base} p-5 text-left flex items-center gap-4`}>
-         <IconBadge icon={icon} selected={selected} />
-         <div className="flex-1">
-            <div className="font-bold text-base text-foreground">{label}</div>
-            {sub && (
-               <div className="text-xs text-gray-400 font-medium">{sub}</div>
-            )}
-         </div>
+         className={`${base} p-card-sm text-left flex items-center gap-4`}>
+             <IconBadge icon={icon} selected={selected} />
+             <div className="flex-1">
+                <div className="text-body text-foreground font-bold">{label}</div>
+                {sub && (
+                   <div className="text-caption text-subtle">{sub}</div>
+                )}
+             </div>
          {selected && (
             <CheckCircle2 size={20} className="text-primary shrink-0" />
          )}
