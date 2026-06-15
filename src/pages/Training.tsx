@@ -1,12 +1,19 @@
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { useStore } from "@/store/useStore"
+import type { Routine, RoutineExercise } from "@/store/useStore"
+import {
+   apiCreateRoutine,
+   apiUpdateRoutine,
+   apiDeleteRoutine,
+   type RoutineExerciseInput,
+   type UpsertRoutinePayload,
+} from "@/api/routines"
+import { apiCreateWorkoutSession, type WorkoutSetInput } from "@/api/workouts"
+import { todayLocalISO } from "@/api/client"
 import { motion, AnimatePresence } from "framer-motion"
 import {
    CheckCircle2,
-   Play,
    Circle,
-   Clock,
-   Flame,
    Dumbbell,
    Zap,
    Trash2,
@@ -15,154 +22,352 @@ import {
    ChevronLeft,
    Plus,
    ChevronDown,
+   X,
+   Weight,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useWebHaptics } from "web-haptics/react"
 import { Button, Modal } from "@/components/ui"
 
+// ─── Local draft model for editing a routine ────────────────────────────────
+
+type Unit = "reps" | "seg" | "min"
+
+interface DraftExercise {
+   key: string
+   name: string
+   unit: Unit
+   value: number
+   sets: number
+   usesWeight: boolean
+   weight: number
+   rest: number
+}
+
+let draftKeySeq = 0
+function newKey(): string {
+   draftKeySeq += 1
+   return `d${draftKeySeq}`
+}
+
+function unitOf(ex: RoutineExercise): Unit {
+   if (ex.tracking === "TIME") {
+      const s = ex.targetDurationSeconds ?? 0
+      return s > 0 && s % 60 === 0 ? "min" : "seg"
+   }
+   return "reps"
+}
+
+function valueOf(ex: RoutineExercise): number {
+   if (ex.tracking === "TIME") {
+      const s = ex.targetDurationSeconds ?? 0
+      return s % 60 === 0 ? s / 60 : s
+   }
+   return ex.targetReps ?? 0
+}
+
+function toDraft(routine: Routine): { name: string; exercises: DraftExercise[] } {
+   return {
+      name: routine.name,
+      exercises: routine.exercises.map((ex) => ({
+         key: newKey(),
+         name: ex.exerciseName,
+         unit: unitOf(ex),
+         value: valueOf(ex),
+         sets: ex.targetSets,
+         usesWeight: ex.usesWeight,
+         weight: ex.targetWeight ?? 0,
+         rest: ex.restSeconds ?? 0,
+      })),
+   }
+}
+
+function blankExercise(): DraftExercise {
+   return {
+      key: newKey(),
+      name: "Nuevo ejercicio",
+      unit: "reps",
+      value: 10,
+      sets: 3,
+      usesWeight: false,
+      weight: 0,
+      rest: 0,
+   }
+}
+
+function draftToPayload(
+   name: string,
+   exercises: DraftExercise[],
+   unitSystem: Routine["unitSystem"],
+): UpsertRoutinePayload {
+   const mapped: RoutineExerciseInput[] = exercises.map((e) => {
+      const input: RoutineExerciseInput = {
+         exerciseName: e.name.trim() || "Ejercicio",
+         tracking: e.unit === "reps" ? "REPS" : "TIME",
+         usesWeight: e.usesWeight,
+         targetSets: Math.max(1, e.sets),
+      }
+      if (e.unit === "reps") input.targetReps = Math.max(1, e.value)
+      else input.targetDurationSeconds = Math.max(1, e.unit === "min" ? e.value * 60 : e.value)
+      if (e.usesWeight && e.weight > 0) input.targetWeight = e.weight
+      if (e.rest > 0) input.restSeconds = e.rest
+      return input
+   })
+   return { name: name.trim() || "Rutina", unitSystem, exercises: mapped }
+}
+
+// ─── Display helpers ─────────────────────────────────────────────────────────
+
+function planSummary(ex: RoutineExercise): string {
+   const unit = unitOf(ex)
+   const value = valueOf(ex)
+   const what =
+      unit === "reps" ? `${value} reps` : unit === "min" ? `${value} min` : `${value} seg`
+   const weight = ex.usesWeight && ex.targetWeight ? ` · ${ex.targetWeight} kg` : ""
+   return `${ex.targetSets} series × ${what}${weight}`
+}
+
+function exerciseToSets(ex: RoutineExercise): WorkoutSetInput[] {
+   return Array.from({ length: ex.targetSets }, () => {
+      const s: WorkoutSetInput = { completed: true }
+      if (ex.tracking === "REPS" && ex.targetReps) s.reps = ex.targetReps
+      else if (ex.tracking === "TIME" && ex.targetDurationSeconds)
+         s.durationSeconds = ex.targetDurationSeconds
+      else if (ex.tracking === "DISTANCE" && ex.targetDistanceMeters)
+         s.distanceMeters = ex.targetDistanceMeters
+      if (ex.usesWeight && ex.targetWeight) s.weight = ex.targetWeight
+      return s
+   })
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function TrainingPage() {
    const { trigger } = useWebHaptics()
-   const {
-      workouts,
-      activeWorkoutId,
-      setActiveWorkout,
-      addWorkout,
-      deleteWorkout,
-      addExercise,
-      updateExercise,
-      deleteExercise,
-      toggleExerciseCompletion,
-      setWorkoutCompleted,
-      workoutCompleted,
-      resetWorkoutProgress,
-   } = useStore()
+   const routines = useStore((s) => s.routines)
+   const activeRoutineId = useStore((s) => s.activeRoutineId)
+   const setActiveRoutine = useStore((s) => s.setActiveRoutine)
+   const upsertRoutine = useStore((s) => s.upsertRoutine)
+   const removeRoutine = useStore((s) => s.removeRoutine)
+   const setWorkoutCompleted = useStore((s) => s.setWorkoutCompleted)
+   const workoutCompleted = useStore((s) => s.workoutCompleted)
 
+   const activeRoutine = useMemo(
+      () => routines.find((r) => r.id === activeRoutineId) ?? routines[0] ?? null,
+      [routines, activeRoutineId],
+   )
+
+   // Ephemeral per-session set progress: exerciseId -> boolean[] (length = sets).
+   const [progress, setProgress] = useState<Record<string, boolean[]>>({})
    const [showCelebration, setShowCelebration] = useState(false)
-   const [editingExId, setEditingExId] = useState<string | null>(null)
-   const [activeExerciseId, setActiveExerciseId] = useState<string | null>(null)
+   const [saving, setSaving] = useState(false)
 
+   // Edit draft state.
+   const [editing, setEditing] = useState(false)
+   const [draft, setDraft] = useState<{ name: string; exercises: DraftExercise[] }>({
+      name: "",
+      exercises: [],
+   })
+
+   // Modal (create / confirm).
    const [modal, setModal] = useState<{
       isOpen: boolean
       type: "prompt" | "confirm"
       title: string
       message?: string
-      defaultValue?: string
       onConfirm: (val?: string) => void
-   }>({
-      isOpen: false,
-      type: "confirm",
-      title: "",
-      onConfirm: () => {},
-   })
+   }>({ isOpen: false, type: "confirm", title: "", onConfirm: () => {} })
    const [modalInput, setModalInput] = useState("")
 
-   const showPrompt = (
-      title: string,
-      defaultValue: string,
-      onConfirm: (val: string) => void,
-   ) => {
-      setModalInput(defaultValue)
+   // Reset session progress when switching routines or its shape changes.
+   useEffect(() => {
+      if (!activeRoutine) {
+         setProgress({})
+         return
+      }
+      setProgress((prev) => {
+         const next: Record<string, boolean[]> = {}
+         for (const ex of activeRoutine.exercises) {
+            const existing = prev[ex.id]
+            next[ex.id] =
+               existing && existing.length === ex.targetSets
+                  ? existing
+                  : Array.from({ length: ex.targetSets }, () => false)
+         }
+         return next
+      })
+   }, [activeRoutine])
+
+   useEffect(() => {
+      if (showCelebration) {
+         const t = setTimeout(() => setShowCelebration(false), 4000)
+         return () => clearTimeout(t)
+      }
+   }, [showCelebration])
+
+   const totalSets = activeRoutine
+      ? activeRoutine.exercises.reduce((acc, ex) => acc + ex.targetSets, 0)
+      : 0
+   const completedSets = Object.values(progress).reduce(
+      (acc, arr) => acc + arr.filter(Boolean).length,
+      0,
+   )
+   const sessionProgress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0
+
+   // ─── Session ──────────────────────────────────────────────────────────────
+
+   const logSession = async (routine: Routine) => {
+      const res = await apiCreateWorkoutSession({
+         title: routine.name,
+         unitSystem: routine.unitSystem,
+         idempotencyKey: `routine-${routine.id}-${todayLocalISO()}`,
+         exercises: routine.exercises.map((ex) => ({
+            exerciseId: ex.exerciseId ?? undefined,
+            exerciseName: ex.exerciseId ? undefined : ex.exerciseName,
+            sets: exerciseToSets(ex),
+         })),
+      })
+      if (res.ok) {
+         setWorkoutCompleted(true)
+         setShowCelebration(true)
+         trigger("success")
+      }
+   }
+
+   const toggleSet = (exerciseId: string, idx: number) => {
+      if (!activeRoutine) return
+
+      const arr = [...(progress[exerciseId] ?? [])]
+      arr[idx] = !arr[idx]
+      const next = { ...progress, [exerciseId]: arr }
+      setProgress(next)
+      trigger("nudge")
+
+      // Fire the session log once, outside the state updater (keeping it pure),
+      // when every set of every exercise is complete.
+      const done = activeRoutine.exercises.every((ex) =>
+         (next[ex.id] ?? []).slice(0, ex.targetSets).every(Boolean),
+      )
+      if (done && !workoutCompleted) void logSession(activeRoutine)
+   }
+
+   const resetSession = () => {
+      if (!activeRoutine) return
+      setProgress(
+         Object.fromEntries(
+            activeRoutine.exercises.map((ex) => [
+               ex.id,
+               Array.from({ length: ex.targetSets }, () => false),
+            ]),
+         ),
+      )
+   }
+
+   // ─── Create / edit / delete ─────────────────────────────────────────────────
+
+   const handleCreate = () => {
+      setModalInput("Nueva rutina")
       setModal({
          isOpen: true,
          type: "prompt",
-         title,
-         defaultValue,
-         onConfirm: (val) => {
-            if (val) onConfirm(val)
-            setModal((prev) => ({ ...prev, isOpen: false }))
+         title: "Crear rutina",
+         onConfirm: async (val) => {
+            setModal((m) => ({ ...m, isOpen: false }))
+            const name = (val ?? "").trim()
+            if (!name) return
+            const res = await apiCreateRoutine({
+               name,
+               exercises: [
+                  { exerciseName: "Ejercicio 1", tracking: "REPS", usesWeight: false, targetSets: 3, targetReps: 10 },
+               ],
+            })
+            if (res.ok) {
+               upsertRoutine(res.data.routine)
+               startEditing(res.data.routine)
+            }
          },
       })
    }
 
-   const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+   const startEditing = (routine: Routine) => {
+      setDraft(toDraft(routine))
+      setEditing(true)
+   }
+
+   const handleSaveEdits = async () => {
+      if (!activeRoutine || saving) return
+      if (draft.exercises.length === 0) return
+      setSaving(true)
+      const res = await apiUpdateRoutine(
+         activeRoutine.id,
+         draftToPayload(draft.name, draft.exercises, activeRoutine.unitSystem),
+      )
+      if (res.ok) {
+         upsertRoutine(res.data.routine)
+         setEditing(false)
+         trigger("success")
+      }
+      setSaving(false)
+   }
+
+   const handleDelete = () => {
+      if (!activeRoutine) return
       setModal({
          isOpen: true,
          type: "confirm",
-         title,
-         message,
-         onConfirm: () => {
-            onConfirm()
-            setModal((prev) => ({ ...prev, isOpen: false }))
+         title: "Eliminar rutina",
+         message: `¿Seguro que querés eliminar "${activeRoutine.name}"?`,
+         onConfirm: async () => {
+            setModal((m) => ({ ...m, isOpen: false }))
+            const id = activeRoutine.id
+            const res = await apiDeleteRoutine(id)
+            if (res.ok) removeRoutine(id)
          },
       })
    }
 
-   const activeWorkout =
-      workouts.find((w) => w.id === activeWorkoutId) || workouts[0]
-   const exercises = activeWorkout?.exercises || []
+   // Draft mutators
+   const updateDraftExercise = (key: string, fields: Partial<DraftExercise>) =>
+      setDraft((d) => ({
+         ...d,
+         exercises: d.exercises.map((e) => (e.key === key ? { ...e, ...fields } : e)),
+      }))
+   const removeDraftExercise = (key: string) =>
+      setDraft((d) => ({ ...d, exercises: d.exercises.filter((e) => e.key !== key) }))
+   const addDraftExercise = () =>
+      setDraft((d) => ({ ...d, exercises: [...d.exercises, blankExercise()] }))
 
-   useEffect(() => {
-      if (activeWorkout && !activeExerciseId && exercises.length > 0) {
-         setActiveExerciseId(exercises[0].id)
-      }
-   }, [activeWorkout, exercises, activeExerciseId])
+   return (
+      <div className="p-4 md:p-6 pb-32 animate-fade-in font-sans flex flex-col min-h-screen relative">
+         <AnimatePresence>
+            {showCelebration && (
+               <motion.div
+                  initial={{ opacity: 0, y: -40, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+                  className="mb-4 w-full bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-[28px] p-4 flex items-center gap-4 shadow-lg shadow-primary/10">
+                  <div className="w-12 h-12 bg-primary/10 dark:bg-primary/20 text-primary rounded-full flex items-center justify-center shrink-0">
+                     <CheckCircle2 size={28} />
+                  </div>
+                  <div className="flex-1">
+                     <h3 className="font-bold text-foreground text-lg">
+                        ¡Rutina completada!
+                     </h3>
+                     <p className="text-subtle dark:text-muted-foreground text-sm font-medium">
+                        Quedó registrada tu sesión. ¡Seguí así!
+                     </p>
+                  </div>
+                  <button
+                     onClick={() => setShowCelebration(false)}
+                     className="p-2 rounded-xl hover:bg-primary/10 dark:hover:bg-primary/20 text-primary transition-colors">
+                     <ChevronDown size={20} className="rotate-180" />
+                  </button>
+               </motion.div>
+            )}
+         </AnimatePresence>
 
-   const handleComplete = (exerciseId: string, idx: number) => {
-      toggleExerciseCompletion(activeWorkout.id, exerciseId)
-
-      const allCompleted = exercises.every((ex, i) =>
-         i === idx ? !ex.completed : ex.completed,
-      )
-
-      if (!exercises[idx].completed) {
-         // Si lo estamos completando ahora
-         if (idx < exercises.length - 1) {
-            setTimeout(() => setActiveExerciseId(exercises[idx + 1].id), 500)
-         } else if (allCompleted) {
-            setTimeout(() => setShowCelebration(true), 800)
-            setWorkoutCompleted(true)
-         }
-      }
-   }
-
-   const handleAddWorkout = () => {
-      showPrompt("Crear Rutina", "Nueva Rutina", (name) => {
-         addWorkout(name)
-      })
-   }
-
-   const completedCount = exercises.filter((e) => e.completed).length
-   const progress =
-      exercises.length > 0 ? (completedCount / exercises.length) * 100 : 0
-
-    useEffect(() => {
-       if (showCelebration) {
-          const timer = setTimeout(() => setShowCelebration(false), 4000)
-          return () => clearTimeout(timer)
-       }
-    }, [showCelebration])
-
-    return (
-       <div className="p-4 md:p-6 pb-32 animate-fade-in font-sans flex flex-col min-h-screen relative">
-          <AnimatePresence>
-             {showCelebration && (
-                <motion.div
-                   initial={{ opacity: 0, y: -40, scale: 0.9 }}
-                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                   exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                   transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-                    className="mb-4 w-full bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/20 rounded-[28px] p-4 flex items-center gap-4 shadow-lg shadow-primary/10">
-                   <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-                       className="w-12 h-12 bg-primary/10 dark:bg-primary/20 text-primary rounded-full flex items-center justify-center shrink-0">
-                      <CheckCircle2 size={28} />
-                   </motion.div>
-                   <div className="flex-1">
-                       <h3 className="font-bold text-foreground text-lg">¡Rutina completada!</h3>
-                       <p className="text-subtle dark:text-muted-foreground text-sm font-medium">Sigue así, puedes seguir editando o reiniciar cuando quieras.</p>
-                   </div>
-                   <button
-                      onClick={() => setShowCelebration(false)}
-                       className="p-2 rounded-xl hover:bg-primary/10 dark:hover:bg-primary/20 text-primary transition-colors">
-                      <ChevronDown size={20} className="rotate-180" />
-                   </button>
-                </motion.div>
-             )}
-          </AnimatePresence>
-
-          <header className="mb-6 flex flex-col items-start justify-between">
+         <header className="mb-6 flex flex-col items-start justify-between">
             <div className="flex items-center gap-2 mb-2">
                <Link
                   to="/"
@@ -177,64 +382,80 @@ export default function TrainingPage() {
 
             <div className="flex gap-2 overflow-x-auto w-full pb-2 [&::-webkit-scrollbar]:hidden mt-2 snap-x">
                <button
-                  onClick={handleAddWorkout}
+                  onClick={handleCreate}
                   className="shrink-0 px-4 py-2.5 rounded-xl font-bold text-sm bg-primary/10 text-primary flex items-center gap-2 hover:bg-primary/20 transition-colors snap-start border border-primary/20">
                   <Plus size={16} /> Crear
                </button>
-               {workouts.map((w) => (
+               {routines.map((r) => (
                   <button
-                     key={w.id}
-                     onClick={() => setActiveWorkout(w.id)}
-                     className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all snap-start                                                    ${activeWorkoutId === w.id ? "bg-primary text-white shadow-md" : "bg-card-bg/40 text-subtle border border-card-border hover:bg-muted"}`}>
-                     {w.name}
+                     key={r.id}
+                     onClick={() => {
+                        setEditing(false)
+                        setActiveRoutine(r.id)
+                     }}
+                     className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all snap-start ${activeRoutine?.id === r.id ? "bg-primary text-white shadow-md" : "bg-card-bg/40 text-subtle border border-card-border hover:bg-muted"}`}>
+                     {r.name}
                   </button>
                ))}
             </div>
          </header>
 
-         {activeWorkout ? (
+         {!activeRoutine ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-subtle">
+               <Dumbbell size={64} className="mb-4 text-muted-foreground dark:text-white/10" />
+               <p className="font-bold text-lg mb-1 text-foreground">No hay rutinas creadas</p>
+               <p className="text-sm mb-6 text-center max-w-xs">
+                  Creá tu primera rutina (Push, Pull, Legs…) para empezar a planificar y
+                  registrar tus entrenamientos.
+               </p>
+               <Button onClick={handleCreate} className="flex items-center gap-2">
+                  <Plus size={20} /> Crear rutina
+               </Button>
+            </div>
+         ) : editing ? (
+            <RoutineEditor
+               draft={draft}
+               saving={saving}
+               onName={(name) => setDraft((d) => ({ ...d, name }))}
+               onUpdate={updateDraftExercise}
+               onRemove={removeDraftExercise}
+               onAdd={addDraftExercise}
+               onCancel={() => setEditing(false)}
+               onSave={handleSaveEdits}
+            />
+         ) : (
             <>
                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-foreground">
-                     {activeWorkout.name}
-                  </h2>
-                   <div className="flex items-center gap-2">
-                      {completedCount > 0 && (
-                          <button
-                             onClick={() => {
-                                showConfirm(
-                                   "Reiniciar Rutina",
-                                   "¿Quieres marcar todos los ejercicios como pendientes?",
-                                   () => resetWorkoutProgress(activeWorkout.id),
-                                )
-                             }}
-                             className="min-w-11 min-h-11 flex items-center justify-center text-primary p-2 bg-primary/10 rounded-xl hover:bg-primary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                             title="Reiniciar rutina">
-                             <Circle size={20} />
-                          </button>
-                       )}
-                       <button
-                          onClick={() => {
-                             showConfirm(
-                                "Eliminar Rutina",
-                                "¿Seguro que quieres eliminar esta rutina completa?",
-                                () => deleteWorkout(activeWorkout.id),
-                             )
-                          }}
-                           className="min-w-11 min-h-11 flex items-center justify-center text-danger p-2 bg-danger/10 dark:bg-danger/10 rounded-xl hover:bg-danger/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                          <Trash2 size={20} />
-                       </button>
-                   </div>
-                </div>
+                  <h2 className="text-2xl font-bold text-foreground">{activeRoutine.name}</h2>
+                  <div className="flex items-center gap-2">
+                     {completedSets > 0 && (
+                        <button
+                           onClick={resetSession}
+                           title="Reiniciar progreso"
+                           className="text-primary p-2 bg-primary/10 rounded-xl hover:bg-primary/20 transition-colors">
+                           <Circle size={20} />
+                        </button>
+                     )}
+                     <button
+                        onClick={() => startEditing(activeRoutine)}
+                        title="Editar rutina"
+                        className="text-subtle p-2 bg-muted dark:bg-white/5 rounded-xl hover:text-foreground transition-colors">
+                        <Settings2 size={20} />
+                     </button>
+                     <button
+                        onClick={handleDelete}
+                        className="text-red-500 p-2 bg-red-50 dark:bg-red-500/10 rounded-xl hover:bg-red-100 transition-colors">
+                        <Trash2 size={20} />
+                     </button>
+                  </div>
+               </div>
 
-               {/* Header Progress */}
-               <div className="bg-card-bg/40 rounded-[32px] p-5 shadow-sm border border-card-border mb-8 flex items-center gap-5">
+               {/* Session progress */}
+               <div className="bg-card-bg rounded-[32px] p-5 shadow-sm border border-card-border mb-8 flex items-center gap-5">
                   <div className="w-14 h-14 relative shrink-0">
-                     <svg
-                        viewBox="0 0 36 36"
-                        className="w-full h-full transform -rotate-90">
+                     <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
                         <path
-                           className="text-muted dark:text-white/10"
+                           className="text-muted dark:text-white/5"
                            strokeWidth="4"
                            stroke="currentColor"
                            fill="none"
@@ -242,7 +463,7 @@ export default function TrainingPage() {
                         />
                         <motion.path
                            initial={{ pathLength: 0 }}
-                           animate={{ pathLength: progress / 100 }}
+                           animate={{ pathLength: sessionProgress / 100 }}
                            className="text-primary"
                            strokeWidth="4"
                            strokeLinecap="round"
@@ -254,468 +475,87 @@ export default function TrainingPage() {
                   </div>
                   <div>
                      <span className="block font-bold text-lg text-foreground">
-                        Progreso de Sesión
+                        Progreso de sesión
                      </span>
                      <span className="text-sm font-bold text-primary">
-                        {completedCount}/{exercises.length} ejercicios listos
+                        {completedSets}/{totalSets} series completadas
                      </span>
                   </div>
                </div>
 
-               {/* Exercises List */}
+               {/* Exercises */}
                <div className="space-y-4 flex-1">
-                  {exercises.map((ex, idx) => {
-                     const isActive = activeExerciseId === ex.id
-                     const isEditing = editingExId === ex.id
-
-                     const getSetsArray = () => {
-                        if (ex.setDetails && ex.setDetails.length === ex.sets)
-                           return ex.setDetails
-                        return Array.from({ length: ex.sets }).map((_, i) => {
-                           if (ex.setDetails && ex.setDetails[i])
-                              return ex.setDetails[i]
-                           return {
-                              id: `${ex.id}-set-${i}`,
-                              reps: ex.reps,
-                              completed: false,
-                           }
-                        })
-                     }
-
+                  {activeRoutine.exercises.map((ex) => {
+                     const sets = progress[ex.id] ?? []
+                     const done = sets.length > 0 && sets.every(Boolean)
                      return (
-                        <motion.div
-                           layout
+                        <div
                            key={ex.id}
-                           className={`rounded-[32px] border-2 transition-all ${
-                              ex.completed
-                                 ? "bg-muted dark:bg-white/5 opacity-60 border-transparent"
-                                 : isActive
-                                   ? "bg-card-bg/40 border-primary shadow-lg ring-4 ring-primary/5"
-                                    : "bg-card-bg/40 border-card-border hover:border-muted-foreground"
-                           }`}>
-                           <div className="p-5 flex items-center gap-4">
-                               <button
-                                  onClick={(e) => {
-                                     e.stopPropagation()
-                                     handleComplete(ex.id, idx)
-                                  }}
-                                  aria-label={ex.completed ? "Marcar como pendiente" : "Marcar como completado"}
-                                  className="min-w-11 min-h-11 flex items-center justify-center shrink-0 transition-transform active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full">
-                                 {ex.completed ? (
-                                    <CheckCircle2
-                                       size={32}
-                                       className="text-primary"
-                                    />
-                                 ) : (
-                                    <Circle
-                                       size={32}
-                                       className={
-                                          isActive
-                                             ? "text-primary"
-                                             : "text-muted-foreground"
-                                       }
-                                    />
-                                 )}
-                              </button>
-
-                              <button
-                                 className="flex-1 text-left"
-                                 onClick={() =>
-                                    !ex.completed && setActiveExerciseId(ex.id)
-                                 }>
-                                 {isEditing ? (
-                                    <input
-                                       aria-label="Nombre del ejercicio"
-                                       className="w-full bg-transparent font-bold text-lg text-primary border-b border-primary/20 outline-none pb-1"
-                                       value={ex.name}
-                                       onChange={(e) =>
-                                          updateExercise(activeWorkout.id, ex.id, {
-                                             name: e.target.value,
-                                          })
-                                       }
-                                    />
-                                 ) : (
-                                    <h4
-                                       className={`font-bold transition-all ${isActive ? "text-primary text-xl" : "text-foreground"}`}>
-                                       {ex.name}
-                                    </h4>
-                                 )}
-
-                                 {!isEditing && (
-                                    <p className="text-xs text-subtle font-bold mt-1 uppercase tracking-tight">
-                                       {ex.sets} Sets •{" "}
-                                       {ex.reps.replace(/[^0-9]/g, "")}{" "}
-                                       {ex.reps.includes("s")
-                                          ? "Segundos"
-                                          : ex.reps.includes("m")
-                                            ? "Minutos"
-                                            : "Reps"}
-                                    </p>
-                                 )}
-                              </button>
-
-                              <div className="flex items-center gap-2">
-                                 <button
-                                    aria-label="Editar ejercicio"
-                                    onClick={(e) => {
-                                       e.stopPropagation()
-                                       setEditingExId(isEditing ? null : ex.id)
-                                    }}
-                                     className={`min-w-11 min-h-11 flex items-center justify-center p-2.5 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isEditing ? "bg-muted text-primary" : "bg-muted text-subtle hover:text-foreground"}`}>
-                                     <Settings2 size={18} />
-                                 </button>
+                           className={`rounded-[32px] border-2 transition-all p-5 ${done ? "bg-muted dark:bg-white/5 opacity-70 border-transparent" : "bg-card-bg border-card-border"}`}>
+                           <div className="flex items-start justify-between gap-3 mb-4">
+                              <div>
+                                 <h4 className="font-bold text-lg text-foreground">
+                                    {ex.exerciseName}
+                                 </h4>
+                                 <p className="text-xs text-subtle font-bold mt-1 uppercase tracking-tight flex items-center gap-1.5">
+                                    {planSummary(ex)}
+                                    {ex.usesWeight && (
+                                       <Weight size={12} className="text-primary" />
+                                    )}
+                                 </p>
                               </div>
                            </div>
-
-                           <AnimatePresence>
-                              {isActive && !isEditing && (
-                                 <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="px-5 pb-5 overflow-hidden">
-                                    <div className="flex flex-col gap-2 pt-2 border-t border-muted dark:border-white/5">
-                                       {getSetsArray().map((setDetail, setIdx) => (
-                                          <div
-                                             key={setDetail.id}
-                                             className="flex items-center gap-3">
-                                             <div className="w-6 text-center text-xs font-bold text-subtle">
-                                                {setIdx + 1}
-                                             </div>
-                                             <div className="flex-1 bg-muted dark:bg-white/5 rounded-xl px-4 py-3 flex items-center gap-2 border border-transparent focus-within:border-primary/30">
-                                                <input
-                                                   type="number"
-                                                   aria-label="Repeticiones"
-                                                   className={`w-full bg-transparent font-bold outline-none text-sm ${setDetail.completed ? "text-subtle line-through" : "text-foreground"}`}
-                                                   value={setDetail.reps.replace(
-                                                      /[^0-9]/g,
-                                                      "",
-                                                   )}
-                                                   onChange={(e) => {
-                                                      const unit =
-                                                         setDetail.reps.replace(
-                                                            /[0-9]/g,
-                                                            "",
-                                                         )
-                                                      const updatedSets = [
-                                                         ...getSetsArray(),
-                                                      ]
-                                                      updatedSets[setIdx] = {
-                                                         ...setDetail,
-                                                         reps: e.target.value + unit,
-                                                      }
-                                                      updateExercise(
-                                                         activeWorkout.id,
-                                                         ex.id,
-                                                         { setDetails: updatedSets },
-                                                      )
-                                                   }}
-                                                />
-                                                {setDetail.reps.replace(
-                                                   /[0-9]/g,
-                                                   "",
-                                                ) && (
-                                                   <span className="text-xs font-bold text-subtle shrink-0">
-                                                      {setDetail.reps.includes("s")
-                                                         ? "seg"
-                                                         : "min"}
-                                                   </span>
-                                                )}
-                                             </div>
-                                             <button
-                                                aria-label={
-                                                   setDetail.completed
-                                                      ? "Marcar serie como pendiente"
-                                                      : "Completar serie"
-                                                }
-                                                onClick={(e) => {
-                                                   e.stopPropagation()
-                                                   trigger("nudge")
-                                                   const updatedSets = [
-                                                      ...getSetsArray(),
-                                                   ]
-                                                   updatedSets[setIdx] = {
-                                                      ...setDetail,
-                                                      completed:
-                                                         !setDetail.completed,
-                                                   }
-                                                   const allCompleted =
-                                                      updatedSets.every(
-                                                         (s) => s.completed,
-                                                      )
-                                                   updateExercise(
-                                                      activeWorkout.id,
-                                                      ex.id,
-                                                      {
-                                                         setDetails: updatedSets,
-                                                         completed: allCompleted,
-                                                      },
-                                                   )
-                                                   if (
-                                                      allCompleted &&
-                                                      !ex.completed
-                                                   ) {
-                                                      trigger("success")
-                                                      const allExCompleted =
-                                                         exercises.every((e, i) =>
-                                                            i === idx
-                                                               ? true
-                                                               : e.completed,
-                                                         )
-                                                      if (
-                                                         idx <
-                                                         exercises.length - 1
-                                                      ) {
-                                                         setTimeout(
-                                                            () =>
-                                                               setActiveExerciseId(
-                                                                  exercises[idx + 1]
-                                                                     .id,
-                                                               ),
-                                                            500,
-                                                         )
-                                                      } else if (allExCompleted) {
-                                                         setTimeout(
-                                                            () =>
-                                                               setShowCelebration(
-                                                                  true,
-                                                               ),
-                                                            800,
-                                                         )
-                                                         setWorkoutCompleted(true)
-                                                      }
-                                                   }
-                                                }}
-                                                 className={`p-2 rounded-xl transition-colors ${setDetail.completed ? "bg-primary/10 text-primary" : "bg-muted text-subtle hover:text-foreground"}`}>
-                                                <CheckCircle2 size={18} />
-                                             </button>
-                                          </div>
-                                       ))}
-                                    </div>
-                                 </motion.div>
-                              )}
-
-                              {isEditing && (
-                                 <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="px-6 pb-6 overflow-hidden">
-                                     <div className="grid grid-cols-3 gap-3 mb-4 mt-2 items-start">
-                                        <div className="bg-muted dark:bg-white/5 py-1 px-2 rounded-xl border border-muted dark:border-white/5 inline-flex flex-col">
-                                            <span className="text-caption text-subtle block leading-none">
-                                               Sets
-                                            </span>
-                                           <input
-                                              type="number"
-                                              aria-label="Sets"
-                                              min="0"
-                                              className="w-full bg-transparent font-bold text-base text-foreground outline-none leading-none mt-0.5"
-                                              value={ex.sets}
-                                              onChange={(e) => {
-                                                 const newSets =
-                                                    parseInt(e.target.value) || 0
-                                                 const updatedSets = Array.from({
-                                                    length: newSets,
-                                                 }).map((_, i) => {
-                                                    if (
-                                                       ex.setDetails &&
-                                                       ex.setDetails[i]
-                                                    )
-                                                       return ex.setDetails[i]
-                                                    return {
-                                                       id: `${ex.id}-set-${i}`,
-                                                       reps: ex.reps,
-                                                       completed: false,
-                                                    }
-                                                 })
-                                                 updateExercise(
-                                                    activeWorkout.id,
-                                                    ex.id,
-                                                    {
-                                                       sets: newSets,
-                                                       setDetails: updatedSets,
-                                                    },
-                                                 )
-                                              }}
-                                           />
-                                        </div>
-                                        <div className="bg-muted dark:bg-white/5 py-1 px-2 rounded-xl border border-muted dark:border-white/5 inline-flex flex-col">
-                                            <span className="text-caption text-subtle block leading-none">
-                                               Cantidad
-                                            </span>
-                                           <input
-                                              type="number"
-                                              aria-label="Cantidad"
-                                              min="0"
-                                              className="w-full bg-transparent font-bold text-base text-foreground outline-none leading-none mt-0.5"
-                                              value={ex.reps.replace(/[^0-9]/g, "")}
-                                              onChange={(e) => {
-                                                 const val = e.target.value
-                                                 const unit = ex.reps.includes("s")
-                                                    ? "s"
-                                                    : ex.reps.includes("m")
-                                                      ? "m"
-                                                      : ""
-                                                 const newReps = val + unit
-                                                 const updatedSets =
-                                                    getSetsArray().map((s) => ({
-                                                       ...s,
-                                                       reps: newReps,
-                                                    }))
-                                                 updateExercise(
-                                                    activeWorkout.id,
-                                                    ex.id,
-                                                    {
-                                                       reps: newReps,
-                                                       setDetails: updatedSets,
-                                                    },
-                                                 )
-                                              }}
-                                           />
-                                        </div>
-                                        <div className="rounded-xl border border-muted dark:border-white/5 overflow-hidden flex flex-col">
-                                          {[
-                                             { value: "reps", label: "Reps" },
-                                             { value: "s", label: "Segundos" },
-                                             { value: "m", label: "Minutos" },
-                                          ].map((opt) => {
-                                             const current = ex.reps.includes("s")
-                                                ? "s"
-                                                : ex.reps.includes("m")
-                                                  ? "m"
-                                                  : "reps"
-                                             const isSelected = current === opt.value
-                                             return (
-                                                <button
-                                                   key={opt.value}
-                                                   type="button"
-                                                   onClick={() => {
-                                                      const num = ex.reps.replace(
-                                                         /[^0-9]/g,
-                                                         "",
-                                                      )
-                                                      const unit =
-                                                         opt.value === "reps"
-                                                            ? ""
-                                                            : opt.value
-                                                      const newReps = num + unit
-                                                      const updatedSets =
-                                                         getSetsArray().map((s) => ({
-                                                            ...s,
-                                                            reps:
-                                                               s.reps.replace(
-                                                                  /[^0-9]/g,
-                                                                  "",
-                                                               ) + unit,
-                                                         }))
-                                                      updateExercise(
-                                                         activeWorkout.id,
-                                                         ex.id,
-                                                         {
-                                                            reps: newReps,
-                                                            setDetails: updatedSets,
-                                                         },
-                                                      )
-                                                   }}
-                                                   className={`px-3 py-2 font-bold text-xs text-left transition-all w-full border-t first:border-t-0 border-muted dark:border-white/5 ${
-                                                      isSelected
-                                                         ? "bg-primary text-white"
-                                                         : "bg-muted/50 dark:bg-white/5 text-foreground hover:bg-muted dark:hover:bg-white/5"
-                                                   }`}>
-                                                   {opt.label}
-                                                </button>
-                                             )
-                                          })}
-                                       </div>
-                                    </div>
-                                    <div className="flex gap-3">
-                                       <button
-                                          onClick={() =>
-                                             deleteExercise(activeWorkout.id, ex.id)
-                                          }
-                                           className="flex-1 py-4 bg-danger/10 dark:bg-danger/10 text-danger font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-danger/20 dark:hover:bg-danger/20 transition-colors">
-                                          <Trash2 size={18} /> Eliminar
-                                       </button>
-                                       <button
-                                          onClick={() => setEditingExId(null)}
-                                          className="flex-1 py-4 bg-primary text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-primary/95 transition-colors shadow-lg shadow-primary/20 animate-pulse-subtle">
-                                          <Save size={18} /> Guardar
-                                       </button>
-                                    </div>
-                                 </motion.div>
-                              )}
-                           </AnimatePresence>
-                        </motion.div>
+                           <div className="flex flex-wrap gap-2">
+                              {Array.from({ length: ex.targetSets }, (_, i) => {
+                                 const checked = sets[i]
+                                 return (
+                                    <button
+                                       key={i}
+                                       onClick={() => toggleSet(ex.id, i)}
+                                       className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm transition-all active:scale-90 ${checked ? "bg-primary text-white shadow-md shadow-primary/20" : "bg-muted dark:bg-white/5 text-subtle hover:text-foreground"}`}>
+                                       {checked ? <CheckCircle2 size={18} /> : i + 1}
+                                    </button>
+                                 )
+                              })}
+                           </div>
+                        </div>
                      )
                   })}
-
-                  <button
-                     onClick={() => addExercise(activeWorkout.id)}
-                     className="w-full py-5 mt-4 border-2 border-dashed border-card-border text-subtle font-bold rounded-[32px] flex items-center justify-center gap-2 hover:bg-muted transition-colors active:scale-95">
-                     <Plus size={20} /> Añadir Ejercicio
-                  </button>
                </div>
             </>
-         ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-subtle">
-               <Dumbbell
-                  size={64}
-                  className="mb-4 text-muted-foreground"
-               />
-               <p className="font-bold text-lg mb-1 text-foreground">
-                  No hay rutinas creadas
-               </p>
-               <p className="text-sm mb-6 text-center max-w-xs">
-                  Crea tu primera rutina de entrenamiento para empezar a añadir
-                  ejercicios.
-               </p>
-               <Button
-                  onClick={handleAddWorkout}
-                  className="flex items-center gap-2">
-                  <Plus size={20} /> Crear Rutina
-               </Button>
-            </div>
          )}
 
-         {/* Custom Modal */}
          <Modal
             isOpen={modal.isOpen}
-            onClose={() => setModal((prev) => ({ ...prev, isOpen: false }))}
+            onClose={() => setModal((m) => ({ ...m, isOpen: false }))}
             title={modal.title}
             footer={
                <div className="flex gap-3 w-full">
                   <Button
                      variant="muted"
                      className="flex-1 border border-card-border"
-                     onClick={() =>
-                        setModal((prev) => ({ ...prev, isOpen: false }))
-                     }>
+                     onClick={() => setModal((m) => ({ ...m, isOpen: false }))}>
                      Cancelar
                   </Button>
                   <Button
                      variant="primary"
                      className="flex-1"
-                     onClick={() => {
-                        if (modal.type === "prompt") {
-                           modal.onConfirm(modalInput)
-                        } else {
-                           modal.onConfirm()
-                        }
-                     }}>
+                     onClick={() =>
+                        modal.type === "prompt"
+                           ? modal.onConfirm(modalInput)
+                           : modal.onConfirm()
+                     }>
                      Aceptar
                   </Button>
                </div>
             }>
             {modal.type === "confirm" && (
-               <p className="text-sm text-subtle font-medium mb-6">
-                  {modal.message}
-               </p>
+               <p className="text-sm text-subtle font-medium mb-6">{modal.message}</p>
             )}
             {modal.type === "prompt" && (
-               <div className="bg-muted dark:bg-white/5 p-4 rounded-2xl border border-muted dark:border-white/5 mb-6">
+               <div className="bg-muted dark:bg-white/5 p-4 rounded-2xl border border-card-border mb-6">
                   <input
-                     aria-label="Valor"
+                     aria-label="Nombre de la rutina"
                      className="w-full bg-transparent font-bold text-foreground outline-none text-base"
                      value={modalInput}
                      onChange={(e) => setModalInput(e.target.value)}
@@ -724,5 +564,187 @@ export default function TrainingPage() {
             )}
          </Modal>
       </div>
+   )
+}
+
+// ─── Editor ──────────────────────────────────────────────────────────────────
+
+interface EditorProps {
+   draft: { name: string; exercises: DraftExercise[] }
+   saving: boolean
+   onName: (name: string) => void
+   onUpdate: (key: string, fields: Partial<DraftExercise>) => void
+   onRemove: (key: string) => void
+   onAdd: () => void
+   onCancel: () => void
+   onSave: () => void
+}
+
+const UNITS: { id: Unit; label: string }[] = [
+   { id: "reps", label: "Reps" },
+   { id: "seg", label: "Seg" },
+   { id: "min", label: "Min" },
+]
+
+function RoutineEditor({
+   draft,
+   saving,
+   onName,
+   onUpdate,
+   onRemove,
+   onAdd,
+   onCancel,
+   onSave,
+}: EditorProps) {
+   return (
+      <div className="flex-1 flex flex-col gap-4">
+         <input
+            aria-label="Nombre de la rutina"
+            value={draft.name}
+            onChange={(e) => onName(e.target.value)}
+            className="w-full bg-card-bg border border-card-border rounded-2xl px-4 py-3 text-xl font-bold text-foreground outline-none focus:border-primary/40"
+            placeholder="Nombre de la rutina"
+         />
+
+         <div className="space-y-4">
+            {draft.exercises.map((ex, idx) => (
+               <div
+                  key={ex.key}
+                  className="rounded-[28px] border border-card-border bg-card-bg p-5 flex flex-col gap-4">
+                  <div className="flex items-center gap-2">
+                     <span className="w-7 h-7 shrink-0 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+                        {idx + 1}
+                     </span>
+                     <input
+                        aria-label="Nombre del ejercicio"
+                        value={ex.name}
+                        onChange={(e) => onUpdate(ex.key, { name: e.target.value })}
+                        className="flex-1 bg-transparent font-bold text-base text-foreground border-b border-card-border focus:border-primary/40 outline-none pb-1"
+                     />
+                     <button
+                        aria-label="Eliminar ejercicio"
+                        onClick={() => onRemove(ex.key)}
+                        className="p-2 rounded-xl text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 transition-colors">
+                        <Trash2 size={16} />
+                     </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                     <Field label="Series">
+                        <NumberInput
+                           value={ex.sets}
+                           min={1}
+                           onChange={(v) => onUpdate(ex.key, { sets: v })}
+                        />
+                     </Field>
+                     <Field label="Cantidad">
+                        <NumberInput
+                           value={ex.value}
+                           min={1}
+                           onChange={(v) => onUpdate(ex.key, { value: v })}
+                        />
+                     </Field>
+                  </div>
+
+                  <div className="rounded-xl border border-card-border overflow-hidden flex">
+                     {UNITS.map((u) => (
+                        <button
+                           key={u.id}
+                           onClick={() => onUpdate(ex.key, { unit: u.id })}
+                           className={`flex-1 px-3 py-2 font-bold text-xs transition-all ${ex.unit === u.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/5 text-foreground hover:bg-muted"}`}>
+                           {u.label}
+                        </button>
+                     ))}
+                  </div>
+
+                  {/* Weight (optional) */}
+                  <div className="flex items-center justify-between bg-muted/50 dark:bg-white/5 rounded-2xl px-4 py-3">
+                     <div className="flex items-center gap-2">
+                        <Weight size={16} className="text-primary" />
+                        <span className="text-sm font-bold text-foreground">Usa peso</span>
+                     </div>
+                     <button
+                        role="switch"
+                        aria-checked={ex.usesWeight}
+                        onClick={() => onUpdate(ex.key, { usesWeight: !ex.usesWeight })}
+                        className={`w-11 h-6 rounded-full transition-colors relative ${ex.usesWeight ? "bg-primary" : "bg-muted-foreground"}`}>
+                        <span
+                           className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${ex.usesWeight ? "left-[22px]" : "left-0.5"}`}
+                        />
+                     </button>
+                  </div>
+                  {ex.usesWeight && (
+                     <Field label="Peso (kg)">
+                        <NumberInput
+                           value={ex.weight}
+                           min={0}
+                           step={0.5}
+                           onChange={(v) => onUpdate(ex.key, { weight: v })}
+                        />
+                     </Field>
+                  )}
+               </div>
+            ))}
+
+            <button
+               onClick={onAdd}
+               className="w-full py-5 border-2 border-dashed border-card-border text-subtle font-bold rounded-[28px] flex items-center justify-center gap-2 hover:bg-muted dark:hover:bg-white/5 transition-colors active:scale-95">
+               <Plus size={20} /> Añadir ejercicio
+            </button>
+         </div>
+
+         <div className="flex gap-3 sticky bottom-4 mt-2">
+            <Button
+               variant="muted"
+               onClick={onCancel}
+               className="flex-1 border border-card-border flex items-center justify-center gap-2">
+               <X size={18} /> Cancelar
+            </Button>
+            <Button
+               variant="primary"
+               disabled={saving || draft.exercises.length === 0}
+               onClick={onSave}
+               className="flex-1 flex items-center justify-center gap-2">
+               <Save size={18} /> {saving ? "Guardando…" : "Guardar"}
+            </Button>
+         </div>
+      </div>
+   )
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+   return (
+      <div className="bg-muted/50 dark:bg-white/5 rounded-xl px-3 py-2 flex flex-col">
+         <span className="text-[10px] font-bold text-subtle uppercase tracking-wider">
+            {label}
+         </span>
+         {children}
+      </div>
+   )
+}
+
+function NumberInput({
+   value,
+   onChange,
+   min = 0,
+   step = 1,
+}: {
+   value: number
+   onChange: (v: number) => void
+   min?: number
+   step?: number
+}) {
+   return (
+      <input
+         type="number"
+         min={min}
+         step={step}
+         value={value}
+         onChange={(e) => {
+            const v = parseFloat(e.target.value)
+            onChange(Number.isNaN(v) ? min : v)
+         }}
+         className="w-full bg-transparent font-bold text-base text-foreground outline-none mt-0.5"
+      />
    )
 }

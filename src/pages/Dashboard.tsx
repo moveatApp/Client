@@ -3,23 +3,21 @@ import { useNavigate, Link } from "react-router-dom"
 import { useStore } from "@/store/useStore"
 import { useWebHaptics } from "web-haptics/react"
 import {
-   CheckCircle,
    Flame,
    Plus,
-   Play,
    Droplet,
-   Sparkles,
    Save,
-   CalendarDays,
    X,
    UtensilsCrossed,
    ArrowRight,
    TrendingUp,
-   Zap,
    Dumbbell,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import WeightChart from "@/components/WeightChart"
+import { logWeight } from "@/lib/weightLog"
+import { todayLocalISO } from "@/api/client"
+import { DatePicker } from "@/components/ui"
 
 export default function Home() {
    const navigate = useNavigate()
@@ -31,13 +29,11 @@ export default function Home() {
       dailyCalories,
       waterGlasses,
       addWater,
-      workouts,
-      activeWorkoutId,
-      updateWeight,
-      addWeightEntry,
       isDarkMode,
       meals,
       streak,
+      routines,
+      activeRoutineId,
    } = useStore()
    const { trigger } = useWebHaptics({ debug: true })
    const [mounted, setMounted] = useState(false)
@@ -54,12 +50,12 @@ export default function Home() {
       }
    }, [isOnboarded, navigate])
 
-   const handleDashWeightSave = () => {
+   const handleDashWeightSave = async () => {
       const parsed = parseFloat(dashWeight)
       if (!isNaN(parsed) && parsed > 0) {
-         addWeightEntry(parsed, dashWeightDate)
+         await logWeight(parsed, dashWeightDate)
          setDashWeight("")
-         setDashWeightDate(new Date().toISOString().split("T")[0])
+         setDashWeightDate(todayLocalISO())
          setShowDashWeightForm(false)
       }
    }
@@ -69,8 +65,8 @@ export default function Home() {
    const todayProgress = Math.min((dailyCalories / targetCalories) * 100, 100)
 
    const suggestedWorkout =
-      workouts.length > 0
-         ? workouts.find((w) => w.id === activeWorkoutId) || workouts[0]
+      routines.length > 0
+         ? routines.find((r) => r.id === activeRoutineId) || routines[0]
          : null
 
    const handleWaterClick = (e: React.MouseEvent) => {
@@ -150,52 +146,45 @@ export default function Home() {
                            animate={{ opacity: 1, width: "auto" }}
                            exit={{ opacity: 0, width: 0 }}
                            transition={{ duration: 0.35, ease: "easeInOut" }}
-                           className="flex flex-col gap-2 overflow-hidden w-full">
-                           <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-2 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-card-border flex-1">
-                                 <input
-                                    type="date"
-                                    aria-label="Fecha del registro"
-                                    className="bg-transparent text-sm font-bold text-foreground outline-none w-full"
-                                    style={{
-                                       colorScheme: isDarkMode ? "dark" : "light",
-                                    }}
-                                    value={dashWeightDate}
-                                    onChange={(e) =>
-                                       setDashWeightDate(e.target.value)
-                                    }
-                                 />
-                              </div>
+                           className="flex items-center gap-2 overflow-hidden">
+                           <DatePicker
+                              variant="inline"
+                              value={dashWeightDate}
+                              onChange={setDashWeightDate}
+                              minYear={new Date().getFullYear() - 10}
+                              maxYear={new Date().getFullYear()}
+                              maxDate={todayLocalISO()}
+                              isDarkMode={isDarkMode}
+                           />
+                           <div className="flex items-center gap-2 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-card-border shrink-0">
+                              <input
+                                 type="number"
+                                 step="0.1"
+                                 aria-label="Peso en kg"
+                                 placeholder="70.5"
+                                 className="bg-transparent text-sm font-bold text-foreground w-20 outline-none"
+                                 value={dashWeight}
+                                 onChange={(e) => setDashWeight(e.target.value)}
+                                 onKeyDown={(e) =>
+                                    e.key === "Enter" && handleDashWeightSave()
+                                 }
+                              />
+                              <span className="text-[10px] font-bold text-subtle">
+                                 kg
+                              </span>
+                           </div>
+                           <div className="flex gap-2 shrink-0">
+                              <button
+                                 aria-label="Guardar peso"
+                                 onClick={handleDashWeightSave}
+                                 className="p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors">
+                                 <Save size={16} />
+                              </button>
                               <button
                                  aria-label="Cancelar"
                                  onClick={() => setShowDashWeightForm(false)}
                                  className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-muted text-subtle rounded-xl hover:text-foreground transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                                  <X size={16} />
-                              </button>
-                           </div>
-                           <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-2 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-card-border flex-1">
-                                 <input
-                                    type="number"
-                                    step="0.1"
-                                    aria-label="Peso en kg"
-                                    placeholder="70.5"
-                                    className="bg-transparent text-sm font-bold text-foreground w-full outline-none"
-                                    value={dashWeight}
-                                    onChange={(e) => setDashWeight(e.target.value)}
-                                    onKeyDown={(e) =>
-                                       e.key === "Enter" && handleDashWeightSave()
-                                    }
-                                 />
-                                 <span className="text-xs text-subtle font-bold">
-                                    kg
-                                 </span>
-                              </div>
-                              <button
-                                 aria-label="Guardar peso"
-                                 onClick={handleDashWeightSave}
-                                 className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                                 <Save size={16} />
                               </button>
                            </div>
                         </motion.div>
@@ -392,11 +381,11 @@ export default function Home() {
                                  {suggestedWorkout.exercises.length} EJERCICIOS
                               </span>
                               <span className="text-xs font-bold uppercase tracking-wider text-subtle">
-                                 {suggestedWorkout.exercises.reduce((sum, ex) => {
-                                    const repsNum = parseInt(ex.reps) || 0
-                                    return sum + repsNum
-                                 }, 0)}{" "}
-                                 MIN
+                                 {suggestedWorkout.exercises.reduce(
+                                    (sum, ex) => sum + ex.targetSets,
+                                    0,
+                                 )}{" "}
+                                 SERIES
                               </span>
                            </>
                         ) : (

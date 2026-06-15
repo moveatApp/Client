@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import Navigation from "@/components/Navigation"
 import Onboarding from "@/pages/Onboarding"
 import { useStore } from "@/store/useStore"
+import { useBootstrap } from "@/hooks/useBootstrap"
 import { useWebHaptics } from "web-haptics/react"
 
 const Dashboard = lazy(() => import("@/pages/Dashboard"))
@@ -18,6 +19,15 @@ function PageLoader() {
          <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
       </div>
    )
+}
+
+function Splash() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+      <img src="/Logo.png" alt="MovEat" width={56} height={56} className="h-14 w-auto animate-pulse" />
+      <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+    </div>
+  );
 }
 
 function AnimatedRoutes() {
@@ -84,6 +94,7 @@ function AnimatedRoutes() {
 function Layout() {
    const { pathname } = useLocation()
    const isOnboarding = pathname === "/onboarding"
+   const ready = useBootstrap()
    const isDarkMode = useStore((state) => state.isDarkMode)
    const themeColor = useStore((state) => state.themeColor)
    const checkAndResetDaily = useStore((state) => state.checkAndResetDaily)
@@ -121,6 +132,8 @@ function Layout() {
       window.addEventListener("pointerdown", handlePointerDown)
       return () => window.removeEventListener("pointerdown", handlePointerDown)
    }, [trigger])
+
+   if (!ready) return <Splash />
 
    return (
       <div

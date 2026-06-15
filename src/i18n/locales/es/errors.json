@@ -1,0 +1,32 @@
+{
+   "network": { "error": "Error de conexión" },
+   "http": {
+      "unauthorized": "Sesión inválida o expirada",
+      "forbidden": "No tenés permiso para esta acción",
+      "not_found": "Recurso no encontrado",
+      "conflict": "Conflicto con un registro existente",
+      "rate_limited": "Demasiados intentos. Intentá más tarde",
+      "server": "Error del servidor. Intentá más tarde",
+      "unknown": "Error desconocido"
+   },
+   "auth": {
+      "email_taken": "Este email ya está registrado",
+      "invalid_credentials": "Email o contraseña incorrectos",
+      "google_failed": "No pudimos validar tu cuenta de Google",
+      "rate_limited": "Demasiados intentos. Intentá más tarde"
+   },
+   "channel": {
+      "identifier_taken": "El identificador ya está vinculado a otra cuenta"
+   },
+   "email": { "invalid": "Ingresá un correo válido" },
+   "password": {
+      "signup_requirements": "La contraseña no cumple los requisitos",
+      "login_min": "La contraseña debe tener al menos 6 caracteres"
+   },
+   "birthdate": {
+      "required": "Elegí tu fecha de nacimiento",
+      "invalid": "Fecha inválida",
+      "future": "La fecha no puede ser futura",
+      "max_age": "Ingresá una fecha válida (máx. 120 años)"
+   }
+}

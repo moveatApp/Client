@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { useStore, Meal } from "@/store/useStore"
+import { useStore, Meal, mealFromEntry } from "@/store/useStore"
 import { estimateMacros } from "@/lib/nutrition"
+import { apiCreateMealEntry } from "@/api/meals"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import {
    Send,
@@ -25,12 +26,16 @@ export default function NutritionPage() {
       addMeal,
       updateMealGrams,
       removeMeal,
+      addXP,
+      setDailyTotals,
    } = useStore()
    const shouldReduceMotion = useReducedMotion()
    const [inputText, setInputText] = useState("")
    const [isAnalyzing, setIsAnalyzing] = useState(false)
    const [suggestedMeal, setSuggestedMeal] = useState<any>(null)
    const [expandedMealId, setExpandedMealId] = useState<string | null>(null)
+   const [isSaving, setIsSaving] = useState(false)
+   const [saveError, setSaveError] = useState("")
 
    const handleAIAnalyze = (e: React.FormEvent) => {
       e.preventDefault()
@@ -61,23 +66,43 @@ export default function NutritionPage() {
       }, 800)
    }
 
-   const confirmMeal = () => {
-      if (!suggestedMeal) return
-      const now = new Date()
-      const timeStr = now.toLocaleTimeString("es-ES", {
-         hour: "2-digit",
-         minute: "2-digit",
+   const confirmMeal = async () => {
+      if (!suggestedMeal || isSaving) return
+      setIsSaving(true)
+      setSaveError("")
+
+      const res = await apiCreateMealEntry({
+         mealType: "UNKNOWN",
+         originalInput: suggestedMeal.name,
+         items: [
+            {
+               name: suggestedMeal.name,
+               estimatedQuantity: suggestedMeal.grams,
+               estimatedUnit: "g",
+               estimatedCalories: suggestedMeal.calories,
+               proteinG: suggestedMeal.protein,
+               carbsG: suggestedMeal.carbs,
+               fatG: suggestedMeal.fat,
+            },
+         ],
       })
-      const dateStr = now.toISOString().split("T")[0]
-      const meal: Meal = {
-         ...suggestedMeal,
-         id: Date.now().toString(),
-         time: timeStr,
-         date: dateStr,
+
+      if (res.ok) {
+         // Backend is authoritative: store the persisted entry and its totals.
+         const meal = mealFromEntry(res.data.mealEntry)
+         useStore.setState((state) => ({ meals: [meal, ...state.meals] }))
+         setDailyTotals(
+            res.data.dailySummary.caloriesConsumed,
+            res.data.dailySummary.calorieTarget,
+         )
+         addXP(20)
+         setSuggestedMeal(null)
+         setInputText("")
+      } else {
+         setSaveError(res.message)
       }
-      addMeal(meal)
-      setSuggestedMeal(null)
-      setInputText("")
+
+      setIsSaving(false)
    }
 
    const todayStr = new Date().toISOString().split("T")[0]
@@ -210,12 +235,18 @@ export default function NutritionPage() {
                             </span>
                         </div>
                      </div>
+                     {saveError && (
+                        <p className="text-xs font-bold text-red-500 mb-3">
+                           {saveError}
+                        </p>
+                     )}
                      <div className="flex gap-2">
                         <Button
                            variant="muted"
                            onClick={() => {
                               setSuggestedMeal(null)
                               setInputText("")
+                              setSaveError("")
                            }}
                            className="flex-1 py-3">
                            Descartar
@@ -223,8 +254,9 @@ export default function NutritionPage() {
                         <Button
                            variant="primary"
                            onClick={confirmMeal}
+                           disabled={isSaving}
                            className="flex-1 py-3">
-                           Confirmar
+                           {isSaving ? "Guardando…" : "Confirmar"}
                         </Button>
                      </div>
                   </div>

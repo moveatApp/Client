@@ -1,17 +1,18 @@
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useStore, type Goal, type Level } from "@/store/useStore"
 import {
    apiSignup,
    apiLogin,
    apiGoogleLogin,
-} from "@/api/auth"
-import { apiGetProfile } from "@/api/profile"
-import {
    apiPutOnboarding,
    buildSignupPayload,
    buildOnboardingPayload,
-} from "@/api/onboarding"
+   ageFromBirthDate,
+   suggestTargetWeight,
+} from "@/api/auth"
+import { apiGetContext } from "@/api/me"
+import { tError } from "@/i18n"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import { useWebHaptics } from "web-haptics/react"
 import { emojiBlast } from "emoji-blast"
@@ -51,6 +52,7 @@ import {
    AnimatedError,
    PrimaryButton,
 } from "@/components/onboarding"
+import { DatePicker } from "@/components/ui"
 import {
    validateEmail,
    validateSignupPassword,
@@ -59,6 +61,39 @@ import {
 } from "@/components/onboarding/validation"
 import { estimateMacros } from "@/lib/nutrition"
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** YYYY-MM-DD for a date `years` ago from today (local). */
+function isoYearsAgo(years: number): string {
+   const d = new Date()
+   d.setFullYear(d.getFullYear() - years)
+   return d.toISOString().split("T")[0]
+}
+
+/** Local today as YYYY-MM-DD. */
+function todayISO(): string {
+   return new Date().toISOString().split("T")[0]
+}
+
+// Date-of-birth bounds: not in the future and no more than 120 years ago.
+const MAX_AGE = 120
+const MAX_BIRTHDATE = todayISO()
+const MIN_BIRTHDATE = isoYearsAgo(MAX_AGE)
+
+/** Returns a localized error for an invalid date of birth, or null when valid. */
+function validateBirthDate(birthDate: string): string | null {
+   if (!birthDate) return tError("birthdate.required")
+   const dob = new Date(`${birthDate}T00:00:00`)
+   if (Number.isNaN(dob.getTime())) return tError("birthdate.invalid")
+   const today = new Date()
+   today.setHours(0, 0, 0, 0)
+   if (dob.getTime() > today.getTime()) return tError("birthdate.future")
+   if (dob.getTime() < new Date(`${MIN_BIRTHDATE}T00:00:00`).getTime()) {
+      return tError("birthdate.max_age")
+   }
+   return null
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface FormData {
@@ -66,7 +101,7 @@ interface FormData {
    lastName: string
    goal: string
    gender: string
-   age: number
+   birthDate: string
    weight: number
    height: number
    targetWeight: number
@@ -238,24 +273,25 @@ function Slide({ children, dir = 1 }: { children: React.ReactNode; dir?: number 
 
 export default function Onboarding() {
    const navigate = useNavigate()
-   const { completeOnboarding, toggleDarkMode, isDarkMode } = useStore()
+   const { completeOnboarding, hydrateFromContext, toggleDarkMode, isDarkMode } =
+      useStore()
    const { trigger } = useWebHaptics({ debug: true })
    const [stepIdx, setStepIdx] = useState(0)
    const [dir, setDir] = useState(1)
-    const [form, setForm] = useState<FormData>({
-       name: "",
-       lastName: "",
-       goal: "",
-       gender: "",
-       age: 25,
-       weight: 70,
-       height: 170,
-       targetWeight: 65,
-       level: "",
-       timePerSession: 30,
-       preferences: [],
-       vibe: "",
-    })
+   const [form, setForm] = useState<FormData>({
+      name: "",
+      lastName: "",
+      goal: "",
+      gender: "",
+      birthDate: isoYearsAgo(25),
+      weight: 70,
+      height: 170,
+      targetWeight: 0,
+      level: "",
+      timePerSession: 30,
+      preferences: [],
+      vibe: "",
+   })
    // Food demo step state
    const [demoFood, setDemoFood] = useState("")
    const [demoAdded, setDemoAdded] = useState(false)
@@ -272,6 +308,23 @@ export default function Onboarding() {
 
    const step = STEPS[stepIdx]
    const isFirst = stepIdx === 0
+
+   // Seed the goal weight with a suggestion the first time the metrics step is
+   // shown, then leave it fully under the user's control (independent of the
+   // current weight slider).
+   useEffect(() => {
+      if (
+         step === "metrics" &&
+         !form.targetWeight &&
+         (form.goal === "baja_peso" || form.goal === "gana_masa")
+      ) {
+         setForm((f) => ({
+            ...f,
+            targetWeight: suggestTargetWeight(f.goal, f.weight),
+         }))
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [step])
 
    // ─── Navigation ───────────────────────────────────────────────────────────
 
@@ -333,69 +386,30 @@ export default function Onboarding() {
    }
 
    const processLoginSuccess = async (res: any) => {
-      if (res.ok) {
-         trigger("success")
-
-         const loginUser = res.data.user
-         const name =
-            loginUser.displayName ||
-            `${loginUser.firstName} ${loginUser.lastName}`.trim()
-
-         const existing = useStore.getState().user
-         const currentLastEmail = useStore.getState().lastUserEmail
-         const isNewUser = loginUser.email !== currentLastEmail
-
-         if (isNewUser) {
-            useStore.setState({
-               lastUserEmail: loginUser.email,
-               xp: 0,
-               level: 1,
-               streak: 0,
-               dailyCalories: 0,
-               waterGlasses: 0,
-               waterLiters: 0,
-               meals: [],
-               workoutCompleted: false,
-               totalWorkouts: 0,
-               workoutsCreated: 0,
-               workouts: [],
-               activeWorkoutId: null,
-               weightHistory: [],
-               lastWorkoutDate: null,
-               lastResetDate: null,
-            })
-         }
-
-         if (isLoginMode) {
-            let weight = existing?.weight ?? 70
-
-            useStore.setState({
-               isOnboarded: true,
-               user: existing
-                  ? { ...existing, name, weight, email: loginUser.email }
-                  : {
-                       name,
-                       email: loginUser.email,
-                        goal: "mantiene" as Goal,
-                        level: "principiante" as Level,
-                        weight,
-                        targetWeight: form.targetWeight,
-                        height: 170,
-                        workoutsPerWeek: 2,
-                        timePerSession: 30,
-                        preferences: ["ninguna"],
-                    },
-            })
-
-            navigate("/")
-         } else {
-            setForm((prev) => ({ ...prev, name }))
-            go(1)
-         }
-      } else {
+      if (!res.ok) {
          setAuthError(res.message)
          trigger("rigid")
+         return
       }
+
+      trigger("success")
+
+      const loginUser = res.data.user
+      const name =
+         loginUser.displayName ||
+         `${loginUser.firstName} ${loginUser.lastName}`.trim()
+
+      // Backend is the source of truth: ask for the authoritative context.
+      const ctxRes = await apiGetContext()
+      if (ctxRes.ok && ctxRes.data.onboardingCompleted) {
+         hydrateFromContext(ctxRes.data)
+         navigate("/")
+         return
+      }
+
+      // Authenticated but onboarding is not complete yet — continue the flow.
+      setForm((prev) => ({ ...prev, name }))
+      go(1)
    }
 
    const handleEmailLogin = async () => {
@@ -432,7 +446,7 @@ export default function Onboarding() {
          const res = await apiPutOnboarding(payload)
          if (!res.ok) throw new Error(res.message)
          trigger("success")
-         finish()
+         await finish()
       } catch (error) {
          console.error("Error guardando onboarding:", error)
          setOnboardingError(
@@ -517,25 +531,32 @@ export default function Onboarding() {
       if (step === "level") return !!form.level
       if (step === "vibe") return !!form.vibe
       if (step === "preferences") return form.preferences.length > 0
+      if (step === "age") return validateBirthDate(form.birthDate) === null
       return true
    }
 
-    const finish = () => {
-       completeOnboarding({
-          name: form.name || "Usuario",
-          email: email.trim() || undefined,
-          goal: (form.goal || "bienestar") as Goal,
-          level: (form.level || "principiante") as Level,
-          weight: form.weight,
-          height: form.height,
-          targetWeight: form.targetWeight,
-          workoutsPerWeek:
-             form.level === "principiante" ? 2 : form.level === "intermedio" ? 3 : 5,
-          timePerSession: form.timePerSession,
-          preferences: form.preferences.length > 0 ? form.preferences : ["ninguna"],
-       })
-       navigate("/")
-    }
+   const finish = async () => {
+      // Seed local-only fields (diet preferences, session length) the platform
+      // does not store, then let the backend context override the rest.
+      completeOnboarding({
+         name: form.name || "Usuario",
+         email: email.trim() || undefined,
+         goal: (form.goal || "bienestar") as Goal,
+         level: (form.level || "principiante") as Level,
+         weight: form.weight,
+         height: form.height,
+         targetWeight: form.targetWeight,
+         workoutsPerWeek:
+            form.level === "principiante" ? 2 : form.level === "intermedio" ? 3 : 5,
+         timePerSession: form.timePerSession,
+         preferences: form.preferences.length > 0 ? form.preferences : ["ninguna"],
+      })
+
+      const ctxRes = await apiGetContext()
+      if (ctxRes.ok) hydrateFromContext(ctxRes.data)
+
+      navigate("/")
+   }
 
    const togglePref = (val: string) => {
       if (val === "ninguna") {
@@ -698,63 +719,76 @@ export default function Onboarding() {
                   {/* ══ AGE ══════════════════════════════════════════════════ */}
                   {step === "age" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
-                        <StepHeader tag="Perfil" title="¿Cuántos años tenés?" />
+                        <StepHeader
+                           tag="Perfil"
+                           title="¿Cuándo naciste?"
+                        />
                         <div className="flex flex-col items-center gap-6">
                            <div className="text-8xl font-display font-extrabold text-primary tabular-nums">
-                              {form.age}
+                              {ageFromBirthDate(form.birthDate)}
                            </div>
                            <div className="text-subtle font-bold">años</div>
-                           <input
-                              type="range"
-                              aria-label="Edad"
-                              min={13}
-                              max={80}
-                              value={form.age}
-                              onChange={(e) =>
-                                 setForm({ ...form, age: parseInt(e.target.value) })
+                           <DatePicker
+                              variant="card"
+                              value={form.birthDate}
+                              onChange={(iso) =>
+                                 setForm({ ...form, birthDate: iso })
                               }
-                              className="w-full accent-primary h-2"
+                              minYear={Number(MIN_BIRTHDATE.slice(0, 4))}
+                              maxYear={Number(MAX_BIRTHDATE.slice(0, 4))}
+                              maxDate={MAX_BIRTHDATE}
+                              label="Fecha de nacimiento"
+                              isDarkMode={isDarkMode}
                            />
-                           <div className="flex justify-between w-full text-xs text-subtle font-bold">
-                              <span>13</span>
-                              <span>80</span>
-                           </div>
+                           <AnimatedError
+                              message={validateBirthDate(form.birthDate) ?? ""}
+                           />
                         </div>
                      </div>
                   )}
 
-                   {/* ══ METRICS ══════════════════════════════════════════════ */}
-                   {step === "metrics" && (
-                      <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
-                         <StepHeader tag="Tu cuerpo" title="Peso, altura y objetivo" />
-                         <div className="flex flex-col gap-6">
-                            <SliderCard
-                               label="Peso"
-                               value={form.weight}
-                               unit="kg"
-                               min={30}
-                               max={200}
-                               onChange={(v) => setForm({ ...form, weight: v })}
-                            />
-                            <SliderCard
-                               label="Altura"
-                               value={form.height}
-                               unit="cm"
-                               min={130}
-                               max={220}
-                               onChange={(v) => setForm({ ...form, height: v })}
-                            />
-                            <SliderCard
-                               label="Objetivo de peso"
-                               value={form.targetWeight}
-                               unit="kg"
-                               min={30}
-                               max={200}
-                               onChange={(v) => setForm({ ...form, targetWeight: v })}
-                            />
-                         </div>
-                      </div>
-                   )}
+                  {/* ══ METRICS ══════════════════════════════════════════════ */}
+                  {step === "metrics" && (
+                     <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
+                        <StepHeader tag="Tu cuerpo" title="Peso, altura y objetivo" />
+                        <div className="flex flex-col gap-6">
+                           <SliderCard
+                              label="Peso"
+                              value={form.weight}
+                              unit="kg"
+                              min={30}
+                              max={200}
+                              onChange={(v) => setForm({ ...form, weight: v })}
+                           />
+                           <SliderCard
+                              label="Altura"
+                              value={form.height}
+                              unit="cm"
+                              min={130}
+                              max={220}
+                              onChange={(v) => setForm({ ...form, height: v })}
+                           />
+                           {(form.goal === "baja_peso" ||
+                              form.goal === "gana_masa") && (
+                              <SliderCard
+                                 label="Peso objetivo"
+                                 value={
+                                    form.targetWeight ||
+                                    suggestTargetWeight(form.goal, form.weight)
+                                 }
+                                 // value falls back to the suggestion only on the
+                                 // very first render before the seed effect runs.
+                                 unit="kg"
+                                 min={30}
+                                 max={200}
+                                 onChange={(v) =>
+                                    setForm({ ...form, targetWeight: v })
+                                 }
+                              />
+                           )}
+                        </div>
+                     </div>
+                  )}
 
                   {/* ══ LEVEL ════════════════════════════════════════════════ */}
                   {step === "level" && (
