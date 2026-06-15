@@ -9,7 +9,17 @@ import Progress from '@/pages/Progress';
 import Profile from '@/pages/Profile';
 import Onboarding from '@/pages/Onboarding';
 import { useStore } from '@/store/useStore';
+import { useBootstrap } from '@/hooks/useBootstrap';
 import { useWebHaptics } from 'web-haptics/react';
+
+function Splash() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+      <img src="/Logo.png" alt="MovEat" width={56} height={56} className="h-14 w-auto animate-pulse" />
+      <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -59,6 +69,7 @@ function AnimatedRoutes() {
 function Layout() {
   const { pathname } = useLocation();
   const isOnboarding = pathname === '/onboarding';
+  const ready = useBootstrap();
   const isDarkMode = useStore((state) => state.isDarkMode);
   const themeColor = useStore((state) => state.themeColor);
   const checkAndResetDaily = useStore((state) => state.checkAndResetDaily);
@@ -96,6 +107,8 @@ function Layout() {
     window.addEventListener('pointerdown', handlePointerDown);
     return () => window.removeEventListener('pointerdown', handlePointerDown);
   }, [trigger]);
+
+  if (!ready) return <Splash />;
 
   return (
     <div className={`min-h-screen font-sans flex ${isOnboarding ? 'bg-background' : 'flex-col md:flex-row bg-background'}`}>

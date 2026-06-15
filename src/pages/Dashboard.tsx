@@ -19,6 +19,9 @@ import {
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import WeightChart from "@/components/WeightChart"
+import { apiCreateWeightLog } from "@/api/weight"
+import { todayLocalISO } from "@/api/client"
+import InlineDatePicker from "@/components/ui/InlineDatePicker"
 
 export default function Home() {
    const navigate = useNavigate()
@@ -30,8 +33,6 @@ export default function Home() {
       dailyCalories,
       waterGlasses,
       addWater,
-      workouts,
-      activeWorkoutId,
       updateWeight,
       addWeightEntry,
       isDarkMode,
@@ -53,12 +54,23 @@ export default function Home() {
       }
    }, [isOnboarded, navigate])
 
-   const handleDashWeightSave = () => {
+   const handleDashWeightSave = async () => {
       const parsed = parseFloat(dashWeight)
       if (!isNaN(parsed) && parsed > 0) {
-         addWeightEntry(parsed, dashWeightDate)
+         // Never log a weight in the future; clamp the date to today.
+         const today = todayLocalISO()
+         const date = dashWeightDate > today ? today : dashWeightDate
+         addWeightEntry(parsed, date)
+         const loggedAt =
+            date === today
+               ? undefined
+               : new Date(`${date}T12:00:00`).toISOString()
+         const res = await apiCreateWeightLog({ weight: parsed, loggedAt })
+         if (res.ok && res.data.nutrition) {
+            useStore.setState({ targetCalories: res.data.nutrition.dailyCalorieTarget })
+         }
          setDashWeight("")
-         setDashWeightDate(new Date().toISOString().split("T")[0])
+         setDashWeightDate(todayLocalISO())
          setShowDashWeightForm(false)
       }
    }
@@ -145,18 +157,14 @@ export default function Home() {
                            exit={{ opacity: 0, width: 0 }}
                            transition={{ duration: 0.35, ease: "easeInOut" }}
                            className="flex items-center gap-2 overflow-hidden">
-                           <div className="flex items-center gap-2 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0">
-                              <input
-                                 type="date"
-                                 aria-label="Fecha del registro"
-                                 className="bg-transparent text-sm font-bold text-foreground outline-none"
-                                 style={{
-                                    colorScheme: isDarkMode ? "dark" : "light",
-                                 }}
-                                 value={dashWeightDate}
-                                 onChange={(e) => setDashWeightDate(e.target.value)}
-                              />
-                           </div>
+                           <InlineDatePicker
+                              value={dashWeightDate}
+                              onChange={setDashWeightDate}
+                              minYear={new Date().getFullYear() - 10}
+                              maxYear={new Date().getFullYear()}
+                              maxDate={todayLocalISO()}
+                              isDarkMode={isDarkMode}
+                           />
                            <div className="flex items-center gap-2 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0">
                               <input
                                  type="number"

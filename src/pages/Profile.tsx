@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react"
 import { useStore } from "@/store/useStore"
-import { apiLogout, apiGetMeContext } from "@/api/auth"
+import {
+   apiLogout,
+   mapPrimaryGoal,
+   mapActivityLevel,
+   trainingDaysFromLevel,
+} from "@/api/auth"
+import { apiGetContext, apiPutGoals } from "@/api/me"
 import {
    LogOut,
    User,
@@ -15,7 +21,10 @@ import {
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui"
+import { SUPPORTED_LANGUAGES } from "@/i18n"
+import { Languages } from "lucide-react"
 
 const GOALS = [
    { id: "baja_peso", label: "Bajar de peso" },
@@ -60,21 +69,38 @@ export default function ProfilePage() {
       isDarkMode,
       toggleDarkMode,
       updateUser,
+      hydrateFromContext,
    } = useStore()
    const navigate = useNavigate()
+   const { t, i18n } = useTranslation("common")
 
    const [expandedSection, setExpandedSection] = useState<string | null>(null)
    const [isLoggingOut, setIsLoggingOut] = useState(false)
 
    useEffect(() => {
       if (user && !user.email) {
-         apiGetMeContext().then((res) => {
+         apiGetContext().then((res) => {
             if (res.ok && res.data.user.email) {
                updateUser({ email: res.data.user.email })
             }
          })
       }
    }, [user, updateUser])
+
+   // Persists goal/activity changes to the platform, then re-hydrates targets.
+   const persistGoals = async (next: { goal?: string; level?: string }) => {
+      const goal = next.goal ?? user?.goal ?? "mantiene"
+      const level = next.level ?? user?.level ?? "principiante"
+      const res = await apiPutGoals({
+         primaryGoal: mapPrimaryGoal(goal),
+         activityLevel: mapActivityLevel(level),
+         trainingDaysPerWeek: trainingDaysFromLevel(level),
+      })
+      if (res.ok) {
+         const ctx = await apiGetContext()
+         if (ctx.ok) hydrateFromContext(ctx.data)
+      }
+   }
 
    if (!user) return null
 
@@ -177,6 +203,7 @@ export default function ProfilePage() {
                                     key={g.id}
                                     onClick={() => {
                                        updateUser({ goal: g.id as any })
+                                       void persistGoals({ goal: g.id })
                                        setExpandedSection(null)
                                     }}
                                     className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.goal === g.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white-500/5 text-foreground hover:bg-muted dark:hover:bg-white-500/5"}`}>
@@ -224,6 +251,7 @@ export default function ProfilePage() {
                                     key={l.id}
                                     onClick={() => {
                                        updateUser({ level: l.id as any })
+                                       void persistGoals({ level: l.id })
                                        setExpandedSection(null)
                                     }}
                                     className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.level === l.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white-500/5 text-foreground hover:bg-muted dark:hover:bg-white-500/5"}`}>
@@ -410,6 +438,55 @@ export default function ProfilePage() {
                                        className="w-4 h-4 rounded-full"
                                        style={{ backgroundColor: t.color }}></div>
                                     {t.label}
+                                 </button>
+                              ))}
+                           </div>
+                        </motion.div>
+                     )}
+                  </AnimatePresence>
+               </div>
+
+               {/* Language */}
+               <div className="border-t border-card-border">
+                  <button
+                     aria-expanded={expandedSection === "language"}
+                     onClick={() => toggleSection("language")}
+                     className="w-full text-left p-5 flex items-center justify-between hover:bg-muted dark:hover:bg-white-500/5 transition-colors">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-muted dark:bg-white-500/5 text-gray-500 rounded-xl flex items-center justify-center">
+                           <Languages size={20} />
+                        </div>
+                        <span className="font-bold text-foreground">
+                           {t("language.label")}
+                        </span>
+                     </div>
+                     <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400 font-medium">
+                           {t(`language.${i18n.resolvedLanguage ?? i18n.language}`)}
+                        </span>
+                        <ChevronDown
+                           size={16}
+                           className={`text-gray-400 transition-transform ${expandedSection === "language" ? "rotate-180" : ""}`}
+                        />
+                     </div>
+                  </button>
+                  <AnimatePresence>
+                     {expandedSection === "language" && (
+                        <motion.div
+                           initial={{ height: 0, opacity: 0 }}
+                           animate={{ height: "auto", opacity: 1 }}
+                           exit={{ height: 0, opacity: 0 }}
+                           className="overflow-hidden">
+                           <div className="flex flex-col">
+                              {SUPPORTED_LANGUAGES.map((lng) => (
+                                 <button
+                                    key={lng}
+                                    onClick={() => {
+                                       void i18n.changeLanguage(lng)
+                                       setExpandedSection(null)
+                                    }}
+                                    className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${(i18n.resolvedLanguage ?? i18n.language) === lng ? "bg-primary text-white" : "bg-muted/50 dark:bg-white-500/5 text-foreground hover:bg-muted dark:hover:bg-white-500/5"}`}>
+                                    {t(`language.${lng}`)}
                                  </button>
                               ))}
                            </div>

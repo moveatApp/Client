@@ -20,7 +20,9 @@ import {
    X,
 } from "lucide-react"
 import WeightChart from "@/components/WeightChart"
-import { apiPutProfile } from "@/api/auth"
+import { apiCreateWeightLog } from "@/api/weight"
+import { todayLocalISO } from "@/api/client"
+import InlineDatePicker from "@/components/ui/InlineDatePicker"
 
 export default function ProgressPage() {
    const {
@@ -49,11 +51,27 @@ export default function ProgressPage() {
       new Date().toISOString().split("T")[0],
    )
 
+   const persistWeightLog = async (weight: number, dateISO: string) => {
+      // Never log a weight in the future; clamp to today.
+      const today = todayLocalISO()
+      const date = dateISO > today ? today : dateISO
+      // A weight log against a non-today date is timestamped at local noon.
+      const loggedAt =
+         date === today
+            ? undefined
+            : new Date(`${date}T12:00:00`).toISOString()
+      const res = await apiCreateWeightLog({ weight, loggedAt })
+      if (res.ok && res.data.nutrition) {
+         // Logging weight can recalculate calorie targets server-side.
+         useStore.setState({ targetCalories: res.data.nutrition.dailyCalorieTarget })
+      }
+   }
+
    const handleSaveWeight = async () => {
       const parsed = parseFloat(weightInput)
       if (!isNaN(parsed) && parsed > 0) {
          updateWeight(parsed)
-         await apiPutProfile({ currentWeight: parsed })
+         await persistWeightLog(parsed, todayLocalISO())
       }
       setEditingWeight(false)
    }
@@ -62,12 +80,10 @@ export default function ProgressPage() {
       const parsed = parseFloat(newWeight)
       if (!isNaN(parsed) && parsed > 0) {
          addWeightEntry(parsed, newWeightDate)
-         if (newWeightDate === new Date().toISOString().split("T")[0]) {
-            await apiPutProfile({ currentWeight: parsed })
-         }
+         await persistWeightLog(parsed, newWeightDate)
       }
       setNewWeight("")
-      setNewWeightDate(new Date().toISOString().split("T")[0])
+      setNewWeightDate(todayLocalISO())
       setShowWeightForm(false)
    }
    const nextLevelXp = level * 100
@@ -227,18 +243,14 @@ export default function ProgressPage() {
                            exit={{ opacity: 0, width: 0 }}
                            transition={{ duration: 0.35, ease: "easeInOut" }}
                            className="flex items-center gap-2 overflow-hidden">
-                           <div className="flex items-center gap-2 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0">
-                              <input
-                                 type="date"
-                                 aria-label="Fecha del registro"
-                                 className="bg-transparent text-sm font-bold text-foreground outline-none"
-                                 style={{
-                                    colorScheme: isDarkMode ? "dark" : "light",
-                                 }}
-                                 value={newWeightDate}
-                                 onChange={(e) => setNewWeightDate(e.target.value)}
-                              />
-                           </div>
+                           <InlineDatePicker
+                              value={newWeightDate}
+                              onChange={setNewWeightDate}
+                              minYear={new Date().getFullYear() - 10}
+                              maxYear={new Date().getFullYear()}
+                              maxDate={todayLocalISO()}
+                              isDarkMode={isDarkMode}
+                           />
                            <div className="flex items-center gap-2 bg-muted/50 dark:bg-white-500/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0">
                               <input
                                  type="number"

@@ -1,8 +1,69 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { MeContext } from '@/api/me';
+import type { MealEntry } from '@/api/meals';
+import type { WeightLog } from '@/api/weight';
+import type { Routine } from '@/api/routines';
+import type { ActivityLevel, PrimaryGoal } from '@/api/client';
 
 type Goal = 'baja_peso' | 'gana_masa' | 'mantiene' | 'bienestar';
 type Level = 'principiante' | 'intermedio' | 'avanzado';
+
+// ─── Backend ⇄ store enum mapping ──────────────────────────────────────────
+
+export function goalFromApi(goal: PrimaryGoal): Goal {
+  if (goal === 'FAT_LOSS') return 'baja_peso';
+  if (goal === 'MUSCLE_GAIN') return 'gana_masa';
+  return 'mantiene';
+}
+
+export function levelFromApi(level: ActivityLevel): Level {
+  if (level === 'SEDENTARY' || level === 'LIGHT') return 'principiante';
+  if (level === 'ACTIVE' || level === 'VERY_ACTIVE') return 'avanzado';
+  return 'intermedio';
+}
+
+function heightCm(height: { cm?: number; feet?: number; inches?: number } | null): number {
+  if (!height) return 0;
+  if (typeof height.cm === 'number') return Math.round(height.cm);
+  if (typeof height.feet === 'number') {
+    return Math.round(height.feet * 30.48 + (height.inches ?? 0) * 2.54);
+  }
+  return 0;
+}
+
+/** Maps a backend meal entry to the local Meal shape used by the UI. */
+export function mealFromEntry(entry: MealEntry): Meal {
+  const sum = (pick: (i: MealEntry['items'][number]) => number | null | undefined): number =>
+    Math.round(entry.items.reduce((acc, item) => acc + (pick(item) ?? 0), 0));
+
+  const calories = sum((i) => i.estimatedCalories);
+  const protein = sum((i) => i.proteinG);
+  const carbs = sum((i) => i.carbsG);
+  const fat = sum((i) => i.fatG);
+  const name = entry.originalInput?.trim() || entry.items.map((i) => i.name).join(', ') || 'Comida';
+  const occurred = new Date(entry.occurredAt);
+
+  return {
+    id: entry.id,
+    name,
+    // Backend meals have no per-100g base, so base == total and grams == 100
+    // keeps the macro slider neutral (local-only; it does not sync back).
+    baseCalories: calories,
+    baseProtein: protein,
+    baseCarbs: carbs,
+    baseFat: fat,
+    baseSugar: 0,
+    grams: 100,
+    calories,
+    protein,
+    carbs,
+    fat,
+    sugar: 0,
+    time: occurred.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+    date: entry.localDate,
+  };
+}
 
 export interface UserProfile {
   name: string;
@@ -41,27 +102,8 @@ export interface Meal {
   date: string; // ISO date string (YYYY-MM-DD)
 }
 
-export interface ExerciseSet {
-  id: string;
-  reps: string;
-  completed: boolean;
-}
-
-export interface Exercise {
-  id: string;
-  name: string;
-  sets: number;
-  reps: string;
-  rest: string;
-  completed: boolean;
-  setDetails?: ExerciseSet[];
-}
-
-export interface Workout {
-  id: string;
-  name: string;
-  exercises: Exercise[];
-}
+// Routines (workout templates) are backend-authoritative; see src/api/routines.ts.
+export type { Routine, RoutineExercise } from '@/api/routines';
 
 function getTargetWeight(goal: Goal, currentWeight: number): number {
   if (goal === 'baja_peso') return Math.round((currentWeight - 5) * 10) / 10;
@@ -98,18 +140,22 @@ interface AppState {
   workoutCompleted: boolean;
   isDarkMode: boolean;
   totalWorkouts: number;
-  workoutsCreated: number;
-  workouts: Workout[];
-  activeWorkoutId: string | null;
+  routines: Routine[];
+  activeRoutineId: string | null;
   themeColor: string;
   weightHistory: WeightEntry[];
   targetWeight: number;
    lastWorkoutDate: string | null;
    lastResetDate: string | null;
    lastUserEmail: string | null;
+   hydrated: boolean;
 
    // Actions
    completeOnboarding: (profile: UserProfile) => void;
+  hydrateFromContext: (ctx: MeContext) => void;
+  setMealsFromEntries: (entries: MealEntry[]) => void;
+  setWeightHistoryFromLogs: (logs: WeightLog[]) => void;
+  setDailyTotals: (consumed: number, target?: number | null) => void;
   addXP: (amount: number) => void;
   addMeal: (meal: Meal) => void;
   updateMealGrams: (id: string, newGrams: number) => void;
@@ -127,17 +173,11 @@ interface AppState {
   addWeightEntry: (weight: number, dateStr?: string) => void;
   updateStreak: () => void;
 
-  // Workout Actions
-  addWorkout: (name: string) => void;
-  deleteWorkout: (id: string) => void;
-  setActiveWorkout: (id: string) => void;
-
-  // Exercise Actions
-  addExercise: (workoutId: string) => void;
-  updateExercise: (workoutId: string, exerciseId: string, fields: Partial<Exercise>) => void;
-  deleteExercise: (workoutId: string, exerciseId: string) => void;
-  toggleExerciseCompletion: (workoutId: string, exerciseId: string) => void;
-  resetWorkoutProgress: (workoutId: string) => void;
+  // Routine Actions (backend-authoritative)
+  setRoutines: (routines: Routine[]) => void;
+  upsertRoutine: (routine: Routine) => void;
+  removeRoutine: (id: string) => void;
+  setActiveRoutine: (id: string | null) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -156,16 +196,106 @@ export const useStore = create<AppState>()(
       workoutCompleted: false,
       isDarkMode: false,
       totalWorkouts: 0,
-      workoutsCreated: 0,
-      workouts: [],
-      activeWorkoutId: null,
+      routines: [],
+      activeRoutineId: null,
       themeColor: 'orange',
       weightHistory: [],
       targetWeight: 65,
       lastWorkoutDate: null,
       lastResetDate: null,
       lastUserEmail: null,
+      hydrated: false,
       setThemeColor: (theme) => set({ themeColor: theme }),
+
+      // ─── Backend hydration (backend is the source of truth) ──────────────
+      hydrateFromContext: (ctx) => {
+        const state = get();
+        const name =
+          ctx.user.displayName ||
+          `${ctx.user.firstName} ${ctx.user.lastName}`.trim() ||
+          'Usuario';
+        const isNewUser = ctx.user.email !== state.lastUserEmail;
+
+        const goal = ctx.goals ? goalFromApi(ctx.goals.primaryGoal) : (state.user?.goal ?? 'mantiene');
+        const level = ctx.goals ? levelFromApi(ctx.goals.activityLevel) : (state.user?.level ?? 'principiante');
+        const weight = ctx.profile?.currentWeight ?? state.user?.weight ?? 70;
+        const height = heightCm(ctx.profile?.height ?? null) || state.user?.height || 170;
+        const workoutsPerWeek = ctx.goals?.trainingDaysPerWeek ?? state.user?.workoutsPerWeek ?? 3;
+
+        const target = ctx.today.calorieTarget ?? ctx.nutrition?.dailyCalorieTarget ?? state.targetCalories;
+        const targetWeight = ctx.goals?.targetWeight ?? getTargetWeight(goal, weight);
+
+        set({
+          hydrated: true,
+          isOnboarded: ctx.onboardingCompleted,
+          lastUserEmail: ctx.user.email,
+          // Reset gamification only when a different user signs in.
+          ...(isNewUser
+            ? {
+                xp: 0,
+                level: 1,
+                streak: 0,
+                waterGlasses: 0,
+                waterLiters: 0,
+                workoutCompleted: false,
+                totalWorkouts: 0,
+                routines: [],
+                activeRoutineId: null,
+                lastWorkoutDate: null,
+                lastResetDate: null,
+              }
+            : {}),
+          user: {
+            name,
+            email: ctx.user.email,
+            goal,
+            level,
+            weight,
+            height,
+            workoutsPerWeek,
+            timePerSession: state.user?.timePerSession ?? 30,
+            preferences: state.user?.preferences ?? ['ninguna'],
+          },
+          targetCalories: target,
+          targetWeight,
+          dailyCalories: ctx.today.caloriesConsumed,
+        });
+      },
+      setMealsFromEntries: (entries) => {
+        const meals = entries
+          .map(mealFromEntry)
+          .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+        set({ meals, dailyCalories: todayCalories(meals) });
+      },
+      setWeightHistoryFromLogs: (logs) => {
+        // Keep the latest log per local date.
+        const byDate = new Map<string, number>();
+        for (const log of [...logs].sort(
+          (a, b) => new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime(),
+        )) {
+          byDate.set(log.localDate, log.weight);
+        }
+        const weightHistory = Array.from(byDate.entries())
+          .map(([date, weight]) => ({ date, weight }))
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+        // No weight logs yet (e.g. fresh onboarding only set profile.currentWeight):
+        // seed today's point from the current weight so the chart isn't empty.
+        if (weightHistory.length === 0) {
+          const current = get().user?.weight;
+          if (typeof current === 'number' && current > 0) {
+            set({ weightHistory: [{ date: todayISO(), weight: current }] });
+            return;
+          }
+        }
+
+        set({ weightHistory });
+      },
+      setDailyTotals: (consumed, target) =>
+        set((state) => ({
+          dailyCalories: consumed,
+          targetCalories: target ?? state.targetCalories,
+        })),
 
       completeOnboarding: (profile) => {
          const state = get();
@@ -190,9 +320,8 @@ export const useStore = create<AppState>()(
              meals: [],
              workoutCompleted: false,
              totalWorkouts: 0,
-             workoutsCreated: 0,
-             workouts: [],
-             activeWorkoutId: null,
+             routines: [],
+             activeRoutineId: null,
              lastWorkoutDate: null,
              lastResetDate: null,
            });
@@ -277,11 +406,10 @@ export const useStore = create<AppState>()(
         }
         set({ workoutCompleted: completed });
       },
-      resetDaily: () => set((state) => ({
+      resetDaily: () => set({
         dailyCalories: 0, waterGlasses: 0, waterLiters: 0, workoutCompleted: false,
-        workouts: state.workouts.map(w => ({ ...w, exercises: w.exercises.map(e => ({ ...e, completed: false })) })),
         lastResetDate: todayISO(),
-      })),
+      }),
       checkAndResetDaily: () => {
         const state = get();
         const today = todayISO();
@@ -301,13 +429,12 @@ export const useStore = create<AppState>()(
           waterGlasses: 0,
           waterLiters: 0,
           workoutCompleted: false,
-          workouts: state.workouts.map(w => ({ ...w, exercises: w.exercises.map(e => ({ ...e, completed: false })) })),
           streak: newStreak,
           lastResetDate: today,
         });
       },
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
-      resetProgress: () => set({ xp: 0, level: 1, streak: 0, totalWorkouts: 0, workoutCompleted: false, waterGlasses: 0, waterLiters: 0, dailyCalories: 0, meals: [], workouts: [], workoutsCreated: 0, activeWorkoutId: null, weightHistory: [], lastWorkoutDate: null, lastResetDate: null }),
+      resetProgress: () => set({ xp: 0, level: 1, streak: 0, totalWorkouts: 0, workoutCompleted: false, waterGlasses: 0, waterLiters: 0, dailyCalories: 0, meals: [], routines: [], activeRoutineId: null, weightHistory: [], lastWorkoutDate: null, lastResetDate: null }),
       updateUser: (updates) => set((state) => {
         const newUser = state.user ? { ...state.user, ...updates } : null;
         let newTargetWeight = state.targetWeight;
@@ -336,10 +463,11 @@ export const useStore = create<AppState>()(
         } else {
           newHistory = [...state.weightHistory, { date: today, weight }];
         }
+        // targetWeight is the user's goal (backend-authoritative); logging the
+        // current weight must NOT move it.
         return {
           user: state.user ? { ...state.user, weight } : null,
           weightHistory: newHistory,
-          targetWeight: state.user ? getTargetWeight(state.user.goal, weight) : state.targetWeight,
         };
       }),
       addWeightEntry: (weight, dateStr) => set((state) => {
@@ -355,7 +483,6 @@ export const useStore = create<AppState>()(
         return {
           user: isToday && state.user ? { ...state.user, weight } : state.user,
           weightHistory: newHistory,
-          targetWeight: (isToday && state.user) ? getTargetWeight(state.user.goal, weight) : state.targetWeight,
         };
       }),
       updateStreak: () => set((state) => {
@@ -368,109 +495,39 @@ export const useStore = create<AppState>()(
         return { streak: newStreak, lastWorkoutDate: today };
       }),
 
-      // Workout Actions
-      addWorkout: (name) => set((state) => {
-        const newWorkout: Workout = {
-          id: Date.now().toString(),
-          name,
-          exercises: []
-        };
+      // Routine Actions (backend is the source of truth; pages call the API
+      // and feed the results here).
+      setRoutines: (routines) => set((state) => ({
+        routines,
+        activeRoutineId:
+          state.activeRoutineId && routines.some(r => r.id === state.activeRoutineId)
+            ? state.activeRoutineId
+            : routines[0]?.id ?? null,
+      })),
+      upsertRoutine: (routine) => set((state) => {
+        const exists = state.routines.some(r => r.id === routine.id);
         return {
-          workouts: [...state.workouts, newWorkout],
-          activeWorkoutId: newWorkout.id,
-          workoutsCreated: state.workoutsCreated + 1,
+          routines: exists
+            ? state.routines.map(r => (r.id === routine.id ? routine : r))
+            : [...state.routines, routine],
+          activeRoutineId: routine.id,
         };
       }),
-      deleteWorkout: (id) => set((state) => {
-        const remaining = state.workouts.filter(w => w.id !== id);
+      removeRoutine: (id) => set((state) => {
+        const remaining = state.routines.filter(r => r.id !== id);
         return {
-          workouts: remaining,
-          activeWorkoutId: state.activeWorkoutId === id ? (remaining[0]?.id || null) : state.activeWorkoutId
+          routines: remaining,
+          activeRoutineId:
+            state.activeRoutineId === id ? (remaining[0]?.id ?? null) : state.activeRoutineId,
         };
       }),
-      setActiveWorkout: (id) => set({ activeWorkoutId: id }),
-
-      // Exercise Actions
-      addExercise: (workoutId) => set((state) => ({
-        workouts: state.workouts.map(w => {
-          if (w.id === workoutId) {
-            return {
-              ...w,
-              exercises: [...w.exercises, {
-                id: Date.now().toString(),
-                name: 'Nuevo Ejercicio',
-                sets: 3,
-                reps: '10',
-                rest: '30s',
-                completed: false
-              }]
-            };
-          }
-          return w;
-        })
-      })),
-      updateExercise: (workoutId, exerciseId, fields) => set((state) => ({
-        workouts: state.workouts.map(w => {
-          if (w.id === workoutId) {
-            return {
-              ...w,
-              exercises: w.exercises.map(e => e.id === exerciseId ? { ...e, ...fields } : e)
-            };
-          }
-          return w;
-        })
-      })),
-      deleteExercise: (workoutId, exerciseId) => set((state) => ({
-        workouts: state.workouts.map(w => {
-          if (w.id === workoutId) {
-            return {
-              ...w,
-              exercises: w.exercises.filter(e => e.id !== exerciseId)
-            };
-          }
-          return w;
-        })
-      })),
-      toggleExerciseCompletion: (workoutId, exerciseId) => set((state) => ({
-        workouts: state.workouts.map(w => {
-          if (w.id === workoutId) {
-            return {
-              ...w,
-              exercises: w.exercises.map(e => {
-                if (e.id === exerciseId) {
-                  const newCompleted = !e.completed;
-                  return {
-                    ...e,
-                    completed: newCompleted,
-                    setDetails: e.setDetails?.map(s => ({ ...s, completed: newCompleted }))
-                  };
-                }
-                return e;
-              })
-            };
-          }
-          return w;
-        })
-      })),
-      resetWorkoutProgress: (workoutId) => set((state) => ({
-        workoutCompleted: false,
-        workouts: state.workouts.map(w => {
-          if (w.id === workoutId) {
-            return {
-              ...w,
-              exercises: w.exercises.map(e => ({
-                ...e,
-                completed: false,
-                setDetails: e.setDetails?.map(s => ({ ...s, completed: false }))
-              }))
-            };
-          }
-          return w;
-        })
-      }))
+      setActiveRoutine: (id) => set({ activeRoutineId: id }),
     }),
     {
       name: 'moveat-storage',
+      // `hydrated` is a per-session flag; never persist it so the app always
+      // re-bootstraps its session against the backend on reload.
+      partialize: ({ hydrated: _hydrated, ...rest }) => rest,
     }
   )
 );

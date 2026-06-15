@@ -16,7 +16,12 @@ import { Save, X, Pencil } from "lucide-react"
 type Period = "month" | "6m" | "year" | "all"
 
 function toISODate(d: Date): string {
-   return d.toISOString().split("T")[0]
+   // Local calendar date (YYYY-MM-DD). Using UTC here would shift the day in
+   // non-UTC timezones and mismatch the backend's localDate strings.
+   const y = d.getFullYear()
+   const m = String(d.getMonth() + 1).padStart(2, "0")
+   const day = String(d.getDate()).padStart(2, "0")
+   return `${y}-${m}-${day}`
 }
 
 function startOfMonth(d: Date): Date {
@@ -135,26 +140,39 @@ function getPeriodRange(
    const today = new Date()
    today.setHours(0, 0, 0, 0)
 
+   // The end of every range must cover the most recent log, even if it is dated
+   // slightly ahead of "today" (the backend computes localDate in the user's
+   // timezone, which can land on tomorrow relative to the browser clock).
+   let end = today
+   if (history.length > 0) {
+      const latestStr = history.reduce(
+         (max, e) => (e.date > max ? e.date : max),
+         history[0].date,
+      )
+      const latest = new Date(`${latestStr}T00:00:00`)
+      if (latest.getTime() > end.getTime()) end = latest
+   }
+
    if (period === "month") {
-      return { start: startOfMonth(today), end: today }
+      return { start: startOfMonth(today), end }
    }
 
    if (period === "6m") {
-      return { start: addMonths(today, -6), end: today }
+      return { start: addMonths(today, -6), end }
    }
 
    if (period === "year") {
-      return { start: new Date(today.getFullYear(), 0, 1), end: today }
+      return { start: new Date(today.getFullYear(), 0, 1), end }
    }
 
    if (history.length > 0) {
       const sorted = [...history].sort(
          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
       )
-      return { start: new Date(sorted[0].date), end: today }
+      return { start: new Date(`${sorted[0].date}T00:00:00`), end }
    }
 
-   return { start: addMonths(today, -1), end: today }
+   return { start: addMonths(today, -1), end }
 }
 
 interface WeightChartProps {

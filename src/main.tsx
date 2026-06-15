@@ -2,6 +2,8 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import App from "./App"
 import "./index.css"
+// Initialize i18next before the app renders.
+import "./i18n"
 
 // Global haptics for all buttons
 if (typeof window !== "undefined") {

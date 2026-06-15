@@ -1,0 +1,32 @@
+{
+   "network": { "error": "Connection error" },
+   "http": {
+      "unauthorized": "Your session is invalid or has expired",
+      "forbidden": "You don't have permission for this action",
+      "not_found": "Resource not found",
+      "conflict": "Conflict with an existing record",
+      "rate_limited": "Too many attempts. Try again later",
+      "server": "Server error. Try again later",
+      "unknown": "Unknown error"
+   },
+   "auth": {
+      "email_taken": "This email is already registered",
+      "invalid_credentials": "Incorrect email or password",
+      "google_failed": "We couldn't validate your Google account",
+      "rate_limited": "Too many attempts. Try again later"
+   },
+   "channel": {
+      "identifier_taken": "This identifier is already linked to another account"
+   },
+   "email": { "invalid": "Enter a valid email" },
+   "password": {
+      "signup_requirements": "Your password doesn't meet the requirements",
+      "login_min": "Password must be at least 6 characters"
+   },
+   "birthdate": {
+      "required": "Choose your date of birth",
+      "invalid": "Invalid date",
+      "future": "The date can't be in the future",
+      "max_age": "Enter a valid date (max. 120 years)"
+   }
+}
