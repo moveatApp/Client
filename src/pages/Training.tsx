@@ -10,6 +10,7 @@ import {
 } from "@/api/routines"
 import { apiCreateWorkoutSession, type WorkoutSetInput } from "@/api/workouts"
 import { todayLocalISO } from "@/api/client"
+import { toast } from "@/components/ui/toast"
 import { motion, AnimatePresence } from "framer-motion"
 import {
    CheckCircle2,
@@ -26,6 +27,8 @@ import {
    Weight,
 } from "lucide-react"
 import { Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
+import type { TFunction } from "i18next"
 import { useWebHaptics } from "web-haptics/react"
 import { Button, Modal } from "@/components/ui"
 
@@ -82,10 +85,10 @@ function toDraft(routine: Routine): { name: string; exercises: DraftExercise[] }
    }
 }
 
-function blankExercise(): DraftExercise {
+function blankExercise(name: string): DraftExercise {
    return {
       key: newKey(),
-      name: "Nuevo ejercicio",
+      name,
       unit: "reps",
       value: 10,
       sets: 3,
@@ -99,10 +102,11 @@ function draftToPayload(
    name: string,
    exercises: DraftExercise[],
    unitSystem: Routine["unitSystem"],
+   fallback: { routine: string; exercise: string },
 ): UpsertRoutinePayload {
    const mapped: RoutineExerciseInput[] = exercises.map((e) => {
       const input: RoutineExerciseInput = {
-         exerciseName: e.name.trim() || "Ejercicio",
+         exerciseName: e.name.trim() || fallback.exercise,
          tracking: e.unit === "reps" ? "REPS" : "TIME",
          usesWeight: e.usesWeight,
          targetSets: Math.max(1, e.sets),
@@ -113,18 +117,21 @@ function draftToPayload(
       if (e.rest > 0) input.restSeconds = e.rest
       return input
    })
-   return { name: name.trim() || "Rutina", unitSystem, exercises: mapped }
+   return { name: name.trim() || fallback.routine, unitSystem, exercises: mapped }
 }
 
 // ─── Display helpers ─────────────────────────────────────────────────────────
 
-function planSummary(ex: RoutineExercise): string {
+function planSummary(ex: RoutineExercise, t: TFunction): string {
    const unit = unitOf(ex)
    const value = valueOf(ex)
-   const what =
-      unit === "reps" ? `${value} reps` : unit === "min" ? `${value} min` : `${value} seg`
    const weight = ex.usesWeight && ex.targetWeight ? ` · ${ex.targetWeight} kg` : ""
-   return `${ex.targetSets} series × ${what}${weight}`
+   return t("training.plan_summary", {
+      sets: ex.targetSets,
+      value,
+      unit: t(`training.units.${unit}`),
+      weight,
+   })
 }
 
 function exerciseToSets(ex: RoutineExercise): WorkoutSetInput[] {
@@ -144,6 +151,7 @@ function exerciseToSets(ex: RoutineExercise): WorkoutSetInput[] {
 
 export default function TrainingPage() {
    const { trigger } = useWebHaptics()
+   const { t } = useTranslation("common")
    const routines = useStore((s) => s.routines)
    const activeRoutineId = useStore((s) => s.activeRoutineId)
    const setActiveRoutine = useStore((s) => s.setActiveRoutine)
@@ -200,8 +208,8 @@ export default function TrainingPage() {
 
    useEffect(() => {
       if (showCelebration) {
-         const t = setTimeout(() => setShowCelebration(false), 4000)
-         return () => clearTimeout(t)
+         const timer = setTimeout(() => setShowCelebration(false), 4000)
+         return () => clearTimeout(timer)
       }
    }, [showCelebration])
 
@@ -231,6 +239,8 @@ export default function TrainingPage() {
          setWorkoutCompleted(true)
          setShowCelebration(true)
          trigger("success")
+      } else {
+         toast.error(res.message)
       }
    }
 
@@ -266,11 +276,11 @@ export default function TrainingPage() {
    // ─── Create / edit / delete ─────────────────────────────────────────────────
 
    const handleCreate = () => {
-      setModalInput("Nueva rutina")
+      setModalInput(t("training.new_routine"))
       setModal({
          isOpen: true,
          type: "prompt",
-         title: "Crear rutina",
+         title: t("training.create_routine"),
          onConfirm: async (val) => {
             setModal((m) => ({ ...m, isOpen: false }))
             const name = (val ?? "").trim()
@@ -278,12 +288,14 @@ export default function TrainingPage() {
             const res = await apiCreateRoutine({
                name,
                exercises: [
-                  { exerciseName: "Ejercicio 1", tracking: "REPS", usesWeight: false, targetSets: 3, targetReps: 10 },
+                  { exerciseName: t("training.exercise_n", { n: 1 }), tracking: "REPS", usesWeight: false, targetSets: 3, targetReps: 10 },
                ],
             })
             if (res.ok) {
                upsertRoutine(res.data.routine)
                startEditing(res.data.routine)
+            } else {
+               toast.error(res.message)
             }
          },
       })
@@ -300,12 +312,17 @@ export default function TrainingPage() {
       setSaving(true)
       const res = await apiUpdateRoutine(
          activeRoutine.id,
-         draftToPayload(draft.name, draft.exercises, activeRoutine.unitSystem),
+         draftToPayload(draft.name, draft.exercises, activeRoutine.unitSystem, {
+            routine: t("training.routine_fallback"),
+            exercise: t("training.exercise_fallback"),
+         }),
       )
       if (res.ok) {
          upsertRoutine(res.data.routine)
          setEditing(false)
          trigger("success")
+      } else {
+         toast.error(res.message)
       }
       setSaving(false)
    }
@@ -315,13 +332,14 @@ export default function TrainingPage() {
       setModal({
          isOpen: true,
          type: "confirm",
-         title: "Eliminar rutina",
-         message: `¿Seguro que querés eliminar "${activeRoutine.name}"?`,
+         title: t("training.delete_routine"),
+         message: t("training.delete_confirm", { name: activeRoutine.name }),
          onConfirm: async () => {
             setModal((m) => ({ ...m, isOpen: false }))
             const id = activeRoutine.id
             const res = await apiDeleteRoutine(id)
             if (res.ok) removeRoutine(id)
+            else toast.error(res.message)
          },
       })
    }
@@ -335,7 +353,10 @@ export default function TrainingPage() {
    const removeDraftExercise = (key: string) =>
       setDraft((d) => ({ ...d, exercises: d.exercises.filter((e) => e.key !== key) }))
    const addDraftExercise = () =>
-      setDraft((d) => ({ ...d, exercises: [...d.exercises, blankExercise()] }))
+      setDraft((d) => ({
+         ...d,
+         exercises: [...d.exercises, blankExercise(t("training.new_exercise"))],
+      }))
 
    return (
       <div className="p-4 md:p-6 pb-32 animate-fade-in font-sans flex flex-col min-h-screen relative">
@@ -352,10 +373,10 @@ export default function TrainingPage() {
                   </div>
                   <div className="flex-1">
                      <h3 className="font-bold text-foreground text-lg">
-                        ¡Rutina completada!
+                        {t("training.celebration_title")}
                      </h3>
                      <p className="text-subtle dark:text-muted-foreground text-sm font-medium">
-                        Quedó registrada tu sesión. ¡Seguí así!
+                        {t("training.celebration_desc")}
                      </p>
                   </div>
                   <button
@@ -371,12 +392,12 @@ export default function TrainingPage() {
             <div className="flex items-center gap-2 mb-2">
                <Link
                   to="/"
-                  aria-label="Volver al inicio"
+                  aria-label={t("training.back_home")}
                   className="p-2 bg-muted dark:bg-white/5 rounded-xl">
                   <ChevronLeft size={20} />
                </Link>
                <h1 className="text-3xl font-display font-extrabold text-foreground flex items-center gap-2">
-                  <Zap size={32} className="text-primary" /> Rutinas
+                  <Zap size={32} className="text-primary" /> {t("training.header")}
                </h1>
             </div>
 
@@ -384,7 +405,7 @@ export default function TrainingPage() {
                <button
                   onClick={handleCreate}
                   className="shrink-0 px-4 py-2.5 rounded-xl font-bold text-sm bg-primary/10 text-primary flex items-center gap-2 hover:bg-primary/20 transition-colors snap-start border border-primary/20">
-                  <Plus size={16} /> Crear
+                  <Plus size={16} /> {t("training.create")}
                </button>
                {routines.map((r) => (
                   <button
@@ -403,13 +424,12 @@ export default function TrainingPage() {
          {!activeRoutine ? (
             <div className="flex-1 flex flex-col items-center justify-center text-subtle">
                <Dumbbell size={64} className="mb-4 text-muted-foreground dark:text-white/10" />
-               <p className="font-bold text-lg mb-1 text-foreground">No hay rutinas creadas</p>
+               <p className="font-bold text-lg mb-1 text-foreground">{t("training.empty_title")}</p>
                <p className="text-sm mb-6 text-center max-w-xs">
-                  Creá tu primera rutina (Push, Pull, Legs…) para empezar a planificar y
-                  registrar tus entrenamientos.
+                  {t("training.empty_desc")}
                </p>
                <Button onClick={handleCreate} className="flex items-center gap-2">
-                  <Plus size={20} /> Crear rutina
+                  <Plus size={20} /> {t("training.create_routine")}
                </Button>
             </div>
          ) : editing ? (
@@ -431,14 +451,14 @@ export default function TrainingPage() {
                      {completedSets > 0 && (
                         <button
                            onClick={resetSession}
-                           title="Reiniciar progreso"
+                           title={t("training.reset_progress")}
                            className="text-primary p-2 bg-primary/10 rounded-xl hover:bg-primary/20 transition-colors">
                            <Circle size={20} />
                         </button>
                      )}
                      <button
                         onClick={() => startEditing(activeRoutine)}
-                        title="Editar rutina"
+                        title={t("training.edit_routine")}
                         className="text-subtle p-2 bg-muted dark:bg-white/5 rounded-xl hover:text-foreground transition-colors">
                         <Settings2 size={20} />
                      </button>
@@ -475,10 +495,10 @@ export default function TrainingPage() {
                   </div>
                   <div>
                      <span className="block font-bold text-lg text-foreground">
-                        Progreso de sesión
+                        {t("training.session_progress")}
                      </span>
                      <span className="text-sm font-bold text-primary">
-                        {completedSets}/{totalSets} series completadas
+                        {t("training.sets_completed", { done: completedSets, total: totalSets })}
                      </span>
                   </div>
                </div>
@@ -498,7 +518,7 @@ export default function TrainingPage() {
                                     {ex.exerciseName}
                                  </h4>
                                  <p className="text-xs text-subtle font-bold mt-1 uppercase tracking-tight flex items-center gap-1.5">
-                                    {planSummary(ex)}
+                                    {planSummary(ex, t)}
                                     {ex.usesWeight && (
                                        <Weight size={12} className="text-primary" />
                                     )}
@@ -535,7 +555,7 @@ export default function TrainingPage() {
                      variant="muted"
                      className="flex-1 border border-card-border"
                      onClick={() => setModal((m) => ({ ...m, isOpen: false }))}>
-                     Cancelar
+                     {t("training.cancel")}
                   </Button>
                   <Button
                      variant="primary"
@@ -545,7 +565,7 @@ export default function TrainingPage() {
                            ? modal.onConfirm(modalInput)
                            : modal.onConfirm()
                      }>
-                     Aceptar
+                     {t("training.accept")}
                   </Button>
                </div>
             }>
@@ -555,7 +575,7 @@ export default function TrainingPage() {
             {modal.type === "prompt" && (
                <div className="bg-muted dark:bg-white/5 p-4 rounded-2xl border border-card-border mb-6">
                   <input
-                     aria-label="Nombre de la rutina"
+                     aria-label={t("training.routine_name")}
                      className="w-full bg-transparent font-bold text-foreground outline-none text-base"
                      value={modalInput}
                      onChange={(e) => setModalInput(e.target.value)}
@@ -580,11 +600,7 @@ interface EditorProps {
    onSave: () => void
 }
 
-const UNITS: { id: Unit; label: string }[] = [
-   { id: "reps", label: "Reps" },
-   { id: "seg", label: "Seg" },
-   { id: "min", label: "Min" },
-]
+const UNITS: { id: Unit }[] = [{ id: "reps" }, { id: "seg" }, { id: "min" }]
 
 function RoutineEditor({
    draft,
@@ -596,14 +612,15 @@ function RoutineEditor({
    onCancel,
    onSave,
 }: EditorProps) {
+   const { t } = useTranslation("common")
    return (
       <div className="flex-1 flex flex-col gap-4">
          <input
-            aria-label="Nombre de la rutina"
+            aria-label={t("training.routine_name")}
             value={draft.name}
             onChange={(e) => onName(e.target.value)}
             className="w-full bg-card-bg border border-card-border rounded-2xl px-4 py-3 text-xl font-bold text-foreground outline-none focus:border-primary/40"
-            placeholder="Nombre de la rutina"
+            placeholder={t("training.routine_name")}
          />
 
          <div className="space-y-4">
@@ -616,13 +633,13 @@ function RoutineEditor({
                         {idx + 1}
                      </span>
                      <input
-                        aria-label="Nombre del ejercicio"
+                        aria-label={t("training.exercise_name")}
                         value={ex.name}
                         onChange={(e) => onUpdate(ex.key, { name: e.target.value })}
                         className="flex-1 bg-transparent font-bold text-base text-foreground border-b border-card-border focus:border-primary/40 outline-none pb-1"
                      />
                      <button
-                        aria-label="Eliminar ejercicio"
+                        aria-label={t("training.remove_exercise")}
                         onClick={() => onRemove(ex.key)}
                         className="p-2 rounded-xl text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 transition-colors">
                         <Trash2 size={16} />
@@ -630,14 +647,14 @@ function RoutineEditor({
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                     <Field label="Series">
+                     <Field label={t("training.field.series")}>
                         <NumberInput
                            value={ex.sets}
                            min={1}
                            onChange={(v) => onUpdate(ex.key, { sets: v })}
                         />
                      </Field>
-                     <Field label="Cantidad">
+                     <Field label={t("training.field.amount")}>
                         <NumberInput
                            value={ex.value}
                            min={1}
@@ -652,7 +669,7 @@ function RoutineEditor({
                            key={u.id}
                            onClick={() => onUpdate(ex.key, { unit: u.id })}
                            className={`flex-1 px-3 py-2 font-bold text-xs transition-all ${ex.unit === u.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/5 text-foreground hover:bg-muted"}`}>
-                           {u.label}
+                           {t(`training.unit_labels.${u.id}`)}
                         </button>
                      ))}
                   </div>
@@ -661,7 +678,7 @@ function RoutineEditor({
                   <div className="flex items-center justify-between bg-muted/50 dark:bg-white/5 rounded-2xl px-4 py-3">
                      <div className="flex items-center gap-2">
                         <Weight size={16} className="text-primary" />
-                        <span className="text-sm font-bold text-foreground">Usa peso</span>
+                        <span className="text-sm font-bold text-foreground">{t("training.uses_weight")}</span>
                      </div>
                      <button
                         role="switch"
@@ -674,7 +691,7 @@ function RoutineEditor({
                      </button>
                   </div>
                   {ex.usesWeight && (
-                     <Field label="Peso (kg)">
+                     <Field label={t("training.field.weight")}>
                         <NumberInput
                            value={ex.weight}
                            min={0}
@@ -689,7 +706,7 @@ function RoutineEditor({
             <button
                onClick={onAdd}
                className="w-full py-5 border-2 border-dashed border-card-border text-subtle font-bold rounded-[28px] flex items-center justify-center gap-2 hover:bg-muted dark:hover:bg-white/5 transition-colors active:scale-95">
-               <Plus size={20} /> Añadir ejercicio
+               <Plus size={20} /> {t("training.add_exercise")}
             </button>
          </div>
 
@@ -698,14 +715,14 @@ function RoutineEditor({
                variant="muted"
                onClick={onCancel}
                className="flex-1 border border-card-border flex items-center justify-center gap-2">
-               <X size={18} /> Cancelar
+               <X size={18} /> {t("training.cancel")}
             </Button>
             <Button
                variant="primary"
                disabled={saving || draft.exercises.length === 0}
                onClick={onSave}
                className="flex-1 flex items-center justify-center gap-2">
-               <Save size={18} /> {saving ? "Guardando…" : "Guardar"}
+               <Save size={18} /> {saving ? t("training.saving") : t("training.save")}
             </Button>
          </div>
       </div>

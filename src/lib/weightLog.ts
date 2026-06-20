@@ -1,6 +1,7 @@
 import { apiCreateWeightLog } from "@/api/weight"
 import { todayLocalISO } from "@/api/client"
 import { useStore } from "@/store/useStore"
+import { toast } from "@/components/ui/toast"
 
 /**
  * Logs a weight measurement.
@@ -22,7 +23,11 @@ export async function logWeight(weight: number, dateISO: string): Promise<void> 
    const loggedAt =
       date === today ? undefined : new Date(`${date}T12:00:00`).toISOString()
    const res = await apiCreateWeightLog({ weight, loggedAt })
-   if (res.ok && res.data.nutrition) {
+   if (!res.ok) {
+      toast.error(res.message)
+      return
+   }
+   if (res.data.nutrition) {
       useStore.setState({ targetCalories: res.data.nutrition.dailyCalorieTarget })
    }
 }

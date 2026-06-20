@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useStore } from "@/store/useStore"
+import { useTranslation } from "react-i18next"
 import { motion, AnimatePresence } from "framer-motion"
 import {
    Award,
@@ -40,6 +41,7 @@ export default function ProgressPage() {
        meals,
       isDarkMode,
    } = useStore()
+   const { t } = useTranslation("common")
    const [editingWeight, setEditingWeight] = useState(false)
    const [weightInput, setWeightInput] = useState(String(user?.weight ?? ""))
    const [showWeightForm, setShowWeightForm] = useState(false)
@@ -74,63 +76,21 @@ export default function ProgressPage() {
       !!user?.name && !!user?.goal && user.weight > 0 && user.height > 0
    const isHighBurn = dailyCalories < targetCalories - 500 && workoutCompleted
 
+   // Stable i18n keys; name/description come from `progress.badges.<key>`.
    const badges = [
-      {
-         id: 1,
-         name: "Semana completa",
-         icon: Star,
-         unlocked: streak >= 7,
-         description: "7 días seguidos activo",
-      },
-      {
-         id: 2,
-         name: "First Blood",
-         icon: Zap,
-         unlocked: totalWorkouts >= 1,
-         description: "Primer entreno completado",
-      },
-      {
-         id: 3,
-         name: "Día Perfecto",
-         icon: Target,
-         unlocked: isPerfectDay,
-         description: "Dieta, hidratación y entreno logrados",
-      },
-      {
-         id: 4,
-         name: "Hidratación PRO",
-         icon: Droplet,
-          unlocked: isHydrationPro,
-          description: "2L durante 5 días seguidos",
-      },
+      { id: 1, key: "week", icon: Star, unlocked: streak >= 7 },
+      { id: 2, key: "first_blood", icon: Zap, unlocked: totalWorkouts >= 1 },
+      { id: 3, key: "perfect_day", icon: Target, unlocked: isPerfectDay },
+      { id: 4, key: "hydration_pro", icon: Droplet, unlocked: isHydrationPro },
       {
          id: 5,
-         name: "Madrugador",
+         key: "early_bird",
          icon: Clock,
          unlocked: totalWorkouts >= 5 && streak >= 3,
-         description: "5 entrenos y racha de 3+ días",
       },
-      {
-         id: 6,
-         name: "Guerrero",
-         icon: Shield,
-         unlocked: totalWorkouts >= 10,
-         description: "10 entrenos totales",
-      },
-      {
-         id: 7,
-         name: "A tope",
-         icon: Rocket,
-         unlocked: isHighBurn,
-         description: "Déficit de +500 kcal con entreno",
-      },
-      {
-         id: 8,
-         name: "Socialite",
-         icon: Trophy,
-         unlocked: isProfileComplete,
-         description: "Perfil completado al 100%",
-      },
+      { id: 6, key: "warrior", icon: Shield, unlocked: totalWorkouts >= 10 },
+      { id: 7, key: "all_in", icon: Rocket, unlocked: isHighBurn },
+      { id: 8, key: "profile_complete", icon: Trophy, unlocked: isProfileComplete },
    ]
 
    return (
@@ -138,12 +98,12 @@ export default function ProgressPage() {
          <header className="mb-6 shrink-0 flex justify-between items-center">
             <h1 className="text-3xl font-display font-extrabold text-foreground tracking-tight flex items-center gap-2">
                <Award size={32} className="text-primary" />
-               Tu Progreso
+               {t("progress.header")}
             </h1>
              <button
                 onClick={resetProgress}
                  className="text-caption text-subtle hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-button px-2 py-1">
-                Reiniciar Todo
+                {t("progress.reset")}
              </button>
          </header>
 
@@ -159,7 +119,7 @@ export default function ProgressPage() {
                         <div className="flex items-center gap-2">
                            <input
                               type="number"
-                              aria-label="Peso en kg"
+                              aria-label={t("progress.weight_aria")}
                               className="text-4xl font-display font-bold text-foreground w-24 bg-transparent border-b-2 border-primary outline-none"
                               value={weightInput}
                               onChange={(e) => setWeightInput(e.target.value)}
@@ -169,7 +129,7 @@ export default function ProgressPage() {
                            />
                             <span className="text-xl text-subtle font-normal">kg</span>
                             <button
-                               aria-label="Guardar peso"
+                               aria-label={t("progress.save_weight")}
                                onClick={handleSaveWeight}
                                className="min-w-11 min-h-11 flex items-center justify-center p-1.5 bg-primary/10 rounded-lg text-primary hover:bg-primary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                                <Save size={16} />
@@ -187,7 +147,7 @@ export default function ProgressPage() {
                      )}
                   </div>
                    <div className="bg-primary/10 text-primary px-3 py-1 rounded-xl text-xs font-bold">
-                     Objetivo: {targetWeight} kg
+                     {t("progress.target", { weight: targetWeight })}
                   </div>
                </div>
                 <div className="flex-1 w-full -ml-4">
@@ -212,7 +172,7 @@ export default function ProgressPage() {
                            transition={{ duration: 0.2 }}
                            onClick={() => setShowWeightForm(true)}
                            className="flex items-center gap-2 py-2.5 text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-4 rounded-xl hover:bg-primary/20 active:scale-95 transition-all">
-                           <Plus size={14} /> Registrar peso
+                           <Plus size={14} /> {t("progress.log_weight")}
                         </motion.button>
                      ) : (
                         <motion.div
@@ -233,7 +193,7 @@ export default function ProgressPage() {
                                  isDarkMode={isDarkMode}
                               />
                               <button
-                                 aria-label="Cancelar"
+                                 aria-label={t("progress.cancel")}
                                  onClick={() => setShowWeightForm(false)}
                                  className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-muted text-subtle rounded-xl hover:text-foreground transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                                  <X size={16} />
@@ -244,7 +204,7 @@ export default function ProgressPage() {
                                  <input
                                     type="number"
                                     step="0.1"
-                                    aria-label="Peso en kg"
+                                    aria-label={t("progress.weight_aria")}
                                     placeholder="70.5"
                                     className="bg-transparent text-sm font-bold text-foreground w-full outline-none"
                                     value={newWeight}
@@ -256,7 +216,7 @@ export default function ProgressPage() {
                                  <span className="text-xs text-subtle font-bold">kg</span>
                               </div>
                               <button
-                                 aria-label="Guardar peso"
+                                 aria-label={t("progress.save_weight")}
                                  onClick={handleAddWeightEntry}
                                  className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                                  <Save size={16} />
@@ -276,7 +236,7 @@ export default function ProgressPage() {
                <div className="flex justify-between items-center relative z-10 w-full mb-6">
                   <div>
                        <span className="text-caption text-foreground/60">
-                         Nivel Actual
+                         {t("progress.level")}
                       </span>
                       <h2 className="text-5xl font-display font-extrabold mt-1 text-foreground">
                         {level}
@@ -300,7 +260,7 @@ export default function ProgressPage() {
                      />
                   </div>
                     <p className="text-xs text-subtle mt-2 font-medium text-center">
-                      Faltan {nextLevelXp - xp} XP
+                      {t("progress.xp_remaining", { xp: nextLevelXp - xp })}
                    </p>
                </div>
             </motion.section>
@@ -316,7 +276,7 @@ export default function ProgressPage() {
                className="xl:col-span-3 bg-card-bg/40 rounded-[32px] p-6 border border-card-border shadow-sm">
                <h3 className="font-bold text-base mb-4 text-foreground flex items-center gap-2">
                   <Star fill="currentColor" size={18} className="text-accent" />
-                  Logros Obtenidos
+                  {t("progress.achievements")}
                </h3>
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {badges.map((badge) => {
@@ -335,10 +295,10 @@ export default function ProgressPage() {
                            </div>
                            <div>
                               <h4 className="font-bold text-foreground text-sm">
-                                 {badge.name}
+                                 {t(`progress.badges.${badge.key}.name`)}
                               </h4>
                                <p className="text-xs text-subtle font-medium leading-tight">
-                                 {badge.description}
+                                 {t(`progress.badges.${badge.key}.desc`)}
                               </p>
                            </div>
                         </div>
@@ -361,7 +321,7 @@ export default function ProgressPage() {
                      {streak}
                   </span>
                    <span className="text-caption text-subtle">
-                      Racha
+                      {t("progress.streak")}
                    </span>
                </motion.div>
                <motion.div
@@ -376,7 +336,7 @@ export default function ProgressPage() {
                      {totalWorkouts}
                   </span>
                    <span className="text-caption text-subtle">
-                      Entrenos
+                      {t("progress.workouts")}
                    </span>
                </motion.div>
             </div>

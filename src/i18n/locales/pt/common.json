@@ -4,5 +4,318 @@
       "en": "Inglês",
       "es": "Espanhol",
       "pt": "Português"
+   },
+   "datepicker": { "day": "Dia", "month": "Mês", "year": "Ano" },
+   "toast": {
+      "error": "Algo deu errado",
+      "success": "Pronto",
+      "warning": "Atenção",
+      "info": "Nota"
+   },
+   "nav": {
+      "home": "Início",
+      "nutrition": "Nutrição",
+      "training": "Treinar",
+      "progress": "Progresso",
+      "profile": "Perfil"
+   },
+   "profile": {
+      "header": "Perfil",
+      "darkmode": {
+         "to_light": "Mudar para modo claro",
+         "to_dark": "Mudar para modo escuro"
+      },
+      "sections": { "visuals": "Visual", "nutrition_usage": "Alimentação e Uso" },
+      "theme": {
+         "label": "Cor do tema",
+         "options": {
+            "orange": "Laranja",
+            "green": "Verde",
+            "blue": "Azul",
+            "purple": "Roxo"
+         }
+      },
+      "animations": {
+         "label": "Transições animadas",
+         "on": "Ativadas",
+         "off": "Desativadas"
+      },
+      "goal": { "label": "Meu objetivo" },
+      "goals": {
+         "baja_peso": "Perder peso",
+         "gana_masa": "Ganhar massa muscular",
+         "mantiene": "Manter-me saudável",
+         "bienestar": "Melhorar bem-estar"
+      },
+      "level": { "label": "Nível" },
+      "levels": {
+         "principiante": "Iniciante",
+         "intermedio": "Intermediário",
+         "avanzado": "Avançado"
+      },
+      "time": { "label": "Tempo" },
+      "diet": {
+         "label": "Alimentação",
+         "multi_hint": "Você pode escolher várias opções",
+         "eat_all": "Como de tudo"
+      },
+      "preferences": {
+         "ninguna": "Como de tudo",
+         "vegetariano": "Vegetariano",
+         "vegano": "Vegano",
+         "sintacc": "Sem glúten"
+      },
+      "logout": { "label": "Sair", "loading": "Saindo…" }
+   },
+   "dashboard": {
+      "greeting": "Olá, {{name}}! 👋",
+      "target": "Meta: {{weight}} kg",
+      "log_weight": "Registrar peso",
+      "weight_aria": "Peso em kg",
+      "save_weight": "Salvar peso",
+      "cancel": "Cancelar",
+      "today_progress": "Progresso de hoje",
+      "food": "Comida",
+      "water": "Água",
+      "last_meal": "ÚLTIMA REFEIÇÃO",
+      "no_meals": "SEM REFEIÇÕES",
+      "log": "REGISTRAR",
+      "see_more": "Ver mais",
+      "workout": "TREINO",
+      "no_workouts": "SEM TREINOS",
+      "exercises": "{{count}} EXERCÍCIOS",
+      "sets": "{{count}} SÉRIES",
+      "create": "CRIAR",
+      "streak": "Sequência atual",
+      "day_one": "dia",
+      "day_other": "dias",
+      "streak_keep": "Continue assim!",
+      "streak_start": "Comece hoje"
+   },
+   "progress": {
+      "header": "Seu progresso",
+      "reset": "Reiniciar tudo",
+      "target": "Meta: {{weight}} kg",
+      "weight_aria": "Peso em kg",
+      "save_weight": "Salvar peso",
+      "cancel": "Cancelar",
+      "log_weight": "Registrar peso",
+      "level": "Nível atual",
+      "xp_remaining": "Faltam {{xp}} XP",
+      "achievements": "Conquistas",
+      "streak": "Sequência",
+      "workouts": "Treinos",
+      "badges": {
+         "week": { "name": "Semana completa", "desc": "7 dias seguidos ativo" },
+         "first_blood": { "name": "First Blood", "desc": "Primeiro treino concluído" },
+         "perfect_day": { "name": "Dia Perfeito", "desc": "Dieta, hidratação e treino concluídos" },
+         "hydration_pro": { "name": "Hidratação PRO", "desc": "2L por 5 dias seguidos" },
+         "early_bird": { "name": "Madrugador", "desc": "5 treinos e sequência de 3+ dias" },
+         "warrior": { "name": "Guerreiro", "desc": "10 treinos no total" },
+         "all_in": { "name": "No talo", "desc": "Déficit de +500 kcal com treino" },
+         "profile_complete": { "name": "Socialite", "desc": "Perfil 100% completo" }
+      }
+   },
+   "nutrition": {
+      "header": "Alimentação",
+      "completed": "Concluído!",
+      "remaining": "{{count}} restantes",
+      "search_aria": "Buscar comida",
+      "search_placeholder": "Bowl de aveia…",
+      "ai_suggestion": "Sugestão IA",
+      "estimate": "Estimativa {{grams}}g",
+      "discard": "Descartar",
+      "saving": "Salvando…",
+      "confirm": "Confirmar",
+      "history": "Histórico",
+      "empty": "Sem registros ainda",
+      "today": "Hoje",
+      "yesterday": "Ontem",
+      "amount_consumed": "Quantidade consumida",
+      "amount_grams_aria": "Quantidade em gramas",
+      "grams_aria": "Gramas",
+      "macros": { "protein": "Proteínas", "carbs": "Carboidratos", "fat": "Gorduras", "sugar": "Açúcar" },
+      "delete_entry": "Excluir registro"
+   },
+   "training": {
+      "header": "Rotinas",
+      "back_home": "Voltar ao início",
+      "create": "Criar",
+      "create_routine": "Criar rotina",
+      "new_routine": "Nova rotina",
+      "new_exercise": "Novo exercício",
+      "routine_fallback": "Rotina",
+      "exercise_fallback": "Exercício",
+      "exercise_n": "Exercício {{n}}",
+      "delete_routine": "Excluir rotina",
+      "delete_confirm": "Tem certeza que deseja excluir \"{{name}}\"?",
+      "empty_title": "Nenhuma rotina criada",
+      "empty_desc": "Crie sua primeira rotina (Push, Pull, Legs…) para começar a planejar e registrar seus treinos.",
+      "celebration_title": "Rotina concluída!",
+      "celebration_desc": "Sua sessão foi registrada. Continue assim!",
+      "session_progress": "Progresso da sessão",
+      "sets_completed": "{{done}}/{{total}} séries concluídas",
+      "reset_progress": "Reiniciar progresso",
+      "edit_routine": "Editar rotina",
+      "plan_summary": "{{sets}} séries × {{value}} {{unit}}{{weight}}",
+      "units": { "reps": "reps", "seg": "seg", "min": "min" },
+      "unit_labels": { "reps": "Reps", "seg": "Seg", "min": "Min" },
+      "uses_weight": "Usa peso",
+      "add_exercise": "Adicionar exercício",
+      "routine_name": "Nome da rotina",
+      "exercise_name": "Nome do exercício",
+      "remove_exercise": "Excluir exercício",
+      "field": { "series": "Séries", "amount": "Quantidade", "weight": "Peso (kg)" },
+      "cancel": "Cancelar",
+      "accept": "Confirmar",
+      "save": "Salvar",
+      "saving": "Salvando…"
+   },
+   "onboarding": {
+      "aria": { "theme": "Alternar tema", "back": "Voltar" },
+      "footer": { "start": "Começar", "continue": "Continuar", "saving": "Salvando…" },
+      "welcome": {
+         "title": "Bem-vindo ao MovEat",
+         "subtitle": "Seu parceiro de treino, nutrição e bem-estar. Vamos personalizar sua experiência.",
+         "features": {
+            "routines": "Rotinas adaptadas ao seu nível",
+            "nutrition": "Acompanhamento nutricional inteligente",
+            "progress": "Progresso visível todos os dias"
+         }
+      },
+      "goal": {
+         "tag": "Objetivo",
+         "title": "O que você quer alcançar?",
+         "options": {
+            "baja_peso": { "label": "Perder peso", "sub": "Déficit calórico e cardio" },
+            "gana_masa": { "label": "Ganhar massa muscular", "sub": "Superávit e força" },
+            "mantiene": { "label": "Manter meu peso", "sub": "Equilíbrio energético" },
+            "bienestar": { "label": "Bem-estar e energia", "sub": "Hábitos sustentáveis" }
+         }
+      },
+      "gender": {
+         "tag": "Perfil",
+         "title": "Como você se identifica?",
+         "subtitle": "Isso ajusta seus parâmetros metabólicos.",
+         "options": { "male": "Homem", "female": "Mulher", "other": "Outro" }
+      },
+      "age": {
+         "tag": "Perfil",
+         "title": "Quando você nasceu?",
+         "years": "anos",
+         "label": "Data de nascimento"
+      },
+      "metrics": {
+         "tag": "Seu corpo",
+         "title": "Peso, altura e objetivo",
+         "weight": "Peso",
+         "height": "Altura",
+         "target_weight": "Peso desejado"
+      },
+      "level": {
+         "tag": "Atividade",
+         "title": "Qual é o seu nível?",
+         "options": {
+            "principiante": { "label": "Iniciante", "sub": "0-1 treinos/sem" },
+            "intermedio": { "label": "Intermediário", "sub": "2-3 treinos/sem" },
+            "avanzado": { "label": "Avançado", "sub": "+4 treinos/sem" }
+         }
+      },
+      "time": {
+         "tag": "Sessões",
+         "title": "Quanto tempo por sessão?",
+         "options": {
+            "10": { "label": "Express", "sub": "10 minutos" },
+            "30": { "label": "Equilibrado", "sub": "30 minutos" },
+            "60": { "label": "Intensivo", "sub": "1 hora ou mais" }
+         }
+      },
+      "preferences": {
+         "tag": "Alimentação",
+         "title": "Alguma preferência?",
+         "subtitle": "Você pode escolher mais de uma.",
+         "options": {
+            "ninguna": "Como de tudo",
+            "vegetariano": "Vegetariano",
+            "vegano": "Vegano",
+            "sintacc": "Sem glúten"
+         }
+      },
+      "vibe": {
+         "tag": "Check-in",
+         "title": "Como você se sente hoje?",
+         "subtitle": "Isso nos ajuda a adaptar sua rotina inicial.",
+         "options": {
+            "great": { "label": "Cheio de energia!", "sub": "Pronto para dar 100%" },
+            "ok": { "label": "Bem, posso melhorar", "sub": "Motivado mas tranquilo" },
+            "low": { "label": "Preciso de um empurrão", "sub": "Vamos começar leve" }
+         }
+      },
+      "fooddemo": {
+         "tag": "Demo",
+         "title": "Assim você adiciona uma refeição",
+         "subtitle": "Escreva algo e veja como funciona o registro.",
+         "placeholder": "Ex: Aveia com banana…",
+         "food_aria": "Nome da refeição",
+         "add": "Adicionar Refeição",
+         "kcal_logged": "~{{kcal}} kcal · registrada ✓",
+         "success": "Simples assim! 🎉"
+      },
+      "summary": {
+         "title": "Tudo pronto, {{name}}!",
+         "subtitle": "Confirme seu perfil antes de começar.",
+         "footer": "Você pode atualizar tudo isso depois no seu perfil.",
+         "empty": "—",
+         "rows": {
+            "goal": "Objetivo",
+            "level": "Nível",
+            "weight_height": "Peso / Altura",
+            "time": "Tempo por sessão",
+            "vibe": "Como me sinto"
+         },
+         "weight_height_value": "{{weight}} kg / {{height}} cm",
+         "time_value": "{{minutes}} minutos",
+         "goals": {
+            "baja_peso": "Perder peso",
+            "gana_masa": "Ganhar massa",
+            "mantiene": "Manter peso",
+            "bienestar": "Bem-estar"
+         },
+         "levels": {
+            "principiante": "Iniciante",
+            "intermedio": "Intermediário",
+            "avanzado": "Avançado"
+         },
+         "vibes": {
+            "great": "Cheio de energia!",
+            "ok": "Bem, posso melhorar",
+            "low": "Preciso de um empurrão"
+         }
+      },
+      "login": {
+         "title_login": "Bem-vindo de volta",
+         "title_signup": "Crie sua conta",
+         "subtitle": "Salve seu progresso e conecte seu perfil à nuvem para nunca perder seus dados.",
+         "tab_signup": "Cadastrar",
+         "tab_login": "Entrar",
+         "email_placeholder": "Seu e-mail",
+         "email_aria": "E-mail",
+         "first_name": "Nome",
+         "last_name": "Sobrenome",
+         "password": "Senha",
+         "connecting": "Conectando…",
+         "login": "Entrar",
+         "signup": "Cadastrar com E-mail",
+         "divider_or": "ou"
+      },
+      "errors": {
+         "fill_all": "Preencha todos os campos",
+         "save_failed": "Erro ao salvar o onboarding"
+      },
+      "password_rules": {
+         "min": "Mínimo 8 caracteres",
+         "upper": "Pelo menos uma maiúscula",
+         "symbol": "Pelo menos um símbolo"
+      }
    }
 }

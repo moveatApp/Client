@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useStore, Meal, mealFromEntry } from "@/store/useStore"
 import { estimateMacros } from "@/lib/nutrition"
 import { apiCreateMealEntry } from "@/api/meals"
+import { useTranslation } from "react-i18next"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import {
    Send,
@@ -30,6 +31,7 @@ export default function NutritionPage() {
       setDailyTotals,
    } = useStore()
    const shouldReduceMotion = useReducedMotion()
+   const { t, i18n } = useTranslation("common")
    const [inputText, setInputText] = useState("")
    const [isAnalyzing, setIsAnalyzing] = useState(false)
    const [suggestedMeal, setSuggestedMeal] = useState<any>(null)
@@ -120,9 +122,9 @@ export default function NutritionPage() {
    const sortedDates = Object.keys(groupedMeals).sort((a, b) => b.localeCompare(a))
 
    const dateLabel = (date: string) => {
-      if (date === todayStr) return "Hoy"
-      if (date === yesterdayStr) return "Ayer"
-      return new Date(date + "T12:00:00").toLocaleDateString("es-ES", {
+      if (date === todayStr) return t("nutrition.today")
+      if (date === yesterdayStr) return t("nutrition.yesterday")
+      return new Date(date + "T12:00:00").toLocaleDateString(i18n.language, {
          weekday: "long",
          day: "numeric",
          month: "long",
@@ -136,7 +138,7 @@ export default function NutritionPage() {
          <header className="mb-6 shrink-0">
             <h1 className="text-3xl font-display font-extrabold text-foreground tracking-tight flex items-center gap-2">
                <Apple size={32} className="text-primary" />
-               Alimentación
+               {t("nutrition.header")}
             </h1>
          </header>
 
@@ -164,11 +166,11 @@ export default function NutritionPage() {
                             ease: "easeInOut",
                          }}
                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-caption text-primary border border-primary/30 bg-primary/10">
-                         <CheckCircle size={12} /> Completado!
+                         <CheckCircle size={12} /> {t("nutrition.completed")}
                       </motion.div>
                    ) : (
                         <div className="bg-muted/70 dark:bg-muted px-3 py-1.5 rounded-xl border border-card-border text-caption text-primary">
-                         {targetCalories - dailyCalories} restantes
+                         {t("nutrition.remaining", { count: targetCalories - dailyCalories })}
                       </div>
                    )}
                 </div>
@@ -191,8 +193,8 @@ export default function NutritionPage() {
                       </div>
                       <input
                          type="text"
-                         aria-label="Buscar comida"
-                         placeholder="Bowl de avena…"
+                         aria-label={t("nutrition.search_aria")}
+                         placeholder={t("nutrition.search_placeholder")}
                          autoComplete="off"
                          spellCheck={false}
                           className="flex-1 min-w-0 py-3 outline-none bg-transparent font-medium text-sm text-foreground"
@@ -224,14 +226,14 @@ export default function NutritionPage() {
                   <div className="bg-primary/5 p-5 rounded-[32px] border border-primary/20">
                      <div className="flex justify-between items-center mb-4 text-primary">
                         <span className="text-xs font-bold uppercase tracking-widest">
-                           Sugerencia AI
+                           {t("nutrition.ai_suggestion")}
                         </span>
                         <div className="text-right">
                            <span className="block text-2xl font-display font-bold">
                               {suggestedMeal.calories} kcal
                            </span>
                             <span className="text-caption opacity-70">
-                               Estimación {suggestedMeal.grams}g
+                               {t("nutrition.estimate", { grams: suggestedMeal.grams })}
                             </span>
                         </div>
                      </div>
@@ -249,14 +251,14 @@ export default function NutritionPage() {
                               setSaveError("")
                            }}
                            className="flex-1 py-3">
-                           Descartar
+                           {t("nutrition.discard")}
                         </Button>
                         <Button
                            variant="primary"
                            onClick={confirmMeal}
                            disabled={isSaving}
                            className="flex-1 py-3">
-                           {isSaving ? "Guardando…" : "Confirmar"}
+                           {isSaving ? t("nutrition.saving") : t("nutrition.confirm")}
                         </Button>
                      </div>
                   </div>
@@ -266,11 +268,11 @@ export default function NutritionPage() {
 
          <section className="flex-1">
              <h2 className="font-bold text-base mb-4 flex items-center gap-2">
-                <History size={18} className="text-primary" /> Historial
+                <History size={18} className="text-primary" /> {t("nutrition.history")}
              </h2>
             {sortedDates.length === 0 ? (
                <div className="text-center py-10 text-subtle border-2 border-dashed border-card-border rounded-[32px]">
-                  Sin registros aún
+                  {t("nutrition.empty")}
                </div>
             ) : (
                <div className="space-y-6">
@@ -331,7 +333,7 @@ export default function NutritionPage() {
                                           <div className="py-4 border-b border-card-border/30 mb-2">
                                              <div className="flex items-center justify-between mb-2">
                                                 <span className="text-xs font-bold text-subtle uppercase tracking-wider">
-                                                   Cantidad consumida
+                                                   {t("nutrition.amount_consumed")}
                                                 </span>
                                              </div>
                                               <div className="flex items-center gap-3 bg-muted p-3 rounded-2xl">
@@ -341,7 +343,7 @@ export default function NutritionPage() {
                                                 />
                                                 <input
                                                    type="range"
-                                                   aria-label="Cantidad en gramos"
+                                                   aria-label={t("nutrition.amount_grams_aria")}
                                                    min="10"
                                                    max="1000"
                                                    step="10"
@@ -357,7 +359,7 @@ export default function NutritionPage() {
                                                 <div className="flex items-center">
                                                    <input
                                                       type="number"
-                                                      aria-label="Gramos"
+                                                      aria-label={t("nutrition.grams_aria")}
                                                       className="w-13 text-lg bg-transparent text-primary font-bold text-center"
                                                       value={meal.grams}
                                                       onChange={(e) =>
@@ -377,28 +379,28 @@ export default function NutritionPage() {
                                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-3">
                                              {[
                                                 {
-                                                   label: "Proteínas",
+                                                   key: "protein",
                                                    val: meal.protein,
                                                    color: "text-primary",
                                                 },
                                                 {
-                                                   label: "Carbos",
+                                                   key: "carbs",
                                                    val: meal.carbs,
                                                    color: "text-accent",
                                                 },
                                                  {
-                                                    label: "Grasas",
+                                                    key: "fat",
                                                     val: meal.fat,
                                                     color: "text-secondary",
                                                  },
                                                 {
-                                                    label: "Azúcar",
+                                                    key: "sugar",
                                                     val: meal.sugar,
                                                     color: "text-sugar",
                                                 },
                                              ].map((m) => (
-                                                 <div key={m.label} className="bg-muted p-3 rounded-2xl border border-card-border">
-                                                     <span className="text-caption text-subtle block mb-0.5">{m.label}</span>
+                                                 <div key={m.key} className="bg-muted p-3 rounded-2xl border border-card-border">
+                                                     <span className="text-caption text-subtle block mb-0.5">{t(`nutrition.macros.${m.key}`)}</span>
                                                    <span
                                                       className={`text-base font-display font-bold ${m.color}`}>
                                                       {m.val}g
@@ -412,8 +414,7 @@ export default function NutritionPage() {
                                                 variant="danger"
                                                 onClick={() => removeMeal(meal.id)}
                                                 className="w-full flex items-center justify-center gap-2">
-                                                <Trash2 size={18} /> Eliminar
-                                                Registro
+                                                <Trash2 size={18} /> {t("nutrition.delete_entry")}
                                              </Button>
                                           </div>
                                        </motion.div>
