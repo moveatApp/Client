@@ -7,6 +7,7 @@ import {
    trainingDaysFromLevel,
 } from "@/api/auth"
 import { apiGetContext, apiPutGoals } from "@/api/me"
+import { toast } from "@/components/ui/toast"
 import {
    LogOut,
    User,
@@ -103,6 +104,8 @@ export default function ProfilePage() {
       if (res.ok) {
          const ctx = await apiGetContext()
          if (ctx.ok) hydrateFromContext(ctx.data)
+      } else {
+         toast.error(res.message)
       }
    }
 
@@ -134,11 +137,11 @@ export default function ProfilePage() {
       <div className="p-6 pb-20 animate-fade-in font-sans h-full">
          <header className="mb-8 flex justify-between items-center">
             <h1 className="text-3xl font-display font-extrabold text-foreground tracking-tight">
-               Perfil
+               {t("profile.header")}
             </h1>
             <div className="flex items-center gap-2">
                 <button
-                   aria-label={isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                   aria-label={isDarkMode ? t("profile.darkmode.to_light") : t("profile.darkmode.to_dark")}
                    onClick={handleToggleDarkMode}
                    className="p-2 text-subtle hover:text-foreground transition-colors bg-card-bg/40 rounded-full shadow-sm border border-card-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                    {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
@@ -169,7 +172,7 @@ export default function ProfilePage() {
              transition={{ delay: 0.1 }}
              className="mb-8">
              <h3 className="font-bold text-lg mb-4 text-foreground">
-                Visuales
+                {t("profile.sections.visuals")}
              </h3>
 
              <div className="bg-card-bg/40 rounded-3xl overflow-hidden shadow-sm border border-card-border flex flex-col">
@@ -184,13 +187,12 @@ export default function ProfilePage() {
                             <Palette size={20} />
                          </div>
                          <span className="font-bold text-foreground">
-                            Color del Tema
+                            {t("profile.theme.label")}
                          </span>
                       </div>
                       <div className="flex items-center gap-2">
                          <span className="text-sm text-subtle font-medium">
-                            {THEMES.find((t) => t.id === themeColor)?.label ||
-                               "Naranja"}
+                            {t(`profile.theme.options.${themeColor}`)}
                          </span>
                          <ChevronDown
                             size={16}
@@ -206,18 +208,18 @@ export default function ProfilePage() {
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden">
                             <div className="flex flex-col">
-                               {THEMES.map((t) => (
+                               {THEMES.map((th) => (
                                   <button
-                                     key={t.id}
+                                     key={th.id}
                                      onClick={() => {
-                                        setThemeColor(t.id)
+                                        setThemeColor(th.id)
                                         setExpandedSection(null)
                                      }}
-                                     className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border flex items-center gap-3 ${themeColor === t.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/5 text-foreground hover:bg-muted dark:hover:bg-white/5"}`}>
+                                     className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border flex items-center gap-3 ${themeColor === th.id ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/5 text-foreground hover:bg-muted dark:hover:bg-white/5"}`}>
                                      <div
                                         className="w-4 h-4 rounded-full"
-                                        style={{ backgroundColor: t.color }}></div>
-                                     {t.label}
+                                        style={{ backgroundColor: th.color }}></div>
+                                     {t(`profile.theme.options.${th.id}`)}
                                   </button>
                                ))}
                             </div>
@@ -285,12 +287,12 @@ export default function ProfilePage() {
                             <Zap size={20} />
                          </div>
                          <span className="font-bold text-foreground">
-                            Transiciones Animadas
+                            {t("profile.animations.label")}
                          </span>
                       </div>
                       <div className="flex items-center gap-2">
                          <span className={`text-sm font-medium ${animationsEnabled ? "text-primary" : "text-subtle"}`}>
-                            {animationsEnabled ? "Activadas" : "Desactivadas"}
+                            {animationsEnabled ? t("profile.animations.on") : t("profile.animations.off")}
                          </span>
                           <div className={`w-10 h-6 rounded-full p-1 transition-colors ${animationsEnabled ? "bg-primary" : "bg-muted-foreground"}`}>
                             <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${animationsEnabled ? "translate-x-4" : "translate-x-0"}`} />
@@ -307,7 +309,7 @@ export default function ProfilePage() {
              transition={{ delay: 0.15 }}
              className="mb-8">
              <h3 className="font-bold text-lg mb-4 text-foreground">
-                Alimentación y Uso
+                {t("profile.sections.nutrition_usage")}
              </h3>
 
              <div className="bg-card-bg/40 rounded-3xl overflow-hidden shadow-sm border border-card-border flex flex-col">
@@ -322,12 +324,12 @@ export default function ProfilePage() {
                             <Activity size={20} />
                          </div>
                          <span className="font-bold text-foreground">
-                            Mi Objetivo
+                            {t("profile.goal.label")}
                          </span>
                       </div>
                       <div className="flex items-center gap-2">
                          <span className="text-sm text-subtle font-medium">
-                            {GOALS.find((g) => g.id === user.goal)?.label}
+                            {t(`profile.goals.${user.goal}`)}
                          </span>
                          <ChevronDown
                             size={16}
@@ -352,7 +354,7 @@ export default function ProfilePage() {
                                         setExpandedSection(null)
                                      }}
                                      className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.goal === g.id ? "bg-primary text-white" : "bg-muted/50 text-foreground hover:bg-muted"}`}>
-                                     {g.label}
+                                     {t(`profile.goals.${g.id}`)}
                                   </button>
                                ))}
                             </div>
@@ -371,11 +373,13 @@ export default function ProfilePage() {
                          <div className="w-10 h-10 bg-muted text-subtle rounded-xl flex items-center justify-center">
                             <Dumbbell size={20} />
                          </div>
-                         <span className="font-bold text-foreground">Nivel</span>
+                         <span className="font-bold text-foreground">
+                            {t("profile.level.label")}
+                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                          <span className="text-sm text-subtle font-medium">
-                            {LEVELS.find((l) => l.id === user.level)?.label}
+                            {t(`profile.levels.${user.level}`)}
                          </span>
                          <ChevronDown
                             size={16}
@@ -400,7 +404,7 @@ export default function ProfilePage() {
                                         setExpandedSection(null)
                                      }}
                                      className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.level === l.id ? "bg-primary text-white" : "bg-muted/50 text-foreground hover:bg-muted"}`}>
-                                     {l.label}
+                                     {t(`profile.levels.${l.id}`)}
                                   </button>
                                ))}
                             </div>
@@ -419,7 +423,9 @@ export default function ProfilePage() {
                          <div className="w-10 h-10 bg-muted text-subtle rounded-xl flex items-center justify-center">
                             <Calendar size={20} />
                          </div>
-                         <span className="font-bold text-foreground">Tiempo</span>
+                         <span className="font-bold text-foreground">
+                            {t("profile.time.label")}
+                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                          <span className="text-sm text-subtle font-medium">
@@ -468,7 +474,7 @@ export default function ProfilePage() {
                             <Utensils size={20} />
                          </div>
                          <span className="font-bold text-foreground">
-                            Alimentación
+                            {t("profile.diet.label")}
                          </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -476,12 +482,9 @@ export default function ProfilePage() {
                             {user.preferences.length > 0 &&
                             !user.preferences.includes("ninguna")
                                ? user.preferences
-                                    .map(
-                                       (id) =>
-                                          PREFERENCES.find((p) => p.id === id)?.label,
-                                    )
+                                    .map((id) => t(`profile.preferences.${id}`))
                                     .join(", ")
-                               : "Como de todo"}
+                               : t("profile.diet.eat_all")}
                          </span>
                          <ChevronDown
                             size={16}
@@ -499,7 +502,7 @@ export default function ProfilePage() {
                             <div className="flex flex-col">
                                 <div className="px-5 py-2 bg-muted border-t border-card-border">
                                    <p className="text-xs text-subtle font-medium">
-                                      Puedes elegir múltiples opciones
+                                      {t("profile.diet.multi_hint")}
                                    </p>
                                 </div>
                                {PREFERENCES.map((p) => (
@@ -529,7 +532,7 @@ export default function ProfilePage() {
                                         updateUser({ preferences: newPrefs })
                                      }}
                                      className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${user.preferences.includes(p.id) ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/5 text-foreground hover:bg-muted dark:hover:bg-white/5"}`}>
-                                     {p.label}
+                                     {t(`profile.preferences.${p.id}`)}
                                   </button>
                                ))}
                             </div>
@@ -561,7 +564,7 @@ export default function ProfilePage() {
             }}
             className="w-full flex justify-center items-center gap-2">
             <LogOut size={16} />
-            {isLoggingOut ? "Cerrando sesion..." : "Cerrar sesion"}
+            {isLoggingOut ? t("profile.logout.loading") : t("profile.logout.label")}
          </Button>
       </div>
    )

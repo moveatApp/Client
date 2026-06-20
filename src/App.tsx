@@ -6,6 +6,7 @@ import Onboarding from "@/pages/Onboarding"
 import { useStore } from "@/store/useStore"
 import { useBootstrap } from "@/hooks/useBootstrap"
 import { useWebHaptics } from "web-haptics/react"
+import { Toaster } from "@/components/ui/toast"
 
 const Dashboard = lazy(() => import("@/pages/Dashboard"))
 const Nutrition = lazy(() => import("@/pages/Nutrition"))
@@ -165,6 +166,7 @@ export default function App() {
    return (
       <BrowserRouter>
          <Layout />
+         <Toaster position="top-center" />
       </BrowserRouter>
    )
 }

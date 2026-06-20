@@ -13,6 +13,7 @@ import {
 } from "@/api/auth"
 import { apiGetContext } from "@/api/me"
 import { tError } from "@/i18n"
+import { useTranslation } from "react-i18next"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import { useWebHaptics } from "web-haptics/react"
 import { emojiBlast } from "emoji-blast"
@@ -52,7 +53,8 @@ import {
    AnimatedError,
    PrimaryButton,
 } from "@/components/onboarding"
-import { DatePicker } from "@/components/ui"
+import { DatePicker, LanguageSelect } from "@/components/ui"
+import { toast } from "@/components/ui/toast"
 import {
    validateEmail,
    validateSignupPassword,
@@ -131,121 +133,51 @@ const STEPS = [
 
 // ─── Option data ─────────────────────────────────────────────────────────────
 
+// Option labels/subs are resolved from i18n by `value` at render time; these
+// constants only carry the stable value + icon.
 const GOAL_OPTIONS = [
-   {
-      value: "baja_peso",
-      label: "Bajar de peso",
-      sub: "Déficit calórico y cardio",
-      icon: TrendingDown,
-   },
-   {
-      value: "gana_masa",
-      label: "Ganar masa muscular",
-      sub: "Superávit y fuerza",
-      icon: Dumbbell,
-   },
-   {
-      value: "mantiene",
-      label: "Mantener mi peso",
-      sub: "Balance energético",
-      icon: Scale,
-   },
-   {
-      value: "bienestar",
-      label: "Bienestar y energía",
-      sub: "Hábitos sostenibles",
-      icon: Heart,
-   },
+   { value: "baja_peso", icon: TrendingDown },
+   { value: "gana_masa", icon: Dumbbell },
+   { value: "mantiene", icon: Scale },
+   { value: "bienestar", icon: Heart },
 ]
 
 const GENDER_OPTIONS = [
-   { value: "male", label: "Hombre", icon: Mars },
-   { value: "female", label: "Mujer", icon: Venus },
-   { value: "other", label: "Otro", icon: VenusAndMars },
+   { value: "male", icon: Mars },
+   { value: "female", icon: Venus },
+   { value: "other", icon: VenusAndMars },
 ]
 
 const LEVEL_OPTIONS = [
-   {
-      value: "principiante",
-      label: "Principiante",
-      sub: "0-1 entrenamientos/sem",
-      icon: BatteryLow,
-      sessions: 2,
-   },
-   {
-      value: "intermedio",
-      label: "Intermedio",
-      sub: "2-3 entrenamientos/sem",
-      icon: Zap,
-      sessions: 3,
-   },
-   {
-      value: "avanzado",
-      label: "Avanzado",
-      sub: "+4 entrenamientos/sem",
-      icon: Flame,
-      sessions: 5,
-   },
+   { value: "principiante", icon: BatteryLow },
+   { value: "intermedio", icon: Zap },
+   { value: "avanzado", icon: Flame },
 ]
 
 const TIME_OPTIONS = [
-   { value: 10, label: "Express", sub: "10 minutos", icon: Timer },
-   { value: 30, label: "Equilibrado", sub: "30 minutos", icon: Hourglass },
-   { value: 60, label: "Intensivo", sub: "1 hora o más", icon: Clock },
+   { value: 10, icon: Timer },
+   { value: 30, icon: Hourglass },
+   { value: 60, icon: Clock },
 ]
 
 const PREFERENCE_OPTIONS = [
-   { value: "ninguna", label: "Como de todo", icon: Utensils },
-   { value: "vegetariano", label: "Vegetariano", icon: Carrot },
-   { value: "vegano", label: "Vegano", icon: Leaf },
-   { value: "sintacc", label: "Sin TACC / Gluten Free", icon: WheatOff },
+   { value: "ninguna", icon: Utensils },
+   { value: "vegetariano", icon: Carrot },
+   { value: "vegano", icon: Leaf },
+   { value: "sintacc", icon: WheatOff },
 ]
 
 const VIBE_OPTIONS = [
-   {
-      value: "great",
-      label: "¡Con toda la energía!",
-      sub: "Listo para ir al 100%",
-      icon: Smile,
-   },
-   {
-      value: "ok",
-      label: "Bien, puedo mejorar",
-      sub: "Motivado pero tranquilo",
-      icon: Meh,
-   },
-   {
-      value: "low",
-      label: "Necesito un empujón",
-      sub: "Empecemos suave",
-      icon: Frown,
-   },
+   { value: "great", icon: Smile },
+   { value: "ok", icon: Meh },
+   { value: "low", icon: Frown },
 ]
 
 const WELCOME_FEATURES = [
-   { icon: Flame, text: "Rutinas adaptadas a tu nivel" },
-   { icon: Utensils, text: "Seguimiento nutricional inteligente" },
-   { icon: Heart, text: "Progreso visible cada día" },
+   { key: "routines", icon: Flame },
+   { key: "nutrition", icon: Utensils },
+   { key: "progress", icon: Heart },
 ]
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const goalLabels: Record<string, string> = {
-   baja_peso: "Bajar de peso",
-   gana_masa: "Ganar masa",
-   mantiene: "Mantener peso",
-   bienestar: "Bienestar",
-}
-const levelLabels: Record<string, string> = {
-   principiante: "Principiante",
-   intermedio: "Intermedio",
-   avanzado: "Avanzado",
-}
-const vibeLabels: Record<string, string> = {
-   great: "¡Con toda la energía!",
-   ok: "Bien, puedo mejorar",
-   low: "Necesito un empujón",
-}
 
 // ─── Slide wrapper ────────────────────────────────────────────────────────────
 
@@ -273,6 +205,7 @@ function Slide({ children, dir = 1 }: { children: React.ReactNode; dir?: number 
 
 export default function Onboarding() {
    const navigate = useNavigate()
+   const { t } = useTranslation("common", { keyPrefix: "onboarding" })
    const { completeOnboarding, hydrateFromContext, toggleDarkMode, isDarkMode } =
       useStore()
    const { trigger } = useWebHaptics({ debug: true })
@@ -349,7 +282,7 @@ export default function Onboarding() {
       setAuthError("")
       setEmailError("")
       if (!signupFirstName.trim() || !signupLastName.trim() || !email || !password) {
-         setAuthError("Completá todos los campos")
+         setAuthError(t("errors.fill_all"))
          return
       }
 
@@ -379,7 +312,7 @@ export default function Onboarding() {
          trigger("success")
          go(1)
       } else {
-         setAuthError(res.message)
+         toast.error(res.message)
          trigger("rigid")
       }
       setIsAuthenticating(false)
@@ -387,7 +320,7 @@ export default function Onboarding() {
 
    const processLoginSuccess = async (res: any) => {
       if (!res.ok) {
-         setAuthError(res.message)
+         toast.error(res.message)
          trigger("rigid")
          return
       }
@@ -450,9 +383,7 @@ export default function Onboarding() {
       } catch (error) {
          console.error("Error guardando onboarding:", error)
          setOnboardingError(
-            error instanceof Error
-               ? error.message
-               : "Error al guardar el onboarding",
+            error instanceof Error ? error.message : t("errors.save_failed"),
          )
          trigger("rigid")
       } finally {
@@ -467,7 +398,7 @@ export default function Onboarding() {
          await processLoginSuccess(res)
       } catch (error) {
          console.error("Error conectando con el backend:", error)
-         setAuthError("Error de conexión")
+         toast.error(tError("network.error"))
          trigger("rigid")
       } finally {
          setIsAuthenticating(false)
@@ -587,10 +518,18 @@ export default function Onboarding() {
 
    return (
       <div className="flex flex-col h-full bg-background font-sans select-none relative">
+         {/* Language selector — shown on the pre-auth steps (welcome + login),
+             which have no back button to collide with in the top-left. */}
+         {(step === "welcome" || step === "login") && (
+            <div className="absolute top-6 left-6 z-50">
+               <LanguageSelect />
+            </div>
+         )}
+
          {/* Theme Toggle for Onboarding */}
          <div className="absolute top-6 right-6 z-50">
             <button
-               aria-label="Alternar tema"
+               aria-label={t("aria.theme")}
                onClick={toggleDarkMode}
                className="w-10 h-10 rounded-full bg-card-bg/40 border border-card-border flex items-center justify-center text-foreground shadow-sm hover:bg-muted dark:hover:bg-white/5 transition-colors">
                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -601,7 +540,7 @@ export default function Onboarding() {
          {!isFirst && step !== "summary" && step !== "login" && (
             <div className="flex items-center px-6 pt-6 pb-2 gap-4 shrink-0 relative z-10">
                <button
-                  aria-label="Volver"
+                  aria-label={t("aria.back")}
                   onClick={() => go(-1)}
                   className="w-10 h-10 rounded-full border border-card-border bg-card-bg/40 flex items-center justify-center text-foreground shadow-sm">
                   <ArrowLeft size={18} />
@@ -647,24 +586,23 @@ export default function Onboarding() {
 
                         <div>
                            <h1 className="text-5xl font-display font-extrabold text-foreground tracking-tight leading-none mb-3">
-                              Bienvenido a MovEat
+                              {t("welcome.title")}
                            </h1>
                            <p className="text-subtle font-medium text-base max-w-[260px] mx-auto leading-relaxed">
-                              Tu compañero de entrenamiento, nutrición y bienestar.
-                              Vamos a personalizar tu experiencia.
+                              {t("welcome.subtitle")}
                            </p>
                         </div>
 
                         <div className="flex flex-col gap-2 w-full max-w-[320px] mt-4">
-                           {WELCOME_FEATURES.map(({ icon: Icon, text }) => (
+                           {WELCOME_FEATURES.map(({ icon: Icon, key }) => (
                               <div
-                                 key={text}
+                                 key={key}
                                  className="flex items-center gap-3 bg-card-bg/40 border border-card-border rounded-2xl px-4 py-3 shadow-sm">
                                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                                     <Icon size={16} className="text-primary" />
                                  </div>
                                  <span className="text-sm font-semibold text-foreground">
-                                    {text}
+                                    {t(`welcome.features.${key}`)}
                                  </span>
                               </div>
                            ))}
@@ -675,14 +613,14 @@ export default function Onboarding() {
                   {/* ══ GOAL ═════════════════════════════════════════════════ */}
                   {step === "goal" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-6">
-                        <StepHeader tag="Objetivo" title="¿Qué querés lograr?" />
+                        <StepHeader tag={t("goal.tag")} title={t("goal.title")} />
                         <div className="flex flex-col gap-3">
                            {GOAL_OPTIONS.map((opt) => (
                               <OptionCard
                                  key={opt.value}
                                  icon={opt.icon}
-                                 label={opt.label}
-                                 sub={opt.sub}
+                                 label={t(`goal.options.${opt.value}.label`)}
+                                 sub={t(`goal.options.${opt.value}.sub`)}
                                  selected={form.goal === opt.value}
                                  onClick={() => selectAndAdvance("goal", opt.value)}
                               />
@@ -695,16 +633,16 @@ export default function Onboarding() {
                   {step === "gender" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
                         <StepHeader
-                           tag="Perfil"
-                           title="¿Con qué te identificás?"
-                           subtitle="Esto ajusta tus parámetros metabólicos."
+                           tag={t("gender.tag")}
+                           title={t("gender.title")}
+                           subtitle={t("gender.subtitle")}
                         />
                         <div className="grid grid-cols-3 gap-3">
                            {GENDER_OPTIONS.map((opt) => (
                               <OptionCard
                                  key={opt.value}
                                  icon={opt.icon}
-                                 label={opt.label}
+                                 label={t(`gender.options.${opt.value}`)}
                                  selected={form.gender === opt.value}
                                  onClick={() =>
                                     selectAndAdvance("gender", opt.value)
@@ -719,15 +657,14 @@ export default function Onboarding() {
                   {/* ══ AGE ══════════════════════════════════════════════════ */}
                   {step === "age" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
-                        <StepHeader
-                           tag="Perfil"
-                           title="¿Cuándo naciste?"
-                        />
+                        <StepHeader tag={t("age.tag")} title={t("age.title")} />
                         <div className="flex flex-col items-center gap-6">
                            <div className="text-8xl font-display font-extrabold text-primary tabular-nums">
                               {ageFromBirthDate(form.birthDate)}
                            </div>
-                           <div className="text-subtle font-bold">años</div>
+                           <div className="text-subtle font-bold">
+                              {t("age.years")}
+                           </div>
                            <DatePicker
                               variant="card"
                               value={form.birthDate}
@@ -737,7 +674,7 @@ export default function Onboarding() {
                               minYear={Number(MIN_BIRTHDATE.slice(0, 4))}
                               maxYear={Number(MAX_BIRTHDATE.slice(0, 4))}
                               maxDate={MAX_BIRTHDATE}
-                              label="Fecha de nacimiento"
+                              label={t("age.label")}
                               isDarkMode={isDarkMode}
                            />
                            <AnimatedError
@@ -750,10 +687,10 @@ export default function Onboarding() {
                   {/* ══ METRICS ══════════════════════════════════════════════ */}
                   {step === "metrics" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
-                        <StepHeader tag="Tu cuerpo" title="Peso, altura y objetivo" />
+                        <StepHeader tag={t("metrics.tag")} title={t("metrics.title")} />
                         <div className="flex flex-col gap-6">
                            <SliderCard
-                              label="Peso"
+                              label={t("metrics.weight")}
                               value={form.weight}
                               unit="kg"
                               min={30}
@@ -761,7 +698,7 @@ export default function Onboarding() {
                               onChange={(v) => setForm({ ...form, weight: v })}
                            />
                            <SliderCard
-                              label="Altura"
+                              label={t("metrics.height")}
                               value={form.height}
                               unit="cm"
                               min={130}
@@ -771,7 +708,7 @@ export default function Onboarding() {
                            {(form.goal === "baja_peso" ||
                               form.goal === "gana_masa") && (
                               <SliderCard
-                                 label="Peso objetivo"
+                                 label={t("metrics.target_weight")}
                                  value={
                                     form.targetWeight ||
                                     suggestTargetWeight(form.goal, form.weight)
@@ -793,14 +730,14 @@ export default function Onboarding() {
                   {/* ══ LEVEL ════════════════════════════════════════════════ */}
                   {step === "level" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-6">
-                        <StepHeader tag="Actividad" title="¿Cuál es tu nivel?" />
+                        <StepHeader tag={t("level.tag")} title={t("level.title")} />
                         <div className="flex flex-col gap-3">
                            {LEVEL_OPTIONS.map((opt) => (
                               <OptionCard
                                  key={opt.value}
                                  icon={opt.icon}
-                                 label={opt.label}
-                                 sub={opt.sub}
+                                 label={t(`level.options.${opt.value}.label`)}
+                                 sub={t(`level.options.${opt.value}.sub`)}
                                  selected={form.level === opt.value}
                                  onClick={() => selectAndAdvance("level", opt.value)}
                               />
@@ -812,17 +749,14 @@ export default function Onboarding() {
                   {/* ══ TIME ═════════════════════════════════════════════════ */}
                   {step === "time" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
-                        <StepHeader
-                           tag="Sesiones"
-                           title="¿Cuánto tiempo por sesión?"
-                        />
+                        <StepHeader tag={t("time.tag")} title={t("time.title")} />
                         <div className="flex flex-col gap-3">
                            {TIME_OPTIONS.map((opt) => (
                               <OptionCard
                                  key={opt.value}
                                  icon={opt.icon}
-                                 label={opt.label}
-                                 sub={opt.sub}
+                                 label={t(`time.options.${opt.value}.label`)}
+                                 sub={t(`time.options.${opt.value}.sub`)}
                                  selected={form.timePerSession === opt.value}
                                  onClick={() =>
                                     selectAndAdvance("timePerSession", opt.value)
@@ -837,16 +771,16 @@ export default function Onboarding() {
                   {step === "preferences" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-6">
                         <StepHeader
-                           tag="Alimentación"
-                           title="¿Alguna preferencia?"
-                           subtitle="Podés elegir más de una."
+                           tag={t("preferences.tag")}
+                           title={t("preferences.title")}
+                           subtitle={t("preferences.subtitle")}
                         />
                         <div className="flex flex-col gap-3">
                            {PREFERENCE_OPTIONS.map((opt) => (
                               <OptionCard
                                  key={opt.value}
                                  icon={opt.icon}
-                                 label={opt.label}
+                                 label={t(`preferences.options.${opt.value}`)}
                                  selected={form.preferences.includes(opt.value)}
                                  onClick={() => {
                                     trigger("rigid")
@@ -862,17 +796,17 @@ export default function Onboarding() {
                   {step === "vibe" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-8">
                         <StepHeader
-                           tag="Check-in"
-                           title="¿Cómo te sentís hoy?"
-                           subtitle="Esto nos ayuda a adaptar tu rutina de inicio."
+                           tag={t("vibe.tag")}
+                           title={t("vibe.title")}
+                           subtitle={t("vibe.subtitle")}
                         />
                         <div className="flex flex-col gap-4">
                            {VIBE_OPTIONS.map((opt) => (
                               <OptionCard
                                  key={opt.value}
                                  icon={opt.icon}
-                                 label={opt.label}
-                                 sub={opt.sub}
+                                 label={t(`vibe.options.${opt.value}.label`)}
+                                 sub={t(`vibe.options.${opt.value}.sub`)}
                                  selected={form.vibe === opt.value}
                                  onClick={() => selectAndAdvance("vibe", opt.value)}
                               />
@@ -885,9 +819,9 @@ export default function Onboarding() {
                   {step === "fooddemo" && (
                      <div className="flex flex-col my-auto py-8 shrink-0 gap-6 relative">
                         <StepHeader
-                           tag="Demo"
-                           title="Así agregás una comida"
-                           subtitle="Escribí algo y probá como funciona el registro."
+                           tag={t("fooddemo.tag")}
+                           title={t("fooddemo.title")}
+                           subtitle={t("fooddemo.subtitle")}
                         />
 
                         <div className="bg-card-bg/40 border border-card-border rounded-3xl p-5 shadow-sm">
@@ -895,8 +829,8 @@ export default function Onboarding() {
                               <span className="text-2xl">🍽️</span>
                               <input
                                  type="text"
-                                 aria-label="Nombre de la comida"
-                                 placeholder="Ej: Avena con banana…"
+                                 aria-label={t("fooddemo.food_aria")}
+                                 placeholder={t("fooddemo.placeholder")}
                                  autoComplete="off"
                                  spellCheck={false}
                                  className="flex-1 py-4 bg-transparent outline-none font-semibold text-base text-foreground placeholder-gray-300"
@@ -920,11 +854,12 @@ export default function Onboarding() {
                                        {demoFood}
                                     </div>
                                     <div className="text-xs text-subtle">
-                                       ~
-                                       {Math.round(
-                                          estimateMacros(demoFood).baseCalories * 2,
-                                       )}{" "}
-                                       kcal · registrada ✓
+                                       {t("fooddemo.kcal_logged", {
+                                          kcal: Math.round(
+                                             estimateMacros(demoFood).baseCalories *
+                                                2,
+                                          ),
+                                       })}
                                     </div>
                                  </div>
                               </motion.div>
@@ -932,14 +867,14 @@ export default function Onboarding() {
                               <PrimaryButton
                                  onClick={handleFoodDemo}
                                  disabled={!demoFood.trim()}>
-                                 <span className="text-lg">+</span> Agregar Comida
+                                 <span className="text-lg">+</span> {t("fooddemo.add")}
                               </PrimaryButton>
                            )}
                         </div>
 
                         {demoAdded && (
                            <p className="text-center text-sm text-subtle font-medium">
-                              ¡Exactamente así de fácil! 🎉
+                              {t("fooddemo.success")}
                            </p>
                         )}
                      </div>
@@ -961,34 +896,47 @@ export default function Onboarding() {
                               <CheckCircle2 size={40} className="text-primary" />
                            </motion.div>
                            <h2 className="text-3xl font-display font-extrabold text-foreground mb-1">
-                              ¡Todo listo, {form.name.split(" ")[0]}!
+                              {t("summary.title", {
+                                 name: form.name.split(" ")[0],
+                              })}
                            </h2>
                            <p className="text-subtle text-sm font-medium">
-                              Confirmá tu perfil antes de empezar.
+                              {t("summary.subtitle")}
                            </p>
                         </div>
 
                         <div className="bg-card-bg/40 border border-card-border rounded-3xl p-5 space-y-4 shadow-sm">
                            {[
                               {
-                                 label: "Objetivo",
-                                 val: goalLabels[form.goal] || "—",
+                                 label: t("summary.rows.goal"),
+                                 val: form.goal
+                                    ? t(`summary.goals.${form.goal}`)
+                                    : t("summary.empty"),
                               },
                               {
-                                 label: "Nivel",
-                                 val: levelLabels[form.level] || "—",
+                                 label: t("summary.rows.level"),
+                                 val: form.level
+                                    ? t(`summary.levels.${form.level}`)
+                                    : t("summary.empty"),
                               },
                               {
-                                 label: "Peso / Altura",
-                                 val: `${form.weight} kg / ${form.height} cm`,
+                                 label: t("summary.rows.weight_height"),
+                                 val: t("summary.weight_height_value", {
+                                    weight: form.weight,
+                                    height: form.height,
+                                 }),
                               },
                               {
-                                 label: "Tiempo por sesión",
-                                 val: `${form.timePerSession} minutos`,
+                                 label: t("summary.rows.time"),
+                                 val: t("summary.time_value", {
+                                    minutes: form.timePerSession,
+                                 }),
                               },
                               {
-                                 label: "Cómo me siento",
-                                 val: vibeLabels[form.vibe] || "—",
+                                 label: t("summary.rows.vibe"),
+                                 val: form.vibe
+                                    ? t(`summary.vibes.${form.vibe}`)
+                                    : t("summary.empty"),
                               },
                            ].map((row) => (
                               <div
@@ -1005,7 +953,7 @@ export default function Onboarding() {
                         </div>
 
                         <p className="text-center text-xs text-subtle font-medium">
-                           Podés actualizar todo esto más adelante en tu perfil.
+                           {t("summary.footer")}
                         </p>
                         <AnimatedError message={onboardingError} />
                      </div>
@@ -1029,12 +977,11 @@ export default function Onboarding() {
                         <div>
                            <h2 className="text-3xl font-display font-extrabold text-foreground mb-2 leading-tight">
                               {isLoginMode
-                                 ? "Bienvenido de nuevo"
-                                 : "Crea tu cuenta"}
+                                 ? t("login.title_login")
+                                 : t("login.title_signup")}
                            </h2>
                            <p className="text-subtle text-sm font-medium px-4">
-                              Guardá tu progreso y conectá tu perfil con la nube para
-                              no perder nunca tus datos.
+                              {t("login.subtitle")}
                            </p>
                         </div>
 
@@ -1051,7 +998,7 @@ export default function Onboarding() {
                                         ? "bg-card-bg/40 text-foreground shadow-sm"
                                         : "text-subtle"
                                   }`}>
-                                  Registrarse
+                                  {t("login.tab_signup")}
                                </button>
                                <button
                                   onClick={() => {
@@ -1063,7 +1010,7 @@ export default function Onboarding() {
                                         ? "bg-card-bg/40 text-foreground shadow-sm"
                                       : "text-subtle"
                                }`}>
-                                   Iniciar sesión
+                                   {t("login.tab_login")}
                               </button>
                            </div>
 
@@ -1074,8 +1021,8 @@ export default function Onboarding() {
                               />
                               <input
                                  type="email"
-                                 aria-label="Correo electrónico"
-                                 placeholder="Tu correo electrónico"
+                                 aria-label={t("login.email_aria")}
+                                 placeholder={t("login.email_placeholder")}
                                  autoComplete="email"
                                  spellCheck={false}
                                  className="w-full bg-card-bg/40 border border-card-border text-foreground font-bold py-4 px-6 rounded-2xl shadow-sm outline-none focus:border-primary"
@@ -1095,8 +1042,8 @@ export default function Onboarding() {
                                        className="overflow-hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
                                        <input
                                           type="text"
-                                          aria-label="Nombre"
-                                          placeholder="Nombre"
+                                          aria-label={t("login.first_name")}
+                                          placeholder={t("login.first_name")}
                                           autoComplete="given-name"
                                           className="w-full bg-card-bg/40 border border-card-border text-foreground font-bold py-4 px-5 rounded-2xl shadow-sm outline-none focus:border-primary"
                                           value={signupFirstName}
@@ -1106,8 +1053,8 @@ export default function Onboarding() {
                                        />
                                        <input
                                           type="text"
-                                          aria-label="Apellido"
-                                          placeholder="Apellido"
+                                          aria-label={t("login.last_name")}
+                                          placeholder={t("login.last_name")}
                                           autoComplete="family-name"
                                           className="w-full bg-card-bg/40 border border-card-border text-foreground font-bold py-4 px-5 rounded-2xl shadow-sm outline-none focus:border-primary"
                                           value={signupLastName}
@@ -1121,8 +1068,8 @@ export default function Onboarding() {
 
                               <input
                                  type="password"
-                                 aria-label="Contraseña"
-                                 placeholder="Contraseña"
+                                 aria-label={t("login.password")}
+                                 placeholder={t("login.password")}
                                  autoComplete={
                                     isLoginMode ? "current-password" : "new-password"
                                  }
@@ -1139,16 +1086,16 @@ export default function Onboarding() {
                                        exit={{ height: 0, opacity: 0 }}
                                        className="overflow-hidden">
                                        <div className="flex flex-col gap-1 px-1 pt-1">
-                                          {PASSWORD_RULES.map(({ test, label }) => {
+                                          {PASSWORD_RULES.map(({ test, key }) => {
                                              const ok = test(password)
                                              return (
                                                 <p
-                                                   key={label}
+                                                   key={key}
                                                     className={`text-xs font-bold flex items-center gap-1.5 transition-all ${ok ? "text-primary line-through" : "text-danger"}`}>
                                                     <span
                                                        className={`w-3 h-3 rounded-full border-2 shrink-0 transition-all ${ok ? "bg-primary border-primary" : "border-danger"}`}
                                                     />
-                                                   {label}
+                                                   {t(`password_rules.${key}`)}
                                                 </p>
                                              )
                                           })}
@@ -1175,17 +1122,17 @@ export default function Onboarding() {
                                        : "hover:bg-primary/90"
                                  }>
                                  {isAuthenticating
-                                    ? "Conectando…"
+                                    ? t("login.connecting")
                                     : isLoginMode
-                                      ? "Iniciar sesión"
-                                      : "Registrarse con Email"}
+                                      ? t("login.login")
+                                      : t("login.signup")}
                               </PrimaryButton>
                            </div>
 
                            <div className="relative flex py-2 items-center mb-4">
                               <div className="grow border-t border-card-border"></div>
                               <span className="shrink-0 mx-4 text-subtle text-xs font-bold uppercase">
-                                 o
+                                 {t("login.divider_or")}
                               </span>
                               <div className="grow border-t border-card-border"></div>
                            </div>
@@ -1194,8 +1141,7 @@ export default function Onboarding() {
                               <GoogleLogin
                                  onSuccess={handleGoogleSuccess}
                                  onError={() => {
-
-                                    setAuthError("Fallo el inicio de sesión con Google")
+                                    toast.error(tError("auth.google_failed"))
                                     trigger("rigid")
                                  }}
                                  theme={isDarkMode ? "filled_black" : "outline"}
@@ -1217,28 +1163,28 @@ export default function Onboarding() {
             if (step === "welcome") {
                btn = {
                   onClick: () => go(1),
-                  label: "Empezar",
+                  label: t("footer.start"),
                   icon: <ChevronRight size={22} />,
                   disabled: false,
                }
             } else if (step === "summary") {
                btn = {
                   onClick: handleCompleteOnboarding,
-                  label: isAuthenticating ? "Guardando…" : "Continuar",
+                  label: isAuthenticating ? t("footer.saving") : t("footer.continue"),
                   icon: <ArrowRight size={20} />,
                   disabled: isAuthenticating,
                }
             } else if (step === "fooddemo") {
                btn = {
                   onClick: () => go(1),
-                  label: "Continuar",
+                  label: t("footer.continue"),
                   icon: <ArrowRight size={20} />,
                   disabled: !demoAdded,
                }
             } else if (["age", "metrics", "preferences"].includes(step)) {
                btn = {
                   onClick: () => go(1),
-                  label: "Continuar",
+                  label: t("footer.continue"),
                   icon: <ArrowRight size={20} />,
                   disabled: !canContinue(),
                }

@@ -1,21 +1,21 @@
 import { Link, useLocation } from "react-router-dom"
 import { Home, Apple, Dumbbell, Award, User } from "lucide-react"
-import { useStore } from "@/store/useStore"
+import { useTranslation } from "react-i18next"
 import { useWebHaptics } from "web-haptics/react"
 
 export default function Navigation() {
     const { pathname } = useLocation()
-    const { isDarkMode, toggleDarkMode } = useStore()
+    const { t } = useTranslation("common")
     const { trigger } = useWebHaptics()
 
     if (pathname === "/onboarding") return null
 
     const tabs = [
-       { name: "Inicio", path: "/", icon: Home },
-       { name: "Nutrición", path: "/nutrition", icon: Apple },
-       { name: "Entrenar", path: "/training", icon: Dumbbell },
-       { name: "Progreso", path: "/progress", icon: Award },
-       { name: "Perfil", path: "/profile", icon: User },
+       { name: t("nav.home"), path: "/", icon: Home },
+       { name: t("nav.nutrition"), path: "/nutrition", icon: Apple },
+       { name: t("nav.training"), path: "/training", icon: Dumbbell },
+       { name: t("nav.progress"), path: "/progress", icon: Award },
+       { name: t("nav.profile"), path: "/profile", icon: User },
     ]
 
     // Mobile: reorder so Home is in the center

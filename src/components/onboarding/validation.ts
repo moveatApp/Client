@@ -25,11 +25,9 @@ export function validateLoginPassword(password: string): string | null {
    return null
 }
 
+// `key` resolves to `onboarding.password_rules.<key>` at render time.
 export const PASSWORD_RULES = [
-   { test: (p: string) => p.length >= 8, label: "Mínimo 8 caracteres" },
-   { test: (p: string) => /[A-Z]/.test(p), label: "Al menos una mayúscula" },
-   {
-      test: (p: string) => /[^a-zA-Z0-9]/.test(p),
-      label: "Al menos un símbolo",
-   },
+   { test: (p: string) => p.length >= 8, key: "min" },
+   { test: (p: string) => /[A-Z]/.test(p), key: "upper" },
+   { test: (p: string) => /[^a-zA-Z0-9]/.test(p), key: "symbol" },
 ] as const

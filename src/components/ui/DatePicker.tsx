@@ -147,9 +147,9 @@ export default function DatePicker({
                </div>
             )}
             <div className="flex gap-2">
-               {cardSelect("w-[28%]", "Día", day, (v) => emit(year, month, v), dayOptions)}
-               {cardSelect("flex-1", "Mes", month, (v) => emit(year, v, day), monthOptions)}
-               {cardSelect("w-[30%]", "Año", year, (v) => emit(v, month, day), yearOptions)}
+               {cardSelect("w-[28%]", i18n.t("datepicker.day"), day, (v) => emit(year, month, v), dayOptions)}
+               {cardSelect("flex-1", i18n.t("datepicker.month"), month, (v) => emit(year, v, day), monthOptions)}
+               {cardSelect("w-[30%]", i18n.t("datepicker.year"), year, (v) => emit(v, month, day), yearOptions)}
             </div>
          </div>
       )
@@ -165,7 +165,7 @@ export default function DatePicker({
          className="flex items-center gap-1.5 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-black/5 shrink-0"
          style={{ colorScheme: isDarkMode ? "dark" : "light" }}>
          <select
-            aria-label="Día"
+            aria-label={i18n.t("datepicker.day")}
             className={inlineSelectClass}
             value={day}
             onChange={(e) => emit(year, month, Number(e.target.value))}>
@@ -173,7 +173,7 @@ export default function DatePicker({
          </select>
          {separator}
          <select
-            aria-label="Mes"
+            aria-label={i18n.t("datepicker.month")}
             className={inlineSelectClass}
             value={month}
             onChange={(e) => emit(year, Number(e.target.value), day)}>
@@ -181,7 +181,7 @@ export default function DatePicker({
          </select>
          {separator}
          <select
-            aria-label="Año"
+            aria-label={i18n.t("datepicker.year")}
             className={inlineSelectClass}
             value={year}
             onChange={(e) => emit(Number(e.target.value), month, day)}>
