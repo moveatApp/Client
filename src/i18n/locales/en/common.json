@@ -5,7 +5,11 @@
       "es": "Spanish",
       "pt": "Portuguese"
    },
-   "datepicker": { "day": "Day", "month": "Month", "year": "Year" },
+   "datepicker": {
+      "day": "Day",
+      "month": "Month",
+      "year": "Year"
+   },
    "toast": {
       "error": "Something went wrong",
       "success": "All set",
@@ -25,7 +29,10 @@
          "to_light": "Switch to light mode",
          "to_dark": "Switch to dark mode"
       },
-      "sections": { "visuals": "Display", "nutrition_usage": "Nutrition & usage" },
+      "sections": {
+         "visuals": "Display",
+         "nutrition_usage": "Nutrition & usage"
+      },
       "theme": {
          "label": "Theme color",
          "options": {
@@ -35,21 +42,31 @@
             "purple": "Purple"
          }
       },
-      "animations": { "label": "Animated transitions", "on": "On", "off": "Off" },
-      "goal": { "label": "My goal" },
+      "animations": {
+         "label": "Animated transitions",
+         "on": "On",
+         "off": "Off"
+      },
+      "goal": {
+         "label": "My goal"
+      },
       "goals": {
          "baja_peso": "Lose weight",
          "gana_masa": "Build muscle",
          "mantiene": "Stay healthy",
          "bienestar": "Improve wellness"
       },
-      "level": { "label": "Level" },
+      "level": {
+         "label": "Level"
+      },
       "levels": {
          "principiante": "Beginner",
          "intermedio": "Intermediate",
          "avanzado": "Advanced"
       },
-      "time": { "label": "Time" },
+      "time": {
+         "label": "Time"
+      },
       "diet": {
          "label": "Diet",
          "multi_hint": "You can choose multiple options",
@@ -61,7 +78,10 @@
          "vegano": "Vegan",
          "sintacc": "Gluten-free"
       },
-      "logout": { "label": "Log out", "loading": "Logging out…" }
+      "logout": {
+         "label": "Log out",
+         "loading": "Logging out…"
+      }
    },
    "dashboard": {
       "greeting": "Hi, {{name}}! 👋",
@@ -102,14 +122,38 @@
       "streak": "Streak",
       "workouts": "Workouts",
       "badges": {
-         "week": { "name": "Full week", "desc": "7 days active in a row" },
-         "first_blood": { "name": "First Blood", "desc": "First workout completed" },
-         "perfect_day": { "name": "Perfect Day", "desc": "Diet, hydration and workout done" },
-         "hydration_pro": { "name": "Hydration PRO", "desc": "2L for 5 days straight" },
-         "early_bird": { "name": "Early Bird", "desc": "5 workouts and a 3+ day streak" },
-         "warrior": { "name": "Warrior", "desc": "10 total workouts" },
-         "all_in": { "name": "All In", "desc": "500+ kcal deficit with a workout" },
-         "profile_complete": { "name": "Socialite", "desc": "Profile 100% complete" }
+         "week": {
+            "name": "Full week",
+            "desc": "7 days active in a row"
+         },
+         "first_blood": {
+            "name": "First Blood",
+            "desc": "First workout completed"
+         },
+         "perfect_day": {
+            "name": "Perfect Day",
+            "desc": "Diet, hydration and workout done"
+         },
+         "hydration_pro": {
+            "name": "Hydration PRO",
+            "desc": "2L for 5 days straight"
+         },
+         "early_bird": {
+            "name": "Early Bird",
+            "desc": "5 workouts and a 3+ day streak"
+         },
+         "warrior": {
+            "name": "Warrior",
+            "desc": "10 total workouts"
+         },
+         "all_in": {
+            "name": "All In",
+            "desc": "500+ kcal deficit with a workout"
+         },
+         "profile_complete": {
+            "name": "Socialite",
+            "desc": "Profile 100% complete"
+         }
       }
    },
    "nutrition": {
@@ -130,7 +174,12 @@
       "amount_consumed": "Amount consumed",
       "amount_grams_aria": "Amount in grams",
       "grams_aria": "Grams",
-      "macros": { "protein": "Protein", "carbs": "Carbs", "fat": "Fat", "sugar": "Sugar" },
+      "macros": {
+         "protein": "Protein",
+         "carbs": "Carbs",
+         "fat": "Fat",
+         "sugar": "Sugar"
+      },
       "delete_entry": "Delete entry"
    },
    "training": {
@@ -154,22 +203,55 @@
       "reset_progress": "Reset progress",
       "edit_routine": "Edit routine",
       "plan_summary": "{{sets}} sets × {{value}} {{unit}}{{weight}}",
-      "units": { "reps": "reps", "seg": "sec", "min": "min" },
-      "unit_labels": { "reps": "Reps", "seg": "Sec", "min": "Min" },
+      "units": {
+         "reps": "reps",
+         "seg": "sec",
+         "min": "min",
+         "m": "m",
+         "km": "km"
+      },
+      "unit_labels": {
+         "reps": "Reps",
+         "seg": "Sec",
+         "min": "Min",
+         "m": "Meters",
+         "km": "Km"
+      },
       "uses_weight": "Uses weight",
       "add_exercise": "Add exercise",
       "routine_name": "Routine name",
       "exercise_name": "Exercise name",
       "remove_exercise": "Remove exercise",
-      "field": { "series": "Sets", "amount": "Amount", "weight": "Weight (kg)" },
+      "field": {
+         "series": "Sets",
+         "amount": "Amount",
+         "weight": "Weight (kg)"
+      },
       "cancel": "Cancel",
       "accept": "Confirm",
       "save": "Save",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "pick_exercise": "Choose exercise",
+      "search_exercise": "Search exercise…",
+      "custom_exercise": "Custom exercise",
+      "change_exercise": "Change",
+      "all_filter": "All",
+      "filter_muscle": "Muscle",
+      "filter_equipment": "Equipment",
+      "filter_difficulty": "Difficulty",
+      "no_results": "No results",
+      "loading_catalog": "Loading catalog…"
    },
    "onboarding": {
-      "aria": { "theme": "Toggle theme", "back": "Back" },
-      "footer": { "start": "Start", "continue": "Continue", "saving": "Saving…" },
+      "aria": {
+         "theme": "Toggle theme",
+         "back": "Back"
+      },
+      "footer": {
+         "start": "Start",
+         "continue": "Continue",
+         "saving": "Saving…"
+      },
       "welcome": {
          "title": "Welcome to MovEat",
          "subtitle": "Your training, nutrition and wellness companion. Let's personalize your experience.",
@@ -183,17 +265,33 @@
          "tag": "Goal",
          "title": "What do you want to achieve?",
          "options": {
-            "baja_peso": { "label": "Lose weight", "sub": "Calorie deficit and cardio" },
-            "gana_masa": { "label": "Build muscle", "sub": "Surplus and strength" },
-            "mantiene": { "label": "Maintain my weight", "sub": "Energy balance" },
-            "bienestar": { "label": "Wellness and energy", "sub": "Sustainable habits" }
+            "baja_peso": {
+               "label": "Lose weight",
+               "sub": "Calorie deficit and cardio"
+            },
+            "gana_masa": {
+               "label": "Build muscle",
+               "sub": "Surplus and strength"
+            },
+            "mantiene": {
+               "label": "Maintain my weight",
+               "sub": "Energy balance"
+            },
+            "bienestar": {
+               "label": "Wellness and energy",
+               "sub": "Sustainable habits"
+            }
          }
       },
       "gender": {
          "tag": "Profile",
          "title": "How do you identify?",
          "subtitle": "This tunes your metabolic parameters.",
-         "options": { "male": "Man", "female": "Woman", "other": "Other" }
+         "options": {
+            "male": "Man",
+            "female": "Woman",
+            "other": "Other"
+         }
       },
       "age": {
          "tag": "Profile",
@@ -212,18 +310,36 @@
          "tag": "Activity",
          "title": "What's your level?",
          "options": {
-            "principiante": { "label": "Beginner", "sub": "0-1 workouts/week" },
-            "intermedio": { "label": "Intermediate", "sub": "2-3 workouts/week" },
-            "avanzado": { "label": "Advanced", "sub": "4+ workouts/week" }
+            "principiante": {
+               "label": "Beginner",
+               "sub": "0-1 workouts/week"
+            },
+            "intermedio": {
+               "label": "Intermediate",
+               "sub": "2-3 workouts/week"
+            },
+            "avanzado": {
+               "label": "Advanced",
+               "sub": "4+ workouts/week"
+            }
          }
       },
       "time": {
          "tag": "Sessions",
          "title": "How much time per session?",
          "options": {
-            "10": { "label": "Express", "sub": "10 minutes" },
-            "30": { "label": "Balanced", "sub": "30 minutes" },
-            "60": { "label": "Intensive", "sub": "1 hour or more" }
+            "10": {
+               "label": "Express",
+               "sub": "10 minutes"
+            },
+            "30": {
+               "label": "Balanced",
+               "sub": "30 minutes"
+            },
+            "60": {
+               "label": "Intensive",
+               "sub": "1 hour or more"
+            }
          }
       },
       "preferences": {
@@ -242,9 +358,18 @@
          "title": "How do you feel today?",
          "subtitle": "This helps us adapt your starting routine.",
          "options": {
-            "great": { "label": "Full of energy!", "sub": "Ready to give 100%" },
-            "ok": { "label": "Good, room to improve", "sub": "Motivated but easy" },
-            "low": { "label": "I need a push", "sub": "Let's start gentle" }
+            "great": {
+               "label": "Full of energy!",
+               "sub": "Ready to give 100%"
+            },
+            "ok": {
+               "label": "Good, room to improve",
+               "sub": "Motivated but easy"
+            },
+            "low": {
+               "label": "I need a push",
+               "sub": "Let's start gentle"
+            }
          }
       },
       "fooddemo": {
@@ -312,6 +437,55 @@
          "min": "At least 8 characters",
          "upper": "At least one uppercase letter",
          "symbol": "At least one symbol"
+      }
+   },
+   "fitness": {
+      "muscle": {
+         "abdominals": "Abdominals",
+         "abductors": "Abductors",
+         "adductors": "Adductors",
+         "biceps": "Biceps",
+         "calves": "Calves",
+         "chest": "Chest",
+         "forearms": "Forearms",
+         "glutes": "Glutes",
+         "hamstrings": "Hamstrings",
+         "lats": "Lats",
+         "lower_back": "Lower back",
+         "middle_back": "Middle back",
+         "neck": "Neck",
+         "quadriceps": "Quadriceps",
+         "shoulders": "Shoulders",
+         "traps": "Traps",
+         "triceps": "Triceps"
+      },
+      "equipment": {
+         "body_only": "Bodyweight",
+         "machine": "Machine",
+         "barbell": "Barbell",
+         "dumbbell": "Dumbbell",
+         "kettlebells": "Kettlebells",
+         "cable": "Cable",
+         "bands": "Bands",
+         "medicine_ball": "Medicine ball",
+         "exercise_ball": "Exercise ball",
+         "foam_roll": "Foam roll",
+         "ez_curl_bar": "EZ curl bar",
+         "other": "Other"
+      },
+      "category": {
+         "strength": "Strength",
+         "stretching": "Stretching",
+         "plyometrics": "Plyometrics",
+         "strongman": "Strongman",
+         "powerlifting": "Powerlifting",
+         "cardio": "Cardio",
+         "olympic_weightlifting": "Olympic weightlifting"
+      },
+      "difficulty": {
+         "beginner": "Beginner",
+         "intermediate": "Intermediate",
+         "advanced": "Advanced"
       }
    }
 }

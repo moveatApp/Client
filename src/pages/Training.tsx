@@ -8,9 +8,10 @@ import {
    type RoutineExerciseInput,
    type UpsertRoutinePayload,
 } from "@/api/routines"
-import { apiCreateWorkoutSession, type WorkoutSetInput } from "@/api/workouts"
-import { todayLocalISO } from "@/api/client"
+import { apiCreateWorkoutSession, type Exercise, type WorkoutSetInput } from "@/api/workouts"
+import { mediaUrl, todayLocalISO } from "@/api/client"
 import { toast } from "@/components/ui/toast"
+import ExercisePicker from "@/components/ExercisePicker"
 import { motion, AnimatePresence } from "framer-motion"
 import {
    CheckCircle2,
@@ -23,6 +24,7 @@ import {
    ChevronLeft,
    Plus,
    ChevronDown,
+   Search,
    X,
    Weight,
 } from "lucide-react"
@@ -34,11 +36,15 @@ import { Button, Modal } from "@/components/ui"
 
 // ─── Local draft model for editing a routine ────────────────────────────────
 
-type Unit = "reps" | "seg" | "min"
+type Unit = "reps" | "seg" | "min" | "m" | "km"
 
 interface DraftExercise {
    key: string
    name: string
+   /** Catalog exercise id when picked from the catalog; null for custom free-text exercises. */
+   exerciseId: string | null
+   imageUrl: string | null
+   muscleGroup: string | null
    unit: Unit
    value: number
    sets: number
@@ -54,17 +60,25 @@ function newKey(): string {
 }
 
 function unitOf(ex: RoutineExercise): Unit {
-   if (ex.tracking === "TIME") {
+   if (ex.tracking === "DURATION") {
       const s = ex.targetDurationSeconds ?? 0
       return s > 0 && s % 60 === 0 ? "min" : "seg"
+   }
+   if (ex.tracking === "DISTANCE") {
+      const m = ex.targetDistanceMeters ?? 0
+      return m >= 1000 && m % 1000 === 0 ? "km" : "m"
    }
    return "reps"
 }
 
 function valueOf(ex: RoutineExercise): number {
-   if (ex.tracking === "TIME") {
+   if (ex.tracking === "DURATION") {
       const s = ex.targetDurationSeconds ?? 0
       return s % 60 === 0 ? s / 60 : s
+   }
+   if (ex.tracking === "DISTANCE") {
+      const m = ex.targetDistanceMeters ?? 0
+      return m >= 1000 && m % 1000 === 0 ? m / 1000 : m
    }
    return ex.targetReps ?? 0
 }
@@ -75,6 +89,9 @@ function toDraft(routine: Routine): { name: string; exercises: DraftExercise[] }
       exercises: routine.exercises.map((ex) => ({
          key: newKey(),
          name: ex.exerciseName,
+         exerciseId: ex.exerciseId,
+         imageUrl: null,
+         muscleGroup: null,
          unit: unitOf(ex),
          value: valueOf(ex),
          sets: ex.targetSets,
@@ -85,10 +102,30 @@ function toDraft(routine: Routine): { name: string; exercises: DraftExercise[] }
    }
 }
 
-function blankExercise(name: string): DraftExercise {
+function draftFromExercise(ex: Exercise): DraftExercise {
+   const media = ex.media.find((m) => m.isPrimary) ?? ex.media[0]
+   return {
+      key: newKey(),
+      name: ex.name,
+      exerciseId: ex.id,
+      imageUrl: mediaUrl(media?.url),
+      muscleGroup: ex.primaryMuscleGroup,
+      unit: "reps",
+      value: 10,
+      sets: 3,
+      usesWeight: false,
+      weight: 0,
+      rest: 0,
+   }
+}
+
+function draftFromCustom(name: string): DraftExercise {
    return {
       key: newKey(),
       name,
+      exerciseId: null,
+      imageUrl: null,
+      muscleGroup: null,
       unit: "reps",
       value: 10,
       sets: 3,
@@ -105,14 +142,17 @@ function draftToPayload(
    fallback: { routine: string; exercise: string },
 ): UpsertRoutinePayload {
    const mapped: RoutineExerciseInput[] = exercises.map((e) => {
+      const tracking = e.unit === "reps" ? "REPS" : e.unit === "m" || e.unit === "km" ? "DISTANCE" : "DURATION"
       const input: RoutineExerciseInput = {
          exerciseName: e.name.trim() || fallback.exercise,
-         tracking: e.unit === "reps" ? "REPS" : "TIME",
+         tracking,
          usesWeight: e.usesWeight,
          targetSets: Math.max(1, e.sets),
       }
-      if (e.unit === "reps") input.targetReps = Math.max(1, e.value)
-      else input.targetDurationSeconds = Math.max(1, e.unit === "min" ? e.value * 60 : e.value)
+      if (e.exerciseId) input.exerciseId = e.exerciseId
+      if (tracking === "REPS") input.targetReps = Math.max(1, e.value)
+      else if (tracking === "DURATION") input.targetDurationSeconds = Math.max(1, e.unit === "min" ? e.value * 60 : e.value)
+      else input.targetDistanceMeters = Math.max(1, e.unit === "km" ? e.value * 1000 : e.value)
       if (e.usesWeight && e.weight > 0) input.targetWeight = e.weight
       if (e.rest > 0) input.restSeconds = e.rest
       return input
@@ -138,7 +178,7 @@ function exerciseToSets(ex: RoutineExercise): WorkoutSetInput[] {
    return Array.from({ length: ex.targetSets }, () => {
       const s: WorkoutSetInput = { completed: true }
       if (ex.tracking === "REPS" && ex.targetReps) s.reps = ex.targetReps
-      else if (ex.tracking === "TIME" && ex.targetDurationSeconds)
+      else if (ex.tracking === "DURATION" && ex.targetDurationSeconds)
          s.durationSeconds = ex.targetDurationSeconds
       else if (ex.tracking === "DISTANCE" && ex.targetDistanceMeters)
          s.distanceMeters = ex.targetDistanceMeters
@@ -352,11 +392,29 @@ export default function TrainingPage() {
       }))
    const removeDraftExercise = (key: string) =>
       setDraft((d) => ({ ...d, exercises: d.exercises.filter((e) => e.key !== key) }))
-   const addDraftExercise = () =>
-      setDraft((d) => ({
-         ...d,
-         exercises: [...d.exercises, blankExercise(t("training.new_exercise"))],
-      }))
+
+   // Picker target: "add" appends a new exercise, "replace" swaps an existing row.
+   const [picker, setPicker] = useState<{ mode: "add" } | { mode: "replace"; key: string } | null>(
+      null,
+   )
+   const applyPicked = (draftEx: DraftExercise) => {
+      setDraft((d) => {
+         if (picker?.mode === "replace") {
+            const key = picker.key
+            return {
+               ...d,
+               exercises: d.exercises.map((e) =>
+                  e.key === key
+                     ? { ...e, name: draftEx.name, exerciseId: draftEx.exerciseId, imageUrl: draftEx.imageUrl, muscleGroup: draftEx.muscleGroup }
+                     : e,
+               ),
+            }
+         }
+         return { ...d, exercises: [...d.exercises, draftEx] }
+      })
+   }
+   const onPickerSelect = (ex: Exercise) => applyPicked(draftFromExercise(ex))
+   const onPickerCustom = (name: string) => applyPicked(draftFromCustom(name))
 
    return (
       <div className="p-4 md:p-6 pb-32 animate-fade-in font-sans flex flex-col min-h-screen relative">
@@ -439,7 +497,8 @@ export default function TrainingPage() {
                onName={(name) => setDraft((d) => ({ ...d, name }))}
                onUpdate={updateDraftExercise}
                onRemove={removeDraftExercise}
-               onAdd={addDraftExercise}
+               onAdd={() => setPicker({ mode: "add" })}
+               onPick={(key) => setPicker({ mode: "replace", key })}
                onCancel={() => setEditing(false)}
                onSave={handleSaveEdits}
             />
@@ -583,6 +642,13 @@ export default function TrainingPage() {
                </div>
             )}
          </Modal>
+
+         <ExercisePicker
+            isOpen={picker !== null}
+            onClose={() => setPicker(null)}
+            onSelect={onPickerSelect}
+            onCustom={onPickerCustom}
+         />
       </div>
    )
 }
@@ -596,11 +662,18 @@ interface EditorProps {
    onUpdate: (key: string, fields: Partial<DraftExercise>) => void
    onRemove: (key: string) => void
    onAdd: () => void
+   onPick: (key: string) => void
    onCancel: () => void
    onSave: () => void
 }
 
-const UNITS: { id: Unit }[] = [{ id: "reps" }, { id: "seg" }, { id: "min" }]
+const UNITS: { id: Unit }[] = [
+   { id: "reps" },
+   { id: "seg" },
+   { id: "min" },
+   { id: "m" },
+   { id: "km" },
+]
 
 function RoutineEditor({
    draft,
@@ -609,6 +682,7 @@ function RoutineEditor({
    onUpdate,
    onRemove,
    onAdd,
+   onPick,
    onCancel,
    onSave,
 }: EditorProps) {
@@ -632,16 +706,30 @@ function RoutineEditor({
                      <span className="w-7 h-7 shrink-0 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
                         {idx + 1}
                      </span>
-                     <input
-                        aria-label={t("training.exercise_name")}
-                        value={ex.name}
-                        onChange={(e) => onUpdate(ex.key, { name: e.target.value })}
-                        className="flex-1 bg-transparent font-bold text-base text-foreground border-b border-card-border focus:border-primary/40 outline-none pb-1"
-                     />
+                     <button
+                        onClick={() => onPick(ex.key)}
+                        className="flex-1 flex items-center gap-3 min-w-0 text-left rounded-xl hover:bg-muted/50 dark:hover:bg-white/5 transition-colors p-1 -m-1">
+                        <div className="w-11 h-11 shrink-0 rounded-xl bg-muted dark:bg-white/5 overflow-hidden flex items-center justify-center">
+                           {ex.imageUrl ? (
+                              <img src={ex.imageUrl} alt={ex.name} className="w-full h-full object-cover" />
+                           ) : (
+                              <Dumbbell size={18} className="text-muted-foreground dark:text-white/20" />
+                           )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                           <p className="font-bold text-base text-foreground truncate">{ex.name}</p>
+                           <p className="text-[11px] text-subtle font-bold uppercase tracking-tight flex items-center gap-1">
+                              {ex.muscleGroup
+                                 ? t(`fitness.muscle.${ex.muscleGroup.toLowerCase()}`)
+                                 : t("training.change_exercise")}
+                              <Search size={11} />
+                           </p>
+                        </div>
+                     </button>
                      <button
                         aria-label={t("training.remove_exercise")}
                         onClick={() => onRemove(ex.key)}
-                        className="p-2 rounded-xl text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 transition-colors">
+                        className="p-2 rounded-xl text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 transition-colors shrink-0">
                         <Trash2 size={16} />
                      </button>
                   </div>

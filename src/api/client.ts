@@ -12,6 +12,16 @@ export const API_BASE_URL =
 
 export const API_V1 = `${API_BASE_URL}/v1`
 
+/**
+ * Resolves a platform media path (e.g. "/media/exercises/squat/0.jpg") to a loadable URL.
+ * Relative in dev (Vite proxies /media); absolute against the API origin in prod.
+ */
+export function mediaUrl(path: string | null | undefined): string {
+   if (!path) return ""
+   if (path.startsWith("http")) return path
+   return `${API_BASE_URL}${path}`
+}
+
 // ─── Platform enums (mirror prisma/schema.prisma) ──────────────────────────
 
 export type UnitSystem = "METRIC" | "IMPERIAL"

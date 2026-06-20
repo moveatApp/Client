@@ -21,6 +21,13 @@ import { GoogleOAuthProvider } from "@react-oauth/google"
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string
 
+// Register the PWA service worker in production only (avoids interfering with dev HMR).
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+   window.addEventListener("load", () => {
+      void navigator.serviceWorker.register("/sw.js")
+   })
+}
+
 createRoot(document.getElementById("root")!).render(
    <StrictMode>
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>

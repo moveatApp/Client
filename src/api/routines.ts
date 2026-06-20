@@ -2,7 +2,8 @@
 
 import { apiFetch, type ApiResult, type UnitSystem } from "./client"
 
-export type RoutineTracking = "REPS" | "TIME" | "DISTANCE"
+// Mirrors prisma RoutineExerciseTracking. NOTE: the platform enum is DURATION (not "TIME").
+export type RoutineTracking = "REPS" | "DURATION" | "DISTANCE"
 
 export interface RoutineExercise {
    id: string
