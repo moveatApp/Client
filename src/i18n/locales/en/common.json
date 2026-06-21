@@ -180,7 +180,24 @@
          "fat": "Fat",
          "sugar": "Sugar"
       },
-      "delete_entry": "Delete entry"
+      "delete_entry": "Delete entry",
+      "results_title": "Results",
+      "use_estimate": "Not listed, use estimate",
+      "source_off": "Database",
+      "source_estimate": "Estimate",
+      "builder": {
+         "add_ingredient": "Add ingredient",
+         "ingredients": "Ingredients",
+         "empty": "Add ingredients to your meal",
+         "total": "Meal total",
+         "save_meal": "Save meal",
+         "add": "Add",
+         "manual_entry": "Manual entry",
+         "manual_hint": "Not found. Enter the values manually.",
+         "name": "Name",
+         "calories": "Calories",
+         "meal_type": "Meal type"
+      }
    },
    "training": {
       "header": "Routines",
@@ -487,5 +504,11 @@
          "intermediate": "Intermediate",
          "advanced": "Advanced"
       }
+   },
+   "mealtype": {
+      "BREAKFAST": "Breakfast",
+      "LUNCH": "Lunch",
+      "SNACK": "Snack",
+      "DINNER": "Dinner"
    }
 }

@@ -180,7 +180,24 @@
          "fat": "Gorduras",
          "sugar": "Açúcar"
       },
-      "delete_entry": "Excluir registro"
+      "delete_entry": "Excluir registro",
+      "results_title": "Resultados",
+      "use_estimate": "Não encontro, usar estimativa",
+      "source_off": "Base de dados",
+      "source_estimate": "Estimativa",
+      "builder": {
+         "add_ingredient": "Adicionar ingrediente",
+         "ingredients": "Ingredientes",
+         "empty": "Adicione ingredientes à sua refeição",
+         "total": "Total da refeição",
+         "save_meal": "Salvar refeição",
+         "add": "Adicionar",
+         "manual_entry": "Inserir manualmente",
+         "manual_hint": "Não encontramos. Insira os dados manualmente.",
+         "name": "Nome",
+         "calories": "Calorias",
+         "meal_type": "Tipo de refeição"
+      }
    },
    "training": {
       "header": "Rotinas",
@@ -487,5 +504,11 @@
          "intermediate": "Intermediário",
          "advanced": "Avançado"
       }
+   },
+   "mealtype": {
+      "BREAKFAST": "Café da manhã",
+      "LUNCH": "Almoço",
+      "SNACK": "Lanche",
+      "DINNER": "Jantar"
    }
 }

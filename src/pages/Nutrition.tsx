@@ -1,20 +1,16 @@
 import { useState } from "react"
 import { useStore, Meal, mealFromEntry } from "@/store/useStore"
-import { estimateMacros } from "@/lib/nutrition"
-import { apiCreateMealEntry } from "@/api/meals"
+import type { MealEntryCreateResponse } from "@/api/meals"
+import MealBuilder from "@/components/MealBuilder"
 import { useTranslation } from "react-i18next"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import {
-   Send,
    Utensils,
-   Plus,
-   Image as ImageIcon,
    Apple,
    History,
    Trash2,
    ChevronDown,
    ChevronUp,
-   Scale,
    CheckCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui"
@@ -24,87 +20,20 @@ export default function NutritionPage() {
       meals,
       dailyCalories,
       targetCalories,
-      addMeal,
-      updateMealGrams,
       removeMeal,
       addXP,
       setDailyTotals,
    } = useStore()
    const shouldReduceMotion = useReducedMotion()
    const { t, i18n } = useTranslation("common")
-   const [inputText, setInputText] = useState("")
-   const [isAnalyzing, setIsAnalyzing] = useState(false)
-   const [suggestedMeal, setSuggestedMeal] = useState<any>(null)
    const [expandedMealId, setExpandedMealId] = useState<string | null>(null)
-   const [isSaving, setIsSaving] = useState(false)
-   const [saveError, setSaveError] = useState("")
 
-   const handleAIAnalyze = (e: React.FormEvent) => {
-      e.preventDefault()
-      if (!inputText.trim()) return
-
-      setIsAnalyzing(true)
-      setTimeout(() => {
-         const macros = estimateMacros(inputText)
-         const initialGrams = 200
-         const ratio = initialGrams / 100
-
-         setSuggestedMeal({
-            name: inputText,
-            grams: initialGrams,
-            calories: Math.round(macros.baseCalories * ratio),
-            baseCalories: macros.baseCalories,
-            baseProtein: macros.baseProtein,
-            baseCarbs: macros.baseCarbs,
-            baseFat: macros.baseFat,
-            baseSugar: macros.baseSugar,
-            protein: Math.round(macros.baseProtein * ratio),
-            carbs: Math.round(macros.baseCarbs * ratio),
-            fat: Math.round(macros.baseFat * ratio),
-            sugar: Math.round(macros.baseSugar * ratio),
-            confidence: macros.confidence,
-         })
-         setIsAnalyzing(false)
-      }, 800)
-   }
-
-   const confirmMeal = async () => {
-      if (!suggestedMeal || isSaving) return
-      setIsSaving(true)
-      setSaveError("")
-
-      const res = await apiCreateMealEntry({
-         mealType: "UNKNOWN",
-         originalInput: suggestedMeal.name,
-         items: [
-            {
-               name: suggestedMeal.name,
-               estimatedQuantity: suggestedMeal.grams,
-               estimatedUnit: "g",
-               estimatedCalories: suggestedMeal.calories,
-               proteinG: suggestedMeal.protein,
-               carbsG: suggestedMeal.carbs,
-               fatG: suggestedMeal.fat,
-            },
-         ],
-      })
-
-      if (res.ok) {
-         // Backend is authoritative: store the persisted entry and its totals.
-         const meal = mealFromEntry(res.data.mealEntry)
-         useStore.setState((state) => ({ meals: [meal, ...state.meals] }))
-         setDailyTotals(
-            res.data.dailySummary.caloriesConsumed,
-            res.data.dailySummary.calorieTarget,
-         )
-         addXP(20)
-         setSuggestedMeal(null)
-         setInputText("")
-      } else {
-         setSaveError(res.message)
-      }
-
-      setIsSaving(false)
+   // Backend is authoritative: store the persisted entry and its updated totals.
+   const handleMealSaved = (data: MealEntryCreateResponse) => {
+      const meal = mealFromEntry(data.mealEntry)
+      useStore.setState((state) => ({ meals: [meal, ...state.meals] }))
+      setDailyTotals(data.dailySummary.caloriesConsumed, data.dailySummary.calorieTarget)
+      addXP(20)
    }
 
    const todayStr = new Date().toISOString().split("T")[0]
@@ -183,88 +112,11 @@ export default function NutritionPage() {
                 </div>
              </motion.section>
 
-             <motion.section className="bg-card-bg/40 rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-center max-w-xl mx-auto w-full">
-                <form
-                   onSubmit={handleAIAnalyze}
-                    className="relative ring-1 ring-card-border rounded-2xl overflow-hidden focus-within:ring-primary/40 transition-all">
-                   <div className="flex items-center bg-muted">
-                      <div className="p-3 text-subtle">
-                         <ImageIcon size={18} />
-                      </div>
-                      <input
-                         type="text"
-                         aria-label={t("nutrition.search_aria")}
-                         placeholder={t("nutrition.search_placeholder")}
-                         autoComplete="off"
-                         spellCheck={false}
-                          className="flex-1 min-w-0 py-3 outline-none bg-transparent font-medium text-sm text-foreground"
-                         value={inputText}
-                         onChange={(e) => setInputText(e.target.value)}
-                         disabled={isAnalyzing || suggestedMeal}
-                      />
-                       <button
-                          type="submit"
-                          className="min-w-11 min-h-11 flex items-center justify-center mr-1.5 bg-primary text-white rounded-xl active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                          {isAnalyzing ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                         ) : (
-                            <Send size={16} />
-                         )}
-                      </button>
-                   </div>
-                </form>
-             </motion.section>
           </div>
 
-         <AnimatePresence>
-            {suggestedMeal && (
-               <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="mb-6 overflow-hidden">
-                  <div className="bg-primary/5 p-5 rounded-[32px] border border-primary/20">
-                     <div className="flex justify-between items-center mb-4 text-primary">
-                        <span className="text-xs font-bold uppercase tracking-widest">
-                           {t("nutrition.ai_suggestion")}
-                        </span>
-                        <div className="text-right">
-                           <span className="block text-2xl font-display font-bold">
-                              {suggestedMeal.calories} kcal
-                           </span>
-                            <span className="text-caption opacity-70">
-                               {t("nutrition.estimate", { grams: suggestedMeal.grams })}
-                            </span>
-                        </div>
-                     </div>
-                     {saveError && (
-                        <p className="text-xs font-bold text-red-500 mb-3">
-                           {saveError}
-                        </p>
-                     )}
-                     <div className="flex gap-2">
-                        <Button
-                           variant="muted"
-                           onClick={() => {
-                              setSuggestedMeal(null)
-                              setInputText("")
-                              setSaveError("")
-                           }}
-                           className="flex-1 py-3">
-                           {t("nutrition.discard")}
-                        </Button>
-                        <Button
-                           variant="primary"
-                           onClick={confirmMeal}
-                           disabled={isSaving}
-                           className="flex-1 py-3">
-                           {isSaving ? t("nutrition.saving") : t("nutrition.confirm")}
-                        </Button>
-                     </div>
-                  </div>
-               </motion.div>
-            )}
-         </AnimatePresence>
+         <div className="mb-6">
+            <MealBuilder onSaved={handleMealSaved} />
+         </div>
 
          <section className="flex-1">
              <h2 className="font-bold text-base mb-4 flex items-center gap-2">
@@ -329,52 +181,6 @@ export default function NutritionPage() {
                                           animate={{ height: "auto" }}
                                           exit={{ height: 0 }}
                                           className="px-5 pb-5 border-t border-card-border/50">
-                                          {/* Quantity Edit Section */}
-                                          <div className="py-4 border-b border-card-border/30 mb-2">
-                                             <div className="flex items-center justify-between mb-2">
-                                                <span className="text-xs font-bold text-subtle uppercase tracking-wider">
-                                                   {t("nutrition.amount_consumed")}
-                                                </span>
-                                             </div>
-                                              <div className="flex items-center gap-3 bg-muted p-3 rounded-2xl">
-                                                <Scale
-                                                   size={18}
-                                                   className="text-subtle"
-                                                />
-                                                <input
-                                                   type="range"
-                                                   aria-label={t("nutrition.amount_grams_aria")}
-                                                   min="10"
-                                                   max="1000"
-                                                   step="10"
-                                                    className="flex-1 h-1.5 bg-on-subtle rounded-full appearance-none cursor-pointer accent-primary"
-                                                   value={meal.grams}
-                                                   onChange={(e) =>
-                                                      updateMealGrams(
-                                                         meal.id,
-                                                         parseInt(e.target.value),
-                                                      )
-                                                   }
-                                                />
-                                                <div className="flex items-center">
-                                                   <input
-                                                      type="number"
-                                                      aria-label={t("nutrition.grams_aria")}
-                                                      className="w-13 text-lg bg-transparent text-primary font-bold text-center"
-                                                      value={meal.grams}
-                                                      onChange={(e) =>
-                                                         updateMealGrams(
-                                                            meal.id,
-                                                            parseInt(
-                                                               e.target.value,
-                                                            ) || 0,
-                                                         )
-                                                      }
-                                                   />
-                                                </div>
-                                             </div>
-                                          </div>
-
                                           {/* Macros View-only */}
                                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-3">
                                              {[

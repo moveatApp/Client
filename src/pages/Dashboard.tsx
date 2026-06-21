@@ -144,11 +144,11 @@ export default function Home() {
                      ) : (
                         <motion.div
                            key="form"
-                           initial={{ opacity: 0, width: 0 }}
-                           animate={{ opacity: 1, width: "auto" }}
-                           exit={{ opacity: 0, width: 0 }}
-                           transition={{ duration: 0.35, ease: "easeInOut" }}
-                           className="flex items-center gap-2 overflow-hidden">
+                           initial={{ opacity: 0, y: 4 }}
+                           animate={{ opacity: 1, y: 0 }}
+                           exit={{ opacity: 0, y: 4 }}
+                           transition={{ duration: 0.25, ease: "easeInOut" }}
+                           className="flex flex-wrap items-center justify-center gap-2 w-full">
                            <DatePicker
                               variant="inline"
                               value={dashWeightDate}
