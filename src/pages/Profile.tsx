@@ -27,6 +27,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui"
+import ChannelsSection from "@/components/ChannelsSection"
 import { SUPPORTED_LANGUAGES } from "@/i18n"
 
 const GOALS: { id: Goal; label: string }[] = [
@@ -542,6 +543,8 @@ export default function ProfilePage() {
                 </div>
              </div>
           </motion.div>
+
+          <ChannelsSection />
 
          <Button
             variant="danger"

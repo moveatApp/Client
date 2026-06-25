@@ -18,12 +18,17 @@ export async function logWeight(weight: number, dateISO: string): Promise<void> 
    const today = todayLocalISO()
    const date = dateISO > today ? today : dateISO
 
+   // Snapshot for rollback, then update optimistically so the chart reacts now.
+   const prevHistory = useStore.getState().weightHistory
+   const prevUser = useStore.getState().user
    useStore.getState().addWeightEntry(weight, date)
 
    const loggedAt =
       date === today ? undefined : new Date(`${date}T12:00:00`).toISOString()
    const res = await apiCreateWeightLog({ weight, loggedAt })
    if (!res.ok) {
+      // Roll back the optimistic update so we don't show an unsaved weight.
+      useStore.setState({ weightHistory: prevHistory, user: prevUser })
       toast.error(res.message)
       return
    }

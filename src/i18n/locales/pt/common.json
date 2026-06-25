@@ -31,7 +31,26 @@
       },
       "sections": {
          "visuals": "Visual",
-         "nutrition_usage": "Alimentação e Uso"
+         "nutrition_usage": "Alimentação e Uso",
+         "connections": "Conexões"
+      },
+      "channels": {
+         "subtitle": "Conecte seu WhatsApp para registrar refeições e treinos pelo chat.",
+         "whatsapp": "WhatsApp",
+         "telegram": "Telegram",
+         "soon": "Em breve",
+         "not_linked": "Não vinculado",
+         "verified": "Verificado",
+         "unverified": "Não verificado",
+         "link": "Vincular",
+         "edit": "Editar",
+         "save": "Salvar",
+         "saving": "Salvando…",
+         "cancel": "Cancelar",
+         "placeholder": "+55 11 91234 5678",
+         "hint": "Use o mesmo número com que você escreve no WhatsApp, em formato internacional.",
+         "saved": "WhatsApp vinculado",
+         "save_error": "Não foi possível vincular o número"
       },
       "theme": {
          "label": "Cor do tema",

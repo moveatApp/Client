@@ -31,7 +31,26 @@
       },
       "sections": {
          "visuals": "Display",
-         "nutrition_usage": "Nutrition & usage"
+         "nutrition_usage": "Nutrition & usage",
+         "connections": "Connections"
+      },
+      "channels": {
+         "subtitle": "Connect your WhatsApp to log meals and workouts by chat.",
+         "whatsapp": "WhatsApp",
+         "telegram": "Telegram",
+         "soon": "Coming soon",
+         "not_linked": "Not linked",
+         "verified": "Verified",
+         "unverified": "Unverified",
+         "link": "Link",
+         "edit": "Edit",
+         "save": "Save",
+         "saving": "Saving…",
+         "cancel": "Cancel",
+         "placeholder": "+1 555 123 4567",
+         "hint": "Use the same number you message from on WhatsApp, in international format.",
+         "saved": "WhatsApp linked",
+         "save_error": "We couldn't link the number"
       },
       "theme": {
          "label": "Theme color",

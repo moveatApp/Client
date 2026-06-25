@@ -41,7 +41,10 @@ export function mealFromEntry(entry: MealEntry): Meal {
   const protein = sum((i) => i.proteinG);
   const carbs = sum((i) => i.carbsG);
   const fat = sum((i) => i.fatG);
-  const name = entry.originalInput?.trim() || entry.items.map((i) => i.name).join(', ') || 'Comida';
+  // Prefer the resolved item names (e.g. "Caramelos Arcor Butter Toffees") over
+  // the raw user input ("me comí 150 gramos de estos caramelos"), which the
+  // agent stores as originalInput.
+  const name = entry.items.map((i) => i.name).join(', ').trim() || entry.originalInput?.trim() || 'Comida';
   const occurred = new Date(entry.occurredAt);
 
   return {

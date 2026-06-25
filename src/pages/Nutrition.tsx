@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useStore, Meal, mealFromEntry } from "@/store/useStore"
-import type { MealEntryCreateResponse } from "@/api/meals"
+import { apiDeleteMealEntry, type MealEntryCreateResponse } from "@/api/meals"
+import { toast } from "@/components/ui/toast"
 import MealBuilder from "@/components/MealBuilder"
 import { useTranslation } from "react-i18next"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
@@ -40,6 +41,25 @@ export default function NutritionPage() {
    const yesterdayDate = new Date()
    yesterdayDate.setDate(yesterdayDate.getDate() - 1)
    const yesterdayStr = yesterdayDate.toISOString().split("T")[0]
+
+   // Optimistic delete: drop the meal locally, persist, and roll back on error.
+   const handleDeleteMeal = async (meal: Meal) => {
+      const prevMeals = useStore.getState().meals
+      const prevDaily = useStore.getState().dailyCalories
+      removeMeal(meal.id)
+
+      const res = await apiDeleteMealEntry(meal.id)
+      if (!res.ok) {
+         useStore.setState({ meals: prevMeals, dailyCalories: prevDaily })
+         toast.error(res.message)
+         return
+      }
+      // Reconcile today's ring with the authoritative summary when the deleted
+      // meal was from today (past-day deletions don't affect today's totals).
+      if ((meal.date || todayStr) === todayStr) {
+         setDailyTotals(res.data.dailySummary.caloriesConsumed, res.data.dailySummary.calorieTarget)
+      }
+   }
 
    const groupedMeals = meals.reduce<Record<string, Meal[]>>((acc, meal) => {
       const key = meal.date || todayStr
@@ -218,7 +238,7 @@ export default function NutritionPage() {
                                           <div className="mt-4">
                                              <Button
                                                 variant="danger"
-                                                onClick={() => removeMeal(meal.id)}
+                                                onClick={() => handleDeleteMeal(meal)}
                                                 className="w-full flex items-center justify-center gap-2">
                                                 <Trash2 size={18} /> {t("nutrition.delete_entry")}
                                              </Button>

@@ -93,3 +93,9 @@ export function apiGetDailySummary(
 ): Promise<ApiResult<{ dailySummary: NutritionDailySummary }>> {
    return apiFetch("/me/nutrition/daily-summary", { query: { date } })
 }
+
+export function apiDeleteMealEntry(
+   id: string,
+): Promise<ApiResult<{ dailySummary: NutritionDailySummary }>> {
+   return apiFetch(`/me/meal-entries/${id}`, { method: "DELETE" })
+}
