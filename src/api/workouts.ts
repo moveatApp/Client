@@ -99,6 +99,26 @@ export interface CreateWorkoutSessionPayload {
    exercises: WorkoutExerciseInput[]
 }
 
+export interface WorkoutSessionSet {
+   id: string
+   setIndex: number
+   reps: number | null
+   weight: number | null
+   weightKg: number | null
+   durationSeconds: number | null
+   distanceMeters: number | null
+   completed: boolean
+}
+
+export interface WorkoutSessionExercise {
+   id: string
+   exerciseId: string | null
+   exerciseNameSnapshot: string
+   orderIndex: number
+   notes: string | null
+   sets: WorkoutSessionSet[]
+}
+
 export interface WorkoutSession {
    id: string
    source: EntrySource
@@ -110,7 +130,7 @@ export interface WorkoutSession {
    durationMinutes: number | null
    idempotencyKey: string | null
    unitSystem: UnitSystem
-   exercises: unknown[]
+   exercises: WorkoutSessionExercise[]
    createdAt: string
    updatedAt: string
 }

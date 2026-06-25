@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { useStore } from "@/store/useStore"
 import {
    AreaChart,
@@ -91,11 +92,17 @@ interface MonthSpan {
    colorIndex: number
 }
 
-function getMonthSpans(grid: GridPoint[]): MonthSpan[] {
+function getMonthSpans(grid: GridPoint[], locale: string): MonthSpan[] {
    const spans: MonthSpan[] = []
    let currentMonth = -1
    let startIndex = 0
    let colorIndex = 0
+
+   const monthLabel = (dateStr: string) =>
+      new Date(dateStr)
+         .toLocaleDateString(locale, { month: "short" })
+         .replace(".", "")
+         .toUpperCase()
 
    grid.forEach((day, i) => {
       const d = new Date(day.date)
@@ -103,10 +110,7 @@ function getMonthSpans(grid: GridPoint[]): MonthSpan[] {
       if (month !== currentMonth) {
          if (currentMonth !== -1) {
             spans.push({
-               label: new Date(grid[startIndex].date)
-                  .toLocaleDateString("es-ES", { month: "short" })
-                  .replace(".", "")
-                  .toUpperCase(),
+               label: monthLabel(grid[startIndex].date),
                startIndex,
                endIndex: i - 1,
                colorIndex,
@@ -120,10 +124,7 @@ function getMonthSpans(grid: GridPoint[]): MonthSpan[] {
 
    if (grid.length > 0) {
       spans.push({
-         label: new Date(grid[startIndex].date)
-            .toLocaleDateString("es-ES", { month: "short" })
-            .replace(".", "")
-            .toUpperCase(),
+         label: monthLabel(grid[startIndex].date),
          startIndex,
          endIndex: grid.length - 1,
          colorIndex,
@@ -181,16 +182,18 @@ interface WeightChartProps {
 }
 
 export default function WeightChart({ onPointClick, targetWeight }: WeightChartProps = {}) {
+   const { t, i18n } = useTranslation("common")
+   const locale = i18n.language
    const { weightHistory } = useStore()
    const [period, setPeriod] = useState<Period>("month")
 
    const { grid, spans, hasAnyData } = useMemo(() => {
       const { start, end } = getPeriodRange(period, weightHistory)
       const g = generateDayGrid(start, end, weightHistory)
-      const s = getMonthSpans(g)
+      const s = getMonthSpans(g, locale)
       const hasData = g.some((d) => d.weight !== null)
       return { grid: g, spans: s, hasAnyData: hasData }
-   }, [weightHistory, period])
+   }, [weightHistory, period, locale])
 
     const yDomain = useMemo<[number, number]>(() => {
        const vals = grid.map((d) => d.weight).filter((w): w is number => w !== null)
@@ -335,7 +338,7 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
                             strokeDasharray="6 4"
                             strokeWidth={2}
                             label={{
-                               value: "Objetivo",
+                               value: t("chart.target"),
                                position: "insideTopRight",
                                fill: "var(--accent)",
                                fontSize: 10,
@@ -384,7 +387,7 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
                            if (!payload || !payload[0]) return ""
                            const dateStr = payload[0].payload.date as string
                            const d = new Date(dateStr)
-                           return d.toLocaleDateString("es-ES", {
+                           return d.toLocaleDateString(locale, {
                               weekday: "long",
                               day: "numeric",
                               month: "long",
@@ -392,7 +395,7 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
                         }}
                         formatter={(value) => [
                            `${Math.round(Number(value) * 10) / 10} kg`,
-                           "Peso",
+                           t("chart.weight"),
                         ]}
                      />
 
@@ -457,7 +460,7 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
                </ResponsiveContainer>
             ) : (
                <div className="w-full h-full flex items-center justify-center text-subtle text-sm font-medium">
-                  Sin datos de peso en este período
+                  {t("chart.no_data")}
                </div>
             )}
          </div>
@@ -466,22 +469,22 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
              <button
                 onClick={() => setPeriod("month")}
                 className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "month" ? "bg-primary text-white" : ""}`}>
-                Este mes
+                {t("chart.period.month")}
              </button>
              <button
                 onClick={() => setPeriod("6m")}
                 className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "6m" ? "bg-primary text-white" : ""}`}>
-                6 Meses
+                {t("chart.period.6m")}
              </button>
              <button
                 onClick={() => setPeriod("year")}
                 className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "year" ? "bg-primary text-white" : ""}`}>
-                Este año
+                {t("chart.period.year")}
              </button>
              <button
                 onClick={() => setPeriod("all")}
                 className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "all" ? "bg-primary text-white" : ""}`}>
-                Todo
+                {t("chart.period.all")}
              </button>
           </div>
       </div>

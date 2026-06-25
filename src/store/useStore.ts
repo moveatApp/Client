@@ -107,7 +107,7 @@ export interface Meal {
 }
 
 // Routines (workout templates) are backend-authoritative; see src/api/routines.ts.
-export type { Routine, RoutineExercise } from '@/api/routines';
+export type { Routine, RoutineExercise, RoutineSet } from '@/api/routines';
 
 function getTargetWeight(goal: Goal, currentWeight: number, userTarget?: number): number {
   if (userTarget != null && userTarget > 0) return userTarget;

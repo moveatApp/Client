@@ -77,6 +77,12 @@
   --ring-color: rgba(0, 0, 0, 0.08);
   --danger: rgb(207, 65, 65);
   --sugar: #f472b6;
+  /* Macro colors — fixed across all themes so the 3–4 macros always read as
+     distinct hues (the theme's primary/secondary/accent share one hue family). */
+  --macro-protein: #3b82f6;
+  --macro-carbs: #f59e0b;
+  --macro-fat: #a855f7;
+  --macro-sugar: var(--sugar);
 }
 
 [data-theme="orange"] {
@@ -245,6 +251,10 @@
   --color-on-subtle: var(--on-subtle);
   --color-danger: var(--danger);
   --color-sugar: var(--sugar);
+  --color-macro-protein: var(--macro-protein);
+  --color-macro-carbs: var(--macro-carbs);
+  --color-macro-fat: var(--macro-fat);
+  --color-macro-sugar: var(--macro-sugar);
   --shadow-color-primary: var(--primary);
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;

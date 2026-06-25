@@ -1,4 +1,27 @@
 {
+   "history": {
+      "loading": "Carregando treinos…",
+      "error": "Não foi possível carregar o histórico",
+      "empty_title": "Nenhum treino ainda",
+      "empty_desc": "Quando você salvar um treino, ele aparece aqui com suas séries e pesos.",
+      "untitled": "Treino",
+      "no_sets": "Sem séries",
+      "exercises_one": "{{count}} exercício",
+      "exercises_other": "{{count}} exercícios",
+      "sets_one": "{{count}} série",
+      "sets_other": "{{count}} séries"
+   },
+   "chart": {
+      "target": "Meta",
+      "weight": "Peso",
+      "no_data": "Sem dados de peso neste período",
+      "period": {
+         "month": "Este mês",
+         "6m": "6 Meses",
+         "year": "Este ano",
+         "all": "Tudo"
+      }
+   },
    "language": {
       "label": "Idioma",
       "en": "Inglês",
@@ -179,6 +202,7 @@
       "header": "Alimentação",
       "completed": "Concluído!",
       "remaining": "{{count}} restantes",
+      "macros_today": "Macros de hoje",
       "search_aria": "Buscar comida",
       "search_placeholder": "Bowl de aveia…",
       "ai_suggestion": "Sugestão IA",
@@ -237,6 +261,10 @@
       "session_progress": "Progresso da sessão",
       "sets_completed": "{{done}}/{{total}} séries concluídas",
       "reset_progress": "Reiniciar progresso",
+      "finish_workout": "Salvar treino ({{done}}/{{total}})",
+      "workout_saved": "Treino salvo",
+      "tab_routines": "Rotinas",
+      "tab_history": "Histórico",
       "edit_routine": "Editar rotina",
       "plan_summary": "{{sets}} séries × {{value}} {{unit}}{{weight}}",
       "units": {
@@ -255,13 +283,22 @@
       },
       "uses_weight": "Usa peso",
       "add_exercise": "Adicionar exercício",
+      "add_set": "Adicionar série",
+      "remove_set": "Remover série",
+      "advanced": "Avançado",
+      "notes_label": "Notas",
+      "notes_placeholder": "Ex. pegada fechada, última até a falha…",
       "routine_name": "Nome da rotina",
       "exercise_name": "Nome do exercício",
       "remove_exercise": "Excluir exercício",
       "field": {
          "series": "Séries",
          "amount": "Quantidade",
-         "weight": "Peso (kg)"
+         "weight": "Peso (kg)",
+         "rir": "RIR",
+         "rpe": "RPE",
+         "tempo": "Tempo",
+         "rest": "Descanso (s)"
       },
       "cancel": "Cancelar",
       "accept": "Confirmar",

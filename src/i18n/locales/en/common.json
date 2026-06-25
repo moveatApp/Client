@@ -1,4 +1,27 @@
 {
+   "history": {
+      "loading": "Loading workouts…",
+      "error": "Couldn't load history",
+      "empty_title": "No workouts yet",
+      "empty_desc": "When you save a workout, it'll show up here with its sets and weights.",
+      "untitled": "Workout",
+      "no_sets": "No sets",
+      "exercises_one": "{{count}} exercise",
+      "exercises_other": "{{count}} exercises",
+      "sets_one": "{{count}} set",
+      "sets_other": "{{count}} sets"
+   },
+   "chart": {
+      "target": "Target",
+      "weight": "Weight",
+      "no_data": "No weight data in this period",
+      "period": {
+         "month": "This month",
+         "6m": "6 Months",
+         "year": "This year",
+         "all": "All"
+      }
+   },
    "language": {
       "label": "Language",
       "en": "English",
@@ -179,6 +202,7 @@
       "header": "Nutrition",
       "completed": "Completed!",
       "remaining": "{{count}} remaining",
+      "macros_today": "Today's macros",
       "search_aria": "Search food",
       "search_placeholder": "Oatmeal bowl…",
       "ai_suggestion": "AI suggestion",
@@ -237,6 +261,10 @@
       "session_progress": "Session progress",
       "sets_completed": "{{done}}/{{total}} sets completed",
       "reset_progress": "Reset progress",
+      "finish_workout": "Save workout ({{done}}/{{total}})",
+      "workout_saved": "Workout saved",
+      "tab_routines": "Routines",
+      "tab_history": "History",
       "edit_routine": "Edit routine",
       "plan_summary": "{{sets}} sets × {{value}} {{unit}}{{weight}}",
       "units": {
@@ -255,13 +283,22 @@
       },
       "uses_weight": "Uses weight",
       "add_exercise": "Add exercise",
+      "add_set": "Add set",
+      "remove_set": "Remove set",
+      "advanced": "Advanced",
+      "notes_label": "Notes",
+      "notes_placeholder": "e.g. close grip, last set to failure…",
       "routine_name": "Routine name",
       "exercise_name": "Exercise name",
       "remove_exercise": "Remove exercise",
       "field": {
          "series": "Sets",
          "amount": "Amount",
-         "weight": "Weight (kg)"
+         "weight": "Weight (kg)",
+         "rir": "RIR",
+         "rpe": "RPE",
+         "tempo": "Tempo",
+         "rest": "Rest (s)"
       },
       "cancel": "Cancel",
       "accept": "Confirm",

@@ -268,14 +268,15 @@ export default function ExercisePicker({
                            </h3>
                         </div>
                         <div
-                           className="flex-1 overflow-y-auto px-4 flex flex-col items-center justify-center gap-3"
+                           className="flex-1 min-h-0 px-4 flex flex-col items-center justify-center gap-3"
                            onClick={(e) => e.stopPropagation()}>
                            <ExerciseAnimation
+                              contain
                               images={preview.media.map((m) => mediaUrl(m.url))}
                               alt={preview.name}
-                              className="w-full max-w-md rounded-2xl"
+                              className="w-full max-w-md flex-1 min-h-0 max-h-[65vh] rounded-2xl"
                            />
-                           <p className="text-white/50 text-xs font-medium">
+                           <p className="text-white/50 text-xs font-medium shrink-0">
                               {muscleLabel(preview.primaryMuscleGroup)} · {difficultyLabel(preview.difficulty)}
                            </p>
                         </div>

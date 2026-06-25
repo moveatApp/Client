@@ -19,6 +19,13 @@ interface ExerciseAnimationProps {
    fadeMs?: number
    /** When false, shows only the first frame (e.g. for low-priority thumbnails). */
    animate?: boolean
+   /**
+    * Fit the frames inside the box (object-contain) instead of letting the first
+    * frame's natural aspect ratio size the box. Use for full-screen previews so a
+    * tall (portrait) image can't overflow the viewport. The wrapper must have a
+    * bounded height (e.g. `h-[60vh]`).
+    */
+   contain?: boolean
 }
 
 export default function ExerciseAnimation({
@@ -28,6 +35,7 @@ export default function ExerciseAnimation({
    intervalMs = 1100,
    fadeMs = 380,
    animate = true,
+   contain = false,
 }: ExerciseAnimationProps) {
    const frames = images.filter(Boolean)
    // For the 2-frame loop: whether the top (end-position) frame is currently shown.
@@ -50,7 +58,30 @@ export default function ExerciseAnimation({
    }
 
    if (!canAnimate) {
-      return <img src={frames[0]} alt={alt} loading="lazy" className={`object-cover ${className}`} />
+      return (
+         <img
+            src={frames[0]}
+            alt={alt}
+            loading="lazy"
+            className={`${contain ? "w-full h-full object-contain" : "object-cover"} ${className}`}
+         />
+      )
+   }
+
+   // Contained: both frames fill a bounded box with object-contain (no overflow).
+   if (contain) {
+      return (
+         <div className={`relative overflow-hidden ${className}`}>
+            <img src={frames[0]} alt={alt} className="absolute inset-0 w-full h-full object-contain" />
+            <img
+               src={frames[1]}
+               alt=""
+               aria-hidden
+               className="absolute inset-0 w-full h-full object-contain"
+               style={{ opacity: showTop ? 1 : 0, transition: `opacity ${fadeMs}ms ease-in-out` }}
+            />
+         </div>
+      )
    }
 
    return (

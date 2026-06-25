@@ -5,11 +5,28 @@ import { apiFetch, type ApiResult, type UnitSystem } from "./client"
 // Mirrors prisma RoutineExerciseTracking. NOTE: the platform enum is DURATION (not "TIME").
 export type RoutineTracking = "REPS" | "DURATION" | "DISTANCE"
 
+export interface RoutineSet {
+   id: string
+   orderIndex: number
+   targetReps: number | null
+   targetDurationSeconds: number | null
+   targetDistanceMeters: number | null
+   targetWeight: number | null
+   targetWeightKg: number | null
+   rir: number | null
+   rpe: number | null
+   tempo: string | null
+}
+
 export interface RoutineExercise {
    id: string
    orderIndex: number
    exerciseId: string | null
    exerciseName: string
+   /** Primary catalog image (relative /media path) when the exercise is linked. */
+   imageUrl: string | null
+   /** All catalog images (relative /media paths) for the animated preview. */
+   imageUrls: string[]
    tracking: RoutineTracking
    usesWeight: boolean
    targetSets: number
@@ -20,6 +37,7 @@ export interface RoutineExercise {
    targetWeightKg: number | null
    restSeconds: number | null
    notes: string | null
+   sets: RoutineSet[]
 }
 
 export interface Routine {
@@ -30,6 +48,16 @@ export interface Routine {
    exercises: RoutineExercise[]
    createdAt: string
    updatedAt: string
+}
+
+export interface RoutineSetInput {
+   targetReps?: number
+   targetDurationSeconds?: number
+   targetDistanceMeters?: number
+   targetWeight?: number
+   rir?: number
+   rpe?: number
+   tempo?: string
 }
 
 export interface RoutineExerciseInput {
@@ -44,6 +72,8 @@ export interface RoutineExerciseInput {
    targetWeight?: number
    restSeconds?: number
    notes?: string
+   /** Explicit per-set plan. When provided it overrides the aggregate target* fields. */
+   sets?: RoutineSetInput[]
 }
 
 export interface UpsertRoutinePayload {

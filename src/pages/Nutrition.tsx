@@ -82,6 +82,26 @@ export default function NutritionPage() {
 
    const progress = Math.min((dailyCalories / targetCalories) * 100, 100)
 
+   // Today's macro totals (preview alongside the calorie counter).
+   const todayMacros = meals
+      .filter((m) => (m.date || todayStr) === todayStr)
+      .reduce(
+         (acc, m) => ({
+            protein: acc.protein + (m.protein || 0),
+            carbs: acc.carbs + (m.carbs || 0),
+            fat: acc.fat + (m.fat || 0),
+         }),
+         { protein: 0, carbs: 0, fat: 0 },
+      )
+   const macroKcal = todayMacros.protein * 4 + todayMacros.carbs * 4 + todayMacros.fat * 9
+   const macroPct = (grams: number, perGram: number) =>
+      macroKcal > 0 ? (grams * perGram * 100) / macroKcal : 0
+   const macroRows = [
+      { key: "protein", val: todayMacros.protein, color: "text-macro-protein", bar: "bg-macro-protein", pct: macroPct(todayMacros.protein, 4) },
+      { key: "carbs", val: todayMacros.carbs, color: "text-macro-carbs", bar: "bg-macro-carbs", pct: macroPct(todayMacros.carbs, 4) },
+      { key: "fat", val: todayMacros.fat, color: "text-macro-fat", bar: "bg-macro-fat", pct: macroPct(todayMacros.fat, 9) },
+   ]
+
    return (
       <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-6 animate-fade-in font-sans w-full h-full min-h-screen flex flex-col">
          <header className="mb-6 shrink-0">
@@ -129,6 +149,39 @@ export default function NutritionPage() {
                       animate={{ width: `${progress}%` }}
                        className={`h-full ${progress > 100 ? "bg-danger" : "bg-primary"}`}
                    />
+                </div>
+             </motion.section>
+
+             {/* Daily macros preview */}
+             <motion.section className="bg-card-bg/40 border border-card-border rounded-[32px] p-5 flex flex-col gap-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-subtle">
+                   {t("nutrition.macros_today")}
+                </span>
+                <div className="h-2.5 flex rounded-full overflow-hidden bg-muted">
+                   {macroKcal > 0 ? (
+                      macroRows.map((m) => (
+                         <motion.div
+                            key={m.key}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${m.pct}%` }}
+                            className={m.bar}
+                         />
+                      ))
+                   ) : null}
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                   {macroRows.map((m) => (
+                      <div
+                         key={m.key}
+                         className="flex flex-col items-center bg-muted/40 dark:bg-white/5 rounded-2xl py-3">
+                         <span className={`text-xl font-display font-extrabold ${m.color}`}>
+                            {Math.round(m.val)}g
+                         </span>
+                         <span className="text-caption text-subtle capitalize">
+                            {t(`nutrition.macros.${m.key}`)}
+                         </span>
+                      </div>
+                   ))}
                 </div>
              </motion.section>
 
@@ -207,22 +260,22 @@ export default function NutritionPage() {
                                                 {
                                                    key: "protein",
                                                    val: meal.protein,
-                                                   color: "text-primary",
+                                                   color: "text-macro-protein",
                                                 },
                                                 {
                                                    key: "carbs",
                                                    val: meal.carbs,
-                                                   color: "text-accent",
+                                                   color: "text-macro-carbs",
                                                 },
                                                  {
                                                     key: "fat",
                                                     val: meal.fat,
-                                                    color: "text-secondary",
+                                                    color: "text-macro-fat",
                                                  },
                                                 {
                                                     key: "sugar",
                                                     val: meal.sugar,
-                                                    color: "text-sugar",
+                                                    color: "text-macro-sugar",
                                                 },
                                              ].map((m) => (
                                                  <div key={m.key} className="bg-muted p-3 rounded-2xl border border-card-border">
