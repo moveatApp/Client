@@ -14,7 +14,7 @@ export default function Button({
    ...props
 }: ButtonProps) {
     const baseStyles =
-       "font-bold rounded-button transition-colors duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+       "font-bold rounded-button transition-colors duration-200 flex items-center justify-center gap-2 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 
    const variants = {
       primary:

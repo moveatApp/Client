@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import { useStore } from "@/store/useStore"
 import type { Routine, RoutineExercise, RoutineSet } from "@/store/useStore"
 import {
@@ -39,7 +40,7 @@ import { Link } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
 import { useWebHaptics } from "web-haptics/react"
-import { Button, Modal } from "@/components/ui"
+import { Button, Modal, ProgressRing } from "@/components/ui"
 
 // ─── Local draft model for editing a routine ────────────────────────────────
 
@@ -761,28 +762,18 @@ export default function TrainingPage() {
                </div>
 
                {/* Session progress */}
-               <div className="bg-card-bg rounded-[32px] p-5 shadow-sm border border-card-border mb-8 flex items-center gap-5">
-                  <div className="w-14 h-14 relative shrink-0">
-                     <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-                        <path
-                           className="text-muted dark:text-white/5"
-                           strokeWidth="4"
-                           stroke="currentColor"
-                           fill="none"
-                           d="M18 2.5 a 15.5 15.5 0 0 1 0 31.0 a 15.5 15.5 0 0 1 0 -31.0"
-                        />
-                        <motion.path
-                           initial={{ pathLength: 0 }}
-                           animate={{ pathLength: sessionProgress / 100 }}
-                           className="text-primary"
-                           strokeWidth="4"
-                           strokeLinecap="round"
-                           stroke="currentColor"
-                           fill="none"
-                           d="M18 2.5 a 15.5 15.5 0 0 1 0 31.0 a 15.5 15.5 0 0 1 0 -31.0"
-                        />
-                     </svg>
-                  </div>
+               <div className="bg-card-bg rounded-[32px] p-5 border border-card-border mb-8 flex items-center gap-5 soft-raised">
+                  <ProgressRing
+                     value={completedSets}
+                     max={totalSets || 1}
+                     size={56}
+                     stroke={6}
+                     color="var(--primary)"
+                     gradientTo="var(--accent)">
+                     <span className="text-xs font-extrabold text-foreground">
+                        {Math.round(sessionProgress)}%
+                     </span>
+                  </ProgressRing>
                   <div>
                      <span className="block font-bold text-lg text-foreground">
                         {t("training.session_progress")}
@@ -983,37 +974,43 @@ export default function TrainingPage() {
             onCustom={onPickerCustom}
          />
 
-         {/* Animated image preview (the looping "gif") for a saved exercise. */}
-         <AnimatePresence>
-            {preview && (
-               <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setPreview(null)}
-                  className="fixed inset-0 z-50 bg-black/90 flex flex-col">
-                  <div className="p-4 flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                     <button
-                        onClick={() => setPreview(null)}
-                        aria-label={t("training.cancel")}
-                        className="p-2 rounded-xl bg-white/10 text-white shrink-0">
-                        <X size={20} />
-                     </button>
-                     <h3 className="text-white font-bold text-lg flex-1 truncate">{preview.name}</h3>
-                  </div>
-                  <div
-                     className="flex-1 min-h-0 px-4 pb-4 flex flex-col items-center justify-center"
-                     onClick={(e) => e.stopPropagation()}>
-                     <ExerciseAnimation
-                        contain
-                        images={preview.images}
-                        alt={preview.name}
-                        className="w-full max-w-md h-full max-h-[70vh] rounded-2xl"
-                     />
-                  </div>
-               </motion.div>
-            )}
-         </AnimatePresence>
+         {/* Animated image preview (the looping "gif") for a saved exercise.
+             Portaled to <body> so it escapes the page-transition transform (a
+             transformed ancestor makes position:fixed relative to it, not the
+             viewport — which pushed the image to the bottom under the nav). */}
+         {createPortal(
+            <AnimatePresence>
+               {preview && (
+                  <motion.div
+                     initial={{ opacity: 0 }}
+                     animate={{ opacity: 1 }}
+                     exit={{ opacity: 0 }}
+                     onClick={() => setPreview(null)}
+                     className="fixed inset-0 z-[100] bg-black/90 flex flex-col">
+                     <div className="p-4 flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                        <button
+                           onClick={() => setPreview(null)}
+                           aria-label={t("training.cancel")}
+                           className="p-2 rounded-xl bg-white/10 text-white shrink-0">
+                           <X size={20} />
+                        </button>
+                        <h3 className="text-white font-bold text-lg flex-1 truncate">{preview.name}</h3>
+                     </div>
+                     <div
+                        className="flex-1 min-h-0 px-4 pb-4 flex flex-col items-center justify-center"
+                        onClick={(e) => e.stopPropagation()}>
+                        <ExerciseAnimation
+                           contain
+                           images={preview.images}
+                           alt={preview.name}
+                           className="w-full max-w-md h-full max-h-[80vh] rounded-2xl"
+                        />
+                     </div>
+                  </motion.div>
+               )}
+            </AnimatePresence>,
+            document.body,
+         )}
       </div>
    )
 }

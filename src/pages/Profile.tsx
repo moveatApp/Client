@@ -6,7 +6,14 @@ import {
    mapActivityLevel,
    trainingDaysFromLevel,
 } from "@/api/auth"
-import { apiGetContext, apiPutGoals } from "@/api/me"
+import {
+   apiGetContext,
+   apiPutGoals,
+   apiGetNutritionSettings,
+   apiPutNutritionSettings,
+   apiUpdatePreferences,
+   type NutritionSettings,
+} from "@/api/me"
 import { toast } from "@/components/ui/toast"
 import {
    LogOut,
@@ -22,6 +29,9 @@ import {
    Eye,
    Zap,
    Languages,
+   Flame,
+   Target,
+   Save,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
@@ -58,10 +68,16 @@ const PREFERENCES = [
 ]
 
 const THEMES = [
+   { id: "neutral", label: "Neutro", color: "#52525B" },
    { id: "orange", label: "Naranja", color: "#F97316" },
    { id: "green", label: "Verde", color: "#5B6347" },
    { id: "blue", label: "Azul", color: "#3B82F6" },
    { id: "purple", label: "Morado", color: "#8B5CF6" },
+   { id: "red", label: "Rojo", color: "#EF4444" },
+   { id: "teal", label: "Teal", color: "#14B8A6" },
+   { id: "rose", label: "Rosa", color: "#F43F5E" },
+   { id: "amber", label: "Ámbar", color: "#D97706" },
+   { id: "indigo", label: "Índigo", color: "#6366F1" },
 ]
 
 export default function ProfilePage() {
@@ -83,6 +99,11 @@ export default function ProfilePage() {
    const [expandedSection, setExpandedSection] = useState<string | null>(null)
    const [isLoggingOut, setIsLoggingOut] = useState(false)
 
+   // Calorie target settings (backend-authoritative: CALCULATED vs MANUAL).
+   const [nutrition, setNutrition] = useState<NutritionSettings | null>(null)
+   const [manualInput, setManualInput] = useState("")
+   const [savingCalories, setSavingCalories] = useState(false)
+
    useEffect(() => {
       if (user && !user.email) {
          apiGetContext().then((res) => {
@@ -93,14 +114,48 @@ export default function ProfilePage() {
       }
    }, [user, updateUser])
 
+   useEffect(() => {
+      apiGetNutritionSettings().then((res) => {
+         if (res.ok && res.data.nutrition) {
+            setNutrition(res.data.nutrition)
+            setManualInput(String(res.data.nutrition.manualCalorieTarget ?? res.data.nutrition.dailyCalorieTarget))
+         }
+      })
+   }, [])
+
+   const applyNutrition = (next: NutritionSettings) => {
+      setNutrition(next)
+      useStore.setState({ targetCalories: next.dailyCalorieTarget })
+   }
+
+   const saveCalorieMode = async (mode: "CALCULATED" | "MANUAL") => {
+      if (savingCalories) return
+      const manual = Math.round(Number(manualInput))
+      if (mode === "MANUAL" && (!Number.isFinite(manual) || manual < 800 || manual > 8000)) {
+         toast.error(t("profile.calories.invalid"))
+         return
+      }
+      setSavingCalories(true)
+      const res = await apiPutNutritionSettings(
+         mode === "MANUAL" ? { targetMode: "MANUAL", manualCalorieTarget: manual } : { targetMode: "CALCULATED" },
+      )
+      if (res.ok && res.data.nutrition) applyNutrition(res.data.nutrition)
+      else if (!res.ok) toast.error(res.message)
+      setSavingCalories(false)
+   }
+
    // Persists goal/activity changes to the platform, then re-hydrates targets.
-   const persistGoals = async (next: { goal?: string; level?: string }) => {
+   const persistGoals = async (next: { goal?: string; level?: string; targetWeight?: number }) => {
       const goal = next.goal ?? user?.goal ?? "mantiene"
       const level = next.level ?? user?.level ?? "principiante"
+      // Preserve existing target weight on goal/level changes; an explicit edit
+      // overrides it. Backend recomputes calorie targets from this.
+      const targetWeight = next.targetWeight ?? user?.targetWeight
       const res = await apiPutGoals({
          primaryGoal: mapPrimaryGoal(goal),
          activityLevel: mapActivityLevel(level),
          trainingDaysPerWeek: trainingDaysFromLevel(level),
+         ...(targetWeight != null && targetWeight > 0 ? { targetWeight } : {}),
       })
       if (res.ok) {
          const ctx = await apiGetContext()
@@ -108,6 +163,16 @@ export default function ProfilePage() {
       } else {
          toast.error(res.message)
       }
+   }
+
+   const [targetWeightInput, setTargetWeightInput] = useState("")
+   const saveTargetWeight = () => {
+      const n = parseFloat(targetWeightInput)
+      if (Number.isNaN(n) || n <= 0) return
+      updateUser({ targetWeight: n })
+      useStore.setState({ targetWeight: n })
+      void persistGoals({ targetWeight: n })
+      setExpandedSection(null)
    }
 
    if (!user) return null
@@ -131,6 +196,7 @@ export default function ProfilePage() {
              document.documentElement.classList.remove("dark")
           }
           useStore.setState({ isDarkMode: next })
+          void apiUpdatePreferences({ darkMode: next })
        })
     }
 
@@ -266,6 +332,8 @@ export default function ProfilePage() {
                                      key={lng}
                                      onClick={() => {
                                         void i18n.changeLanguage(lng)
+                                        useStore.setState({ locale: lng })
+                                        void apiUpdatePreferences({ locale: lng })
                                         setExpandedSection(null)
                                      }}
                                      className={`px-5 py-4 font-bold text-sm text-left transition-all w-full border-t border-card-border ${(i18n.resolvedLanguage ?? i18n.language) === lng ? "bg-primary text-white" : "bg-muted/50 dark:bg-white/5 text-foreground hover:bg-muted dark:hover:bg-white/5"}`}>
@@ -364,6 +432,90 @@ export default function ProfilePage() {
                    </AnimatePresence>
                 </div>
 
+                {/* Calorie target */}
+                <div className="border-b border-card-border">
+                   <button
+                      aria-expanded={expandedSection === "calories"}
+                      onClick={() => toggleSection("calories")}
+                      className="w-full text-left p-5 flex items-center justify-between hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 bg-muted text-subtle rounded-xl flex items-center justify-center">
+                            <Flame size={20} />
+                         </div>
+                         <span className="font-bold text-foreground">
+                            {t("profile.calories.label")}
+                         </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                         <span className="text-sm text-subtle font-medium">
+                            {nutrition ? `${nutrition.dailyCalorieTarget} kcal` : "…"}
+                         </span>
+                         <ChevronDown
+                            size={16}
+                            className={`text-subtle transition-transform ${expandedSection === "calories" ? "rotate-180" : ""}`}
+                         />
+                      </div>
+                   </button>
+                   <AnimatePresence>
+                      {expandedSection === "calories" && (
+                         <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden">
+                            <div className="flex flex-col gap-3 p-5 border-t border-card-border">
+                               {/* Auto / Manual toggle */}
+                               <div className="flex rounded-2xl border border-card-border overflow-hidden">
+                                  <button
+                                     onClick={() => void saveCalorieMode("CALCULATED")}
+                                     disabled={savingCalories}
+                                     className={`flex-1 px-4 py-3 font-bold text-sm transition-colors ${nutrition?.targetMode === "CALCULATED" ? "bg-primary text-white" : "bg-muted/50 text-foreground hover:bg-muted"}`}>
+                                     {t("profile.calories.auto")}
+                                  </button>
+                                  <button
+                                     onClick={() => void saveCalorieMode("MANUAL")}
+                                     disabled={savingCalories}
+                                     className={`flex-1 px-4 py-3 font-bold text-sm transition-colors ${nutrition?.targetMode === "MANUAL" ? "bg-primary text-white" : "bg-muted/50 text-foreground hover:bg-muted"}`}>
+                                     {t("profile.calories.manual")}
+                                  </button>
+                               </div>
+
+                               <p className="text-xs text-subtle font-medium">
+                                  {t("profile.calories.calculated_hint", { value: nutrition?.calculatedCalorieTarget ?? nutrition?.dailyCalorieTarget ?? "—" })}
+                               </p>
+
+                               {/* Manual value + save — only in Manual mode (Auto saves itself). */}
+                               {nutrition?.targetMode === "MANUAL" && (
+                                  <div className="flex items-center gap-2">
+                                     <div className="flex-1 flex items-center gap-2 bg-muted/50 dark:bg-white/5 rounded-2xl px-4 py-3 border border-card-border">
+                                        <input
+                                           type="number"
+                                           min={800}
+                                           max={8000}
+                                           step={10}
+                                           value={manualInput}
+                                           onChange={(e) => setManualInput(e.target.value)}
+                                           onKeyDown={(e) => e.key === "Enter" && void saveCalorieMode("MANUAL")}
+                                           aria-label={t("profile.calories.manual")}
+                                           className="flex-1 bg-transparent font-bold text-foreground outline-none w-full"
+                                        />
+                                        <span className="text-subtle text-sm font-medium">kcal</span>
+                                     </div>
+                                     <Button
+                                        variant="primary"
+                                        disabled={savingCalories}
+                                        onClick={() => void saveCalorieMode("MANUAL")}
+                                        className="shrink-0 flex items-center justify-center gap-2">
+                                        <Save size={16} /> {t("profile.calories.save")}
+                                     </Button>
+                                  </div>
+                               )}
+                            </div>
+                         </motion.div>
+                      )}
+                   </AnimatePresence>
+                </div>
+
                 {/* Activity Level */}
                 <div className="border-b border-card-border">
                    <button
@@ -408,6 +560,65 @@ export default function ProfilePage() {
                                      {t(`profile.levels.${l.id}`)}
                                   </button>
                                ))}
+                            </div>
+                         </motion.div>
+                      )}
+                   </AnimatePresence>
+                </div>
+
+                {/* Target weight */}
+                <div className="border-b border-card-border">
+                   <button
+                      aria-expanded={expandedSection === "targetWeight"}
+                      onClick={() => {
+                         setTargetWeightInput(user.targetWeight ? String(user.targetWeight) : "")
+                         toggleSection("targetWeight")
+                      }}
+                      className="w-full text-left p-5 flex items-center justify-between hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 bg-muted text-subtle rounded-xl flex items-center justify-center">
+                            <Target size={20} />
+                         </div>
+                         <span className="font-bold text-foreground">
+                            {t("profile.target_weight.label")}
+                         </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                         <span className="text-sm text-subtle font-medium">
+                            {user.targetWeight ? `${user.targetWeight} kg` : "—"}
+                         </span>
+                         <ChevronDown
+                            size={16}
+                            className={`text-subtle transition-transform ${expandedSection === "targetWeight" ? "rotate-180" : ""}`}
+                         />
+                      </div>
+                   </button>
+                   <AnimatePresence>
+                      {expandedSection === "targetWeight" && (
+                         <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden">
+                            <div className="p-5 border-t border-card-border flex items-center gap-3">
+                               <div className="flex-1 flex items-center gap-2 bg-muted/50 rounded-2xl px-4 py-3 border border-card-border">
+                                  <input
+                                     type="number"
+                                     min={20}
+                                     max={400}
+                                     step={0.5}
+                                     inputMode="decimal"
+                                     value={targetWeightInput}
+                                     onChange={(e) => setTargetWeightInput(e.target.value)}
+                                     onKeyDown={(e) => e.key === "Enter" && saveTargetWeight()}
+                                     aria-label={t("profile.target_weight.label")}
+                                     className="flex-1 w-full bg-transparent outline-none font-bold text-foreground"
+                                  />
+                                  <span className="text-subtle font-medium text-sm">kg</span>
+                               </div>
+                               <Button variant="primary" onClick={saveTargetWeight}>
+                                  {t("profile.target_weight.save")}
+                               </Button>
                             </div>
                          </motion.div>
                       )}

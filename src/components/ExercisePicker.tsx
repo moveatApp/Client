@@ -1,6 +1,7 @@
 // ─── Full-screen catalog picker for choosing an exercise into a routine ──────
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import { Check, Dumbbell, Eye, PencilLine, Search, X } from "lucide-react"
 import { useTranslation } from "react-i18next"
@@ -89,7 +90,9 @@ export default function ExercisePicker({
 
    const muscles = useMemo(() => MUSCLE_GROUPS, [])
 
-   return (
+   // Portaled to <body> so the fixed overlay isn't trapped by the page-transition
+   // transform (which would position it relative to the page, not the viewport).
+   return createPortal(
       <AnimatePresence>
          {isOpen && (
             <motion.div
@@ -98,7 +101,7 @@ export default function ExercisePicker({
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
-               className="fixed inset-0 z-50 bg-background flex flex-col overscroll-contain">
+               className="fixed inset-0 z-[100] bg-background flex flex-col overscroll-contain">
                {/* Header */}
                <div className="p-4 border-b border-card-border flex items-center gap-3">
                   <button
@@ -295,7 +298,8 @@ export default function ExercisePicker({
                </AnimatePresence>
             </motion.div>
          )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body,
    )
 }
 

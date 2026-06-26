@@ -14,7 +14,8 @@ import {
    ChevronUp,
    CheckCircle,
 } from "lucide-react"
-import { Button } from "@/components/ui"
+import { Button, CountUp } from "@/components/ui"
+import { cardEnter, stagger } from "@/lib/motion"
 
 export default function NutritionPage() {
    const {
@@ -111,12 +112,12 @@ export default function NutritionPage() {
             </h1>
          </header>
 
-          <div className="flex flex-col gap-4 lg:gap-6 mb-6">
-             <motion.section className="bg-primary/10 border border-primary/20 rounded-[32px] p-6 min-h-[140px] flex flex-col justify-center">
+          <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col gap-4 lg:gap-6 mb-6">
+             <motion.section variants={cardEnter} className="bg-primary/10 border border-primary/20 rounded-[32px] p-6 min-h-[140px] flex flex-col justify-center soft-raised">
                 <div className="flex justify-between items-center mb-4">
                    <div>
                       <span className="text-4xl font-display font-extrabold text-primary">
-                         {dailyCalories}
+                         <CountUp value={dailyCalories} />
                       </span>
                        <span className="text-subtle font-medium ml-1">
                          / {targetCalories} kcal
@@ -153,11 +154,11 @@ export default function NutritionPage() {
              </motion.section>
 
              {/* Daily macros preview */}
-             <motion.section className="bg-card-bg/40 border border-card-border rounded-[32px] p-5 flex flex-col gap-4">
+             <motion.section variants={cardEnter} className="bg-card-bg border border-card-border rounded-[32px] p-5 flex flex-col gap-4 soft-raised">
                 <span className="text-xs font-bold uppercase tracking-wider text-subtle">
                    {t("nutrition.macros_today")}
                 </span>
-                <div className="h-2.5 flex rounded-full overflow-hidden bg-muted">
+                <div className="h-2.5 flex rounded-full overflow-hidden bg-muted soft-inset">
                    {macroKcal > 0 ? (
                       macroRows.map((m) => (
                          <motion.div
@@ -173,9 +174,9 @@ export default function NutritionPage() {
                    {macroRows.map((m) => (
                       <div
                          key={m.key}
-                         className="flex flex-col items-center bg-muted/40 dark:bg-white/5 rounded-2xl py-3">
+                         className="flex flex-col items-center bg-card-bg rounded-2xl py-3 soft-raised-sm">
                          <span className={`text-xl font-display font-extrabold ${m.color}`}>
-                            {Math.round(m.val)}g
+                            <CountUp value={Math.round(m.val)} />g
                          </span>
                          <span className="text-caption text-subtle capitalize">
                             {t(`nutrition.macros.${m.key}`)}
@@ -185,7 +186,7 @@ export default function NutritionPage() {
                 </div>
              </motion.section>
 
-          </div>
+          </motion.div>
 
          <div className="mb-6">
             <MealBuilder onSaved={handleMealSaved} />

@@ -236,7 +236,9 @@ export default function Onboarding() {
    const [password, setPassword] = useState("")
    const [authError, setAuthError] = useState("")
    const [onboardingError, setOnboardingError] = useState("")
-   const [isLoginMode, setIsLoginMode] = useState(false)
+   // Default to "Iniciar sesión" — returning users are the common case; new users
+   // toggle to "Registrarse".
+   const [isLoginMode, setIsLoginMode] = useState(true)
    const [emailError, setEmailError] = useState("")
 
    const step = STEPS[stepIdx]
@@ -390,6 +392,22 @@ export default function Onboarding() {
          setIsAuthenticating(false)
       }
    }
+
+   // The Google widget is an iframe we can't fully restyle, but we can make it
+   // span the form width so it reads as a real full-width button (not the small
+   // "base" pill). Measure the container and feed its width to GoogleLogin.
+   const [googleWidth, setGoogleWidth] = useState(340)
+   const googleWrapRef = useCallback((node: HTMLDivElement | null) => {
+      if (!node) return
+      const measure = () => {
+         const w = node.clientWidth
+         if (w) setGoogleWidth(Math.min(400, Math.max(240, Math.round(w))))
+      }
+      measure()
+      const ro = new ResizeObserver(measure)
+      ro.observe(node)
+      return () => ro.disconnect()
+   }, [])
 
    const handleGoogleSuccess = async (credentialResponse: any) => {
       setIsAuthenticating(true)
@@ -1137,7 +1155,7 @@ export default function Onboarding() {
                               <div className="grow border-t border-card-border"></div>
                            </div>
 
-                           <div className="w-full flex justify-center">
+                           <div ref={googleWrapRef} className="w-full flex justify-center overflow-hidden rounded-full">
                               <GoogleLogin
                                  onSuccess={handleGoogleSuccess}
                                  onError={() => {
@@ -1147,6 +1165,8 @@ export default function Onboarding() {
                                  theme={isDarkMode ? "filled_black" : "outline"}
                                  size="large"
                                  shape="pill"
+                                 width={googleWidth}
+                                 logo_alignment="center"
                                  text={isLoginMode ? "signin_with" : "signup_with"}
                               />
                            </div>

@@ -1,10 +1,11 @@
-import { useEffect, useRef, lazy, Suspense } from "react"
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom"
+import { useEffect, useRef, lazy, Suspense, type ReactNode } from "react"
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import Navigation from "@/components/Navigation"
 import Onboarding from "@/pages/Onboarding"
 import { useStore } from "@/store/useStore"
 import { useBootstrap } from "@/hooks/useBootstrap"
+import i18n from "@/i18n"
 import { useWebHaptics } from "web-haptics/react"
 import { Toaster } from "@/components/ui/toast"
 
@@ -29,6 +30,14 @@ function Splash() {
       <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
     </div>
   );
+}
+
+// Route guard: routes only render after bootstrap (`ready`), so `isOnboarded` is
+// authoritative here — false when there's no valid session. Redirect to login.
+function RequireAuth({ children }: { children: ReactNode }) {
+   const isOnboarded = useStore((s) => s.isOnboarded)
+   if (!isOnboarded) return <Navigate to="/onboarding" replace />
+   return <>{children}</>
 }
 
 function AnimatedRoutes() {
@@ -63,12 +72,14 @@ function AnimatedRoutes() {
     const routes = (
        <Suspense fallback={<PageLoader />}>
           <Routes location={location}>
-             <Route path="/" element={<Dashboard />} />
-             <Route path="/nutrition" element={<Nutrition />} />
-             <Route path="/training" element={<Training />} />
-             <Route path="/progress" element={<Progress />} />
-             <Route path="/profile" element={<Profile />} />
+             <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
+             <Route path="/nutrition" element={<RequireAuth><Nutrition /></RequireAuth>} />
+             <Route path="/training" element={<RequireAuth><Training /></RequireAuth>} />
+             <Route path="/progress" element={<RequireAuth><Progress /></RequireAuth>} />
+             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
              <Route path="/onboarding" element={<Onboarding />} />
+             {/* Unknown paths → home (which itself guards to onboarding when logged out). */}
+             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
        </Suspense>
     )
@@ -98,6 +109,7 @@ function Layout() {
    const ready = useBootstrap()
    const isDarkMode = useStore((state) => state.isDarkMode)
    const themeColor = useStore((state) => state.themeColor)
+   const locale = useStore((state) => state.locale)
    const checkAndResetDaily = useStore((state) => state.checkAndResetDaily)
    const { trigger } = useWebHaptics({ debug: true })
    const isInitialTheme = useRef(true)
@@ -122,6 +134,13 @@ function Layout() {
       document.documentElement.setAttribute("data-theme", themeColor)
    }, [isDarkMode, themeColor])
 
+   // Apply the account language preference (hydrated from the backend).
+   useEffect(() => {
+      if (locale && i18n.language !== locale) {
+         void i18n.changeLanguage(locale)
+      }
+   }, [locale])
+
    useEffect(() => {
       const handlePointerDown = (e: PointerEvent) => {
          const target = e.target as HTMLElement
@@ -138,7 +157,7 @@ function Layout() {
 
    return (
       <div
-         className={`min-h-screen font-sans flex ${isOnboarding ? "bg-background" : "flex-col md:flex-row bg-background"}`}>
+         className={`min-h-screen font-sans flex grain ${isOnboarding ? "bg-background" : "flex-col md:flex-row bg-background"}`}>
          {!isOnboarding && <Navigation />}
          <main
             className={`flex-1 w-full overflow-hidden ${isOnboarding ? "flex justify-center bg-background" : "overflow-y-auto pb-16 md:pb-0"}`}>

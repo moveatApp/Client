@@ -54,26 +54,91 @@
   --color-medium-purple-900: #4c1d95;
   --color-medium-purple-950: #2e1065;
 
-  /* Semantic tokens — default: pumpkin (orange) */
-  --background: var(--color-pumpkin-50);
-  --foreground: var(--color-pumpkin-950);
-  --primary: var(--color-pumpkin-500);
-  --secondary: var(--color-pumpkin-600);
-  --accent: var(--color-pumpkin-400);
+  /* Palette: red */
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-900: #7f1d1d;
+  --color-red-950: #450a0a;
+
+  /* Palette: teal */
+  --color-teal-50: #f0fdfa;
+  --color-teal-100: #ccfbf1;
+  --color-teal-200: #99f6e4;
+  --color-teal-300: #5eead4;
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-teal-700: #0f766e;
+  --color-teal-800: #115e59;
+  --color-teal-900: #134e4a;
+  --color-teal-950: #042f2e;
+
+  /* Palette: rose */
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+  --color-rose-800: #9f1239;
+  --color-rose-900: #881337;
+  --color-rose-950: #4c0519;
+
+  /* Palette: amber */
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+  --color-amber-950: #451a03;
+
+  /* Palette: indigo */
+  --color-indigo-50: #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-200: #c7d2fe;
+  --color-indigo-300: #a5b4fc;
+  --color-indigo-400: #818cf8;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+  --color-indigo-800: #3730a3;
+  --color-indigo-900: #312e81;
+  --color-indigo-950: #1e1b4b;
+
+  /* Semantic tokens — default: neutral (gray). Overridden per [data-theme]. */
+  --background: #fafafa;
+  --foreground: #18181b;
+  --primary: #3f3f46;
+  --secondary: #52525b;
+  --accent: #6366f1;
   --water: #93C5E6;
   --card-bg: #FFFFFF;
-  --card-border: rgba(0, 0, 0, 0.06);
-  --chart-grid: var(--color-pumpkin-200);
-  --chart-label: var(--color-pumpkin-400);
-  --level-card-bg: var(--color-pumpkin-100);
-  --muted: var(--color-pumpkin-100);
-  --muted-foreground: var(--color-pumpkin-300);
+  --card-border: rgba(0, 0, 0, 0.07);
+  --chart-grid: #e4e4e7;
+  --chart-label: #a1a1aa;
+  --level-card-bg: #f4f4f5;
+  --muted: #f4f4f5;
+  --muted-foreground: #d4d4d8;
   /* subdued text — used instead of gray-400 */
-  --subtle: var(--color-pumpkin-400);
+  --subtle: #71717a;
   /* extra-dim surface — used instead of dark:bg-white/5 */
-  --on-subtle: var(--color-pumpkin-200);
+  --on-subtle: #e4e4e7;
   /* shadow tint */
-  --shadow-color: var(--color-pumpkin-500);
+  --shadow-color: #71717a;
   --ring-color: rgba(0, 0, 0, 0.08);
   --danger: rgb(207, 65, 65);
   --sugar: #f472b6;
@@ -103,24 +168,40 @@
   --shadow-color: var(--color-pumpkin-500);
 }
 
-.dark,
+/* Bare .dark = neutral default dark. Also defines shared dark tokens (--water,
+   --foreground, etc.) that per-theme dark blocks inherit. */
+.dark {
+  --background: #121214;
+  --foreground: #f4f4f5;
+  --primary: #71717a;
+  --secondary: #52525b;
+  --accent: #818cf8;
+  --water: #6b9cb8;
+  --card-bg: #1c1c1f;
+  --card-border: rgba(255, 255, 255, 0.09);
+  --chart-grid: #3f3f46;
+  --chart-label: #9ca3af;
+  --muted: #27272a;
+  --muted-foreground: #71717a;
+  --subtle: #a1a1aa;
+  --on-subtle: #27272a;
+  --shadow-color: #000000;
+  --ring-color: rgba(255,255,255,0.06);
+  --level-card-bg: #1c1c1f;
+}
+
 .dark[data-theme="orange"] {
   --background: color-mix(in srgb, #111111 93%, var(--color-pumpkin-700));
   --foreground: #f4f4f5;
   --primary: color-mix(in srgb, var(--color-pumpkin-500) 75%, #a1a1aa 25%);
   --secondary: color-mix(in srgb, var(--color-pumpkin-600) 75%, #a1a1aa 25%);
   --accent: color-mix(in srgb, var(--color-pumpkin-400) 75%, #a1a1aa 25%);
-  --water: #6b9cb8;
   --card-bg: color-mix(in srgb, #18181b 90%, var(--color-pumpkin-700));
   --card-border: rgba(255, 255, 255, 0.08);
   --chart-grid: color-mix(in srgb, #333333 70%, var(--color-pumpkin-700));
-  --chart-label: #9ca3af;
   --muted: color-mix(in srgb, #222222 88%, var(--color-pumpkin-700));
-  --muted-foreground: #71717a;
-  --subtle: #a1a1aa;
   --on-subtle: color-mix(in srgb, #222222 88%, var(--color-pumpkin-700));
   --shadow-color: var(--color-pumpkin-700);
-  --ring-color: rgba(255,255,255,0.06);
   --level-card-bg: color-mix(in srgb, #18181b 90%, var(--color-pumpkin-700));
 }
 
@@ -233,6 +314,233 @@
   --shadow-color: var(--color-medium-purple-700);
   --ring-color: rgba(255,255,255,0.06);
   --level-card-bg: color-mix(in srgb, #18181b 90%, var(--color-medium-purple-700));
+}
+
+[data-theme="red"] {
+  --background: var(--color-red-50);
+  --foreground: var(--color-red-950);
+  --primary: var(--color-red-500);
+  --secondary: var(--color-red-600);
+  --accent: var(--color-red-400);
+  --card-bg: #FFFFFF;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --chart-grid: var(--color-red-200);
+  --chart-label: var(--color-red-400);
+  --level-card-bg: var(--color-red-100);
+  --muted: var(--color-red-100);
+  --muted-foreground: var(--color-red-300);
+  --subtle: var(--color-red-400);
+  --on-subtle: var(--color-red-200);
+  --shadow-color: var(--color-red-500);
+}
+
+.dark[data-theme="red"] {
+  --background: color-mix(in srgb, #111111 93%, var(--color-red-700));
+  --foreground: #f4f4f5;
+  --primary: color-mix(in srgb, var(--color-red-500) 75%, #a1a1aa 25%);
+  --secondary: color-mix(in srgb, var(--color-red-600) 75%, #a1a1aa 25%);
+  --accent: color-mix(in srgb, var(--color-red-400) 75%, #a1a1aa 25%);
+  --card-bg: color-mix(in srgb, #18181b 90%, var(--color-red-700));
+  --card-border: rgba(255, 255, 255, 0.08);
+  --chart-grid: color-mix(in srgb, #333333 70%, var(--color-red-700));
+  --chart-label: #9ca3af;
+  --muted: color-mix(in srgb, #222222 88%, var(--color-red-700));
+  --muted-foreground: #71717a;
+  --subtle: #a1a1aa;
+  --on-subtle: color-mix(in srgb, #222222 88%, var(--color-red-700));
+  --shadow-color: var(--color-red-700);
+  --ring-color: rgba(255,255,255,0.06);
+  --level-card-bg: color-mix(in srgb, #18181b 90%, var(--color-red-700));
+}
+
+[data-theme="teal"] {
+  --background: var(--color-teal-50);
+  --foreground: var(--color-teal-950);
+  /* teal-600 (not 500) so white button text passes AA for large/bold text. */
+  --primary: var(--color-teal-600);
+  --secondary: var(--color-teal-700);
+  --accent: var(--color-teal-500);
+  --card-bg: #FFFFFF;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --chart-grid: var(--color-teal-200);
+  --chart-label: var(--color-teal-400);
+  --level-card-bg: var(--color-teal-100);
+  --muted: var(--color-teal-100);
+  --muted-foreground: var(--color-teal-300);
+  --subtle: var(--color-teal-400);
+  --on-subtle: var(--color-teal-200);
+  --shadow-color: var(--color-teal-500);
+}
+
+.dark[data-theme="teal"] {
+  --background: color-mix(in srgb, #111111 93%, var(--color-teal-700));
+  --foreground: #f4f4f5;
+  --primary: color-mix(in srgb, var(--color-teal-600) 85%, #d4d4d8 15%);
+  --secondary: color-mix(in srgb, var(--color-teal-700) 85%, #d4d4d8 15%);
+  --accent: color-mix(in srgb, var(--color-teal-400) 75%, #a1a1aa 25%);
+  --card-bg: color-mix(in srgb, #18181b 90%, var(--color-teal-700));
+  --card-border: rgba(255, 255, 255, 0.08);
+  --chart-grid: color-mix(in srgb, #333333 70%, var(--color-teal-700));
+  --chart-label: #9ca3af;
+  --muted: color-mix(in srgb, #222222 88%, var(--color-teal-700));
+  --muted-foreground: #71717a;
+  --subtle: #a1a1aa;
+  --on-subtle: color-mix(in srgb, #222222 88%, var(--color-teal-700));
+  --shadow-color: var(--color-teal-700);
+  --ring-color: rgba(255,255,255,0.06);
+  --level-card-bg: color-mix(in srgb, #18181b 90%, var(--color-teal-700));
+}
+
+[data-theme="rose"] {
+  --background: var(--color-rose-50);
+  --foreground: var(--color-rose-950);
+  --primary: var(--color-rose-500);
+  --secondary: var(--color-rose-600);
+  --accent: var(--color-rose-400);
+  --card-bg: #FFFFFF;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --chart-grid: var(--color-rose-200);
+  --chart-label: var(--color-rose-400);
+  --level-card-bg: var(--color-rose-100);
+  --muted: var(--color-rose-100);
+  --muted-foreground: var(--color-rose-300);
+  --subtle: var(--color-rose-400);
+  --on-subtle: var(--color-rose-200);
+  --shadow-color: var(--color-rose-500);
+}
+
+.dark[data-theme="rose"] {
+  --background: color-mix(in srgb, #111111 93%, var(--color-rose-700));
+  --foreground: #f4f4f5;
+  --primary: color-mix(in srgb, var(--color-rose-500) 75%, #a1a1aa 25%);
+  --secondary: color-mix(in srgb, var(--color-rose-600) 75%, #a1a1aa 25%);
+  --accent: color-mix(in srgb, var(--color-rose-400) 75%, #a1a1aa 25%);
+  --card-bg: color-mix(in srgb, #18181b 90%, var(--color-rose-700));
+  --card-border: rgba(255, 255, 255, 0.08);
+  --chart-grid: color-mix(in srgb, #333333 70%, var(--color-rose-700));
+  --chart-label: #9ca3af;
+  --muted: color-mix(in srgb, #222222 88%, var(--color-rose-700));
+  --muted-foreground: #71717a;
+  --subtle: #a1a1aa;
+  --on-subtle: color-mix(in srgb, #222222 88%, var(--color-rose-700));
+  --shadow-color: var(--color-rose-700);
+  --ring-color: rgba(255,255,255,0.06);
+  --level-card-bg: color-mix(in srgb, #18181b 90%, var(--color-rose-700));
+}
+
+[data-theme="amber"] {
+  --background: var(--color-amber-50);
+  --foreground: var(--color-amber-950);
+  --primary: var(--color-amber-600);
+  --secondary: var(--color-amber-700);
+  --accent: var(--color-amber-500);
+  --card-bg: #FFFFFF;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --chart-grid: var(--color-amber-200);
+  --chart-label: var(--color-amber-400);
+  --level-card-bg: var(--color-amber-100);
+  --muted: var(--color-amber-100);
+  --muted-foreground: var(--color-amber-300);
+  --subtle: var(--color-amber-500);
+  --on-subtle: var(--color-amber-200);
+  --shadow-color: var(--color-amber-500);
+}
+
+.dark[data-theme="amber"] {
+  --background: color-mix(in srgb, #111111 93%, var(--color-amber-700));
+  --foreground: #f4f4f5;
+  /* Darker primary so white button text stays readable (amber is light). */
+  --primary: color-mix(in srgb, var(--color-amber-600) 88%, #d4d4d8 12%);
+  --secondary: color-mix(in srgb, var(--color-amber-700) 88%, #d4d4d8 12%);
+  --accent: color-mix(in srgb, var(--color-amber-400) 80%, #a1a1aa 20%);
+  --card-bg: color-mix(in srgb, #18181b 90%, var(--color-amber-700));
+  --card-border: rgba(255, 255, 255, 0.08);
+  --chart-grid: color-mix(in srgb, #333333 70%, var(--color-amber-700));
+  --chart-label: #9ca3af;
+  --muted: color-mix(in srgb, #222222 88%, var(--color-amber-700));
+  --muted-foreground: #71717a;
+  --subtle: #a1a1aa;
+  --on-subtle: color-mix(in srgb, #222222 88%, var(--color-amber-700));
+  --shadow-color: var(--color-amber-700);
+  --ring-color: rgba(255,255,255,0.06);
+  --level-card-bg: color-mix(in srgb, #18181b 90%, var(--color-amber-700));
+}
+
+[data-theme="indigo"] {
+  --background: var(--color-indigo-50);
+  --foreground: var(--color-indigo-950);
+  --primary: var(--color-indigo-500);
+  --secondary: var(--color-indigo-600);
+  --accent: var(--color-indigo-400);
+  --card-bg: #FFFFFF;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --chart-grid: var(--color-indigo-200);
+  --chart-label: var(--color-indigo-400);
+  --level-card-bg: var(--color-indigo-100);
+  --muted: var(--color-indigo-100);
+  --muted-foreground: var(--color-indigo-300);
+  --subtle: var(--color-indigo-400);
+  --on-subtle: var(--color-indigo-200);
+  --shadow-color: var(--color-indigo-500);
+}
+
+.dark[data-theme="indigo"] {
+  --background: color-mix(in srgb, #111111 93%, var(--color-indigo-700));
+  --foreground: #f4f4f5;
+  --primary: color-mix(in srgb, var(--color-indigo-500) 75%, #a1a1aa 25%);
+  --secondary: color-mix(in srgb, var(--color-indigo-600) 75%, #a1a1aa 25%);
+  --accent: color-mix(in srgb, var(--color-indigo-400) 75%, #a1a1aa 25%);
+  --card-bg: color-mix(in srgb, #18181b 90%, var(--color-indigo-700));
+  --card-border: rgba(255, 255, 255, 0.08);
+  --chart-grid: color-mix(in srgb, #333333 70%, var(--color-indigo-700));
+  --chart-label: #9ca3af;
+  --muted: color-mix(in srgb, #222222 88%, var(--color-indigo-700));
+  --muted-foreground: #71717a;
+  --subtle: #a1a1aa;
+  --on-subtle: color-mix(in srgb, #222222 88%, var(--color-indigo-700));
+  --shadow-color: var(--color-indigo-700);
+  --ring-color: rgba(255,255,255,0.06);
+  --level-card-bg: color-mix(in srgb, #18181b 90%, var(--color-indigo-700));
+}
+
+/* Neutral / default: grays for surfaces + a neutral primary, so the app isn't
+   tinted toward one hue. Functional colors (water, macros, danger) are global
+   fixed tokens, so each thing keeps its own color (water celeste, etc.). */
+[data-theme="neutral"] {
+  --background: #fafafa;
+  --foreground: #18181b;
+  --primary: #3f3f46;
+  --secondary: #52525b;
+  --accent: #6366f1;
+  --card-bg: #FFFFFF;
+  --card-border: rgba(0, 0, 0, 0.07);
+  --chart-grid: #e4e4e7;
+  --chart-label: #a1a1aa;
+  --level-card-bg: #f4f4f5;
+  --muted: #f4f4f5;
+  --muted-foreground: #d4d4d8;
+  --subtle: #71717a;
+  --on-subtle: #e4e4e7;
+  --shadow-color: #71717a;
+}
+
+.dark[data-theme="neutral"] {
+  --background: #121214;
+  --foreground: #f4f4f5;
+  --primary: #71717a;
+  --secondary: #52525b;
+  --accent: #818cf8;
+  --card-bg: #1c1c1f;
+  --card-border: rgba(255, 255, 255, 0.09);
+  --chart-grid: #3f3f46;
+  --chart-label: #9ca3af;
+  --muted: #27272a;
+  --muted-foreground: #71717a;
+  --subtle: #a1a1aa;
+  --on-subtle: #27272a;
+  --shadow-color: #000000;
+  --ring-color: rgba(255,255,255,0.06);
+  --level-card-bg: #1c1c1f;
 }
 
 @theme inline {
@@ -477,4 +785,55 @@ body {
   ::view-transition-new(root) {
     animation: none !important;
   }
+}
+/* ── Soft-UI (neumorphic) elevation — theme & dark aware ──────────────────────
+   Used selectively on "tactile" elements (stat tiles, rings, toggles, FAB,
+   primary buttons). Glass cards stay glass; this adds physical depth without
+   killing contrast. */
+:root {
+  --soft-dark: rgba(0, 0, 0, 0.10);
+  --soft-light: rgba(255, 255, 255, 0.92);
+}
+
+.dark {
+  --soft-dark: rgba(0, 0, 0, 0.55);
+  --soft-light: rgba(255, 255, 255, 0.045);
+}
+
+.soft-raised {
+  box-shadow: 6px 6px 16px var(--soft-dark), -5px -5px 14px var(--soft-light);
+}
+
+.soft-raised-sm {
+  box-shadow: 3px 3px 8px var(--soft-dark), -3px -3px 7px var(--soft-light);
+}
+
+.soft-inset {
+  box-shadow: inset 4px 4px 10px var(--soft-dark), inset -4px -4px 10px var(--soft-light);
+}
+
+/* Pressable: extruded at rest, pushed-in on press — a tactile button feel. */
+.soft-pressable {
+  transition: box-shadow 0.18s ease, transform 0.12s ease;
+}
+
+.soft-pressable:active {
+  box-shadow: inset 4px 4px 10px var(--soft-dark), inset -4px -4px 10px var(--soft-light);
+  transform: scale(0.985);
+}
+
+/* Subtle film grain for a premium, non-flat texture. Apply `grain` to the app
+   root; the overlay sits above the background but below content. */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.dark .grain::after {
+  opacity: 0.05;
 }

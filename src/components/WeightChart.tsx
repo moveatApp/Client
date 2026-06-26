@@ -4,29 +4,23 @@ import { useStore } from "@/store/useStore"
 import {
    AreaChart,
    Area,
-   Line,
    XAxis,
    YAxis,
    CartesianGrid,
    Tooltip,
    ResponsiveContainer,
-   ReferenceArea,
    ReferenceLine,
 } from "recharts"
 
 type Period = "month" | "6m" | "year" | "all"
+type Granularity = "day" | "week" | "month"
 
-function toISODate(d: Date): string {
-   // Local calendar date (YYYY-MM-DD). Using UTC here would shift the day in
-   // non-UTC timezones and mismatch the backend's localDate strings.
-   const y = d.getFullYear()
-   const m = String(d.getMonth() + 1).padStart(2, "0")
-   const day = String(d.getDate()).padStart(2, "0")
-   return `${y}-${m}-${day}`
-}
-
-function startOfMonth(d: Date): Date {
-   return new Date(d.getFullYear(), d.getMonth(), 1)
+interface Point {
+   t: number // timestamp (ms) — used for a true time-proportional x-axis
+   date: string // YYYY-MM-DD of the actual measurement
+   weight: number
+   deltaPrev: number | null // change vs the previous point in the series
+   toward: "good" | "bad" | "neutral" // whether that change moved toward the target
 }
 
 function addMonths(d: Date, months: number): Date {
@@ -35,103 +29,64 @@ function addMonths(d: Date, months: number): Date {
    return copy
 }
 
-interface GridPoint {
-   date: string
-   index: number
-   weight: number | null
-   interpolatedWeight: number | null
-   day: number
+function dayMs(date: string): number {
+   return new Date(`${date}T00:00:00`).getTime()
 }
 
-function generateDayGrid(
+// Coarser buckets for longer ranges → fewer, evenly-read points instead of a
+// cramped per-day line. We keep the latest measurement within each bucket.
+function granularityFor(period: Period): Granularity {
+   if (period === "month") return "day"
+   if (period === "6m") return "week"
+   return "month"
+}
+
+function bucketKey(date: string, gran: Granularity): string {
+   if (gran === "day") return date
+   if (gran === "month") return date.slice(0, 7) // YYYY-MM
+   // week: anchor to the Monday of that week
+   const d = new Date(`${date}T00:00:00`)
+   const day = (d.getDay() + 6) % 7 // 0 = Monday
+   d.setDate(d.getDate() - day)
+   return d.toISOString().slice(0, 10)
+}
+
+type BasePoint = Pick<Point, "t" | "date" | "weight">
+
+function buildSeries(
+   history: { date: string; weight: number }[],
    start: Date,
    end: Date,
-   history: { date: string; weight: number }[],
-): GridPoint[] {
-   const weightMap = new Map(history.map((e) => [e.date, e.weight]))
-   const grid: GridPoint[] = []
-   const curr = new Date(start)
+   gran: Granularity,
+): BasePoint[] {
+   const startT = start.getTime()
+   const endT = end.getTime()
+   const buckets = new Map<string, { date: string; weight: number }>()
 
-   while (curr <= end) {
-      const dateStr = toISODate(curr)
-      const weight = weightMap.get(dateStr) ?? null
-      grid.push({
-         date: dateStr,
-         index: grid.length,
-         weight,
-         interpolatedWeight: weight,
-         day: curr.getDate(),
-      })
-      curr.setDate(curr.getDate() + 1)
+   for (const entry of history) {
+      const t = dayMs(entry.date)
+      if (t < startT || t > endT) continue
+      const key = bucketKey(entry.date, gran)
+      const prev = buckets.get(key)
+      // Keep the most recent measurement in the bucket.
+      if (!prev || entry.date > prev.date) buckets.set(key, entry)
    }
 
-   // Interpolate between real data points for smooth area fill
-   let lastRealIdx = -1
-   for (let i = 0; i < grid.length; i++) {
-      if (grid[i].weight !== null) {
-         if (lastRealIdx !== -1 && lastRealIdx < i - 1) {
-            const w1 = grid[lastRealIdx].weight!
-            const w2 = grid[i].weight!
-            const steps = i - lastRealIdx
-            for (let j = 1; j < steps; j++) {
-               grid[lastRealIdx + j].interpolatedWeight =
-                  w1 + (w2 - w1) * (j / steps)
-            }
-         }
-         lastRealIdx = i
-      }
-   }
-
-   return grid
+   return [...buckets.values()]
+      .map((e) => ({ t: dayMs(e.date), date: e.date, weight: e.weight }))
+      .sort((a, b) => a.t - b.t)
 }
 
-interface MonthSpan {
-   label: string
-   startIndex: number
-   endIndex: number
-   colorIndex: number
-}
-
-function getMonthSpans(grid: GridPoint[], locale: string): MonthSpan[] {
-   const spans: MonthSpan[] = []
-   let currentMonth = -1
-   let startIndex = 0
-   let colorIndex = 0
-
-   const monthLabel = (dateStr: string) =>
-      new Date(dateStr)
-         .toLocaleDateString(locale, { month: "short" })
-         .replace(".", "")
-         .toUpperCase()
-
-   grid.forEach((day, i) => {
-      const d = new Date(day.date)
-      const month = d.getMonth()
-      if (month !== currentMonth) {
-         if (currentMonth !== -1) {
-            spans.push({
-               label: monthLabel(grid[startIndex].date),
-               startIndex,
-               endIndex: i - 1,
-               colorIndex,
-            })
-         }
-         currentMonth = month
-         startIndex = i
-         colorIndex = (colorIndex + 1) % 2
-      }
-   })
-
-   if (grid.length > 0) {
-      spans.push({
-         label: monthLabel(grid[startIndex].date),
-         startIndex,
-         endIndex: grid.length - 1,
-         colorIndex,
-      })
+// First-of-month timestamps within [start, end] → clean month gridlines/ticks.
+function monthTicks(start: Date, end: Date): number[] {
+   const ticks: number[] = []
+   const curr = new Date(start.getFullYear(), start.getMonth(), 1)
+   if (curr.getTime() < start.getTime()) curr.setMonth(curr.getMonth() + 1)
+   while (curr.getTime() <= end.getTime()) {
+      ticks.push(curr.getTime())
+      curr.setMonth(curr.getMonth() + 1)
    }
-
-   return spans
+   return ticks
 }
 
 function getPeriodRange(
@@ -141,38 +96,22 @@ function getPeriodRange(
    const today = new Date()
    today.setHours(0, 0, 0, 0)
 
-   // The end of every range must cover the most recent log, even if it is dated
-   // slightly ahead of "today" (the backend computes localDate in the user's
-   // timezone, which can land on tomorrow relative to the browser clock).
+   // Cover the latest log even if it's dated slightly ahead of the browser clock.
    let end = today
    if (history.length > 0) {
-      const latestStr = history.reduce(
-         (max, e) => (e.date > max ? e.date : max),
-         history[0].date,
-      )
+      const latestStr = history.reduce((max, e) => (e.date > max ? e.date : max), history[0].date)
       const latest = new Date(`${latestStr}T00:00:00`)
       if (latest.getTime() > end.getTime()) end = latest
    }
 
-   if (period === "month") {
-      return { start: startOfMonth(today), end }
-   }
-
-   if (period === "6m") {
-      return { start: addMonths(today, -6), end }
-   }
-
-   if (period === "year") {
-      return { start: new Date(today.getFullYear(), 0, 1), end }
-   }
+   if (period === "month") return { start: addMonths(today, -1), end }
+   if (period === "6m") return { start: addMonths(today, -6), end }
+   if (period === "year") return { start: addMonths(today, -12), end }
 
    if (history.length > 0) {
-      const sorted = [...history].sort(
-         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-      )
-      return { start: new Date(`${sorted[0].date}T00:00:00`), end }
+      const earliest = history.reduce((min, e) => (e.date < min ? e.date : min), history[0].date)
+      return { start: new Date(`${earliest}T00:00:00`), end }
    }
-
    return { start: addMonths(today, -1), end }
 }
 
@@ -187,174 +126,139 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
    const { weightHistory } = useStore()
    const [period, setPeriod] = useState<Period>("month")
 
-   const { grid, spans, hasAnyData } = useMemo(() => {
+   const { series, ticks, multiYear } = useMemo(() => {
       const { start, end } = getPeriodRange(period, weightHistory)
-      const g = generateDayGrid(start, end, weightHistory)
-      const s = getMonthSpans(g, locale)
-      const hasData = g.some((d) => d.weight !== null)
-      return { grid: g, spans: s, hasAnyData: hasData }
-   }, [weightHistory, period, locale])
+      const gran = granularityFor(period)
+      const base = buildSeries(weightHistory, start, end, gran)
+      // Enrich each point with its change vs the previous measurement.
+      const s: Point[] = base.map((p, i) => {
+         const prev = i > 0 ? base[i - 1].weight : null
+         const deltaPrev = prev === null ? null : Math.round((p.weight - prev) * 10) / 10
+         let toward: "good" | "bad" | "neutral" = "neutral"
+         if (prev !== null && targetWeight != null) {
+            const before = Math.abs(prev - targetWeight)
+            const after = Math.abs(p.weight - targetWeight)
+            toward = after < before ? "good" : after > before ? "bad" : "neutral"
+         }
+         return { ...p, deltaPrev, toward }
+      })
+      return {
+         series: s,
+         ticks: monthTicks(start, end),
+         multiYear: start.getFullYear() !== end.getFullYear(),
+      }
+   }, [weightHistory, period, targetWeight])
 
-    const yDomain = useMemo<[number, number]>(() => {
-       const vals = grid.map((d) => d.weight).filter((w): w is number => w !== null)
-       const hasData = vals.length > 0
-       const target = targetWeight ?? null
-       if (!hasData) {
-          const min = target != null ? Math.min(target, 50) : 50
-          const max = target != null ? Math.max(target, 100) : 100
-          return [min, max]
-       }
-       const min = Math.min(...vals)
-       const max = Math.max(...vals)
-       const padding = Math.max((max - min) * 0.15, 1)
-       const yMin = Math.max(0, min - padding)
-       const yMax = max + padding
-       if (target != null) {
-          return [Math.min(yMin, target), Math.max(yMax, target)]
-       }
-       return [yMin, yMax]
-    }, [grid, targetWeight])
+   const latest = series.length > 0 ? series[series.length - 1] : null
+   const lastT = latest?.t ?? null
+
+   const yDomain = useMemo<[number, number]>(() => {
+      const vals = series.map((d) => d.weight)
+      const target = targetWeight ?? null
+      if (vals.length === 0) {
+         const min = target != null ? Math.min(target, 50) : 50
+         const max = target != null ? Math.max(target, 100) : 100
+         return [min - 2, max + 2]
+      }
+      let min = Math.min(...vals)
+      let max = Math.max(...vals)
+      if (target != null) {
+         min = Math.min(min, target)
+         max = Math.max(max, target)
+      }
+      const padding = Math.max((max - min) * 0.2, 1.5)
+      return [Math.max(0, min - padding), max + padding]
+   }, [series, targetWeight])
+
+   // Split the line color at the target line: below target → green, above → theme.
+   const targetOffset =
+      targetWeight != null && yDomain[1] > yDomain[0]
+         ? Math.min(1, Math.max(0, (yDomain[1] - targetWeight) / (yDomain[1] - yDomain[0])))
+         : null
+   const strokeColor = targetOffset === null ? "var(--primary)" : "url(#weightSplit)"
+
+   const formatMonth = useCallback(
+      (ts: number) => {
+         const d = new Date(ts)
+         const month = d.toLocaleDateString(locale, { month: "short" }).replace(".", "")
+         // Disambiguate years on long/cross-year ranges.
+         return (multiYear && d.getMonth() === 0) || d.getTime() === ticks[0]
+            ? `${month} '${String(d.getFullYear()).slice(-2)}`
+            : month
+      },
+      [locale, multiYear, ticks],
+   )
 
    const handleDotClick = useCallback(
-      (date: string, weight: number | null) => {
-         onPointClick?.(date, weight)
-      },
+      (date: string, weight: number | null) => onPointClick?.(date, weight),
       [onPointClick],
    )
 
    const handleChartClick = useCallback(
       (state: any) => {
-         if (!state || !grid.length) return
-
-         let index: number | null = null
-
-         // Prefer the active tooltip index (hover nearest day)
-         if (typeof state.activeTooltipIndex === "number") {
-            index = state.activeTooltipIndex
-         } else if (
-            state.activePayload &&
-            state.activePayload[0] &&
-            state.activePayload[0].payload
-         ) {
-            const payload = state.activePayload[0].payload as GridPoint
-            if (payload && payload.date) {
-               handleDotClick(payload.date, payload.weight)
-               return
-            }
-         }
-
-         // Fallback: calculate from click position
-         if (
-            index === null &&
-            typeof state.chartX === "number" &&
-            typeof state.containerWidth === "number"
-         ) {
-            const marginLeft = -10
-            const marginRight = 10
-            const innerWidth = state.containerWidth - marginLeft - marginRight
-            const relativeX = state.chartX - marginLeft
-            const ratio = Math.max(0, Math.min(1, relativeX / innerWidth))
-            index = Math.round(ratio * (grid.length - 1))
-         }
-
-         if (index !== null && index >= 0 && index < grid.length) {
-            const day = grid[index]
-            if (day) {
-               handleDotClick(day.date, day.weight)
-            }
-         }
+         const payload = state?.activePayload?.[0]?.payload as Point | undefined
+         if (payload?.date) handleDotClick(payload.date, payload.weight)
       },
-      [handleDotClick, grid],
+      [handleDotClick],
    )
+
+   const hasAnyData = series.length > 0
 
    return (
       <div className="w-full h-full flex flex-col">
          <div className="flex-1 w-full min-h-[260px]">
             {hasAnyData ? (
-               <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  className="outline-none">
+               <ResponsiveContainer width="100%" height="100%" className="outline-none">
                   <AreaChart
-                     data={grid}
-                     margin={{ top: 24, right: 10, left: -10, bottom: 0 }}
+                     data={series}
+                     margin={{ top: 24, right: 12, left: -8, bottom: 4 }}
                      style={{ outline: "none" }}
                      onClick={handleChartClick}>
                      <defs>
                         <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                           <stop
-                              offset="5%"
-                              stopColor="var(--primary)"
-                              stopOpacity={0.3}
-                           />
-                           <stop
-                              offset="95%"
-                              stopColor="var(--primary)"
-                              stopOpacity={0}
-                           />
+                           <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                           <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                         </linearGradient>
+                        {targetOffset !== null && (
+                           <linearGradient id="weightSplit" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset={0} stopColor="var(--primary)" />
+                              <stop offset={targetOffset} stopColor="var(--primary)" />
+                              <stop offset={targetOffset} stopColor="#22c55e" />
+                              <stop offset={1} stopColor="#22c55e" />
+                           </linearGradient>
+                        )}
                      </defs>
 
-                     {/* Month bands */}
-                     {spans.map((span) => (
-                        <ReferenceArea
-                           key={`${span.label}-${span.startIndex}`}
-                           x1={span.startIndex}
-                           x2={span.endIndex}
-                           stroke={
-                              span.colorIndex === 0
-                                 ? "var(--primary)"
-                                 : "var(--card-border)"
-                           }
-                           strokeOpacity={0.12}
-                           fill={
-                              span.colorIndex === 0
-                                 ? "var(--primary)"
-                                 : "transparent"
-                           }
-                           fillOpacity={span.colorIndex === 0 ? 0.04 : 0}
-                           ifOverflow="extendDomain"
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
+
+                     {targetWeight != null && (
+                        <ReferenceLine
+                           y={targetWeight}
+                           stroke="var(--accent)"
+                           strokeDasharray="6 4"
+                           strokeWidth={2}
                            label={{
-                              value: span.label,
-                              position: "insideTop",
-                              fill: "var(--foreground)",
+                              value: `${t("chart.target")} ${targetWeight}`,
+                              position: "insideTopRight",
+                              fill: "var(--accent)",
                               fontSize: 10,
                               fontWeight: 700,
-                              opacity: 0.45,
                            }}
                         />
-                     ))}
+                     )}
 
-                      <CartesianGrid
-                         strokeDasharray="3 3"
-                         vertical={false}
-                         stroke="var(--chart-grid)"
-                      />
-
-                      {targetWeight != null && (
-                         <ReferenceLine
-                            y={targetWeight}
-                            stroke="var(--accent)"
-                            strokeDasharray="6 4"
-                            strokeWidth={2}
-                            label={{
-                               value: t("chart.target"),
-                               position: "insideTopRight",
-                               fill: "var(--accent)",
-                               fontSize: 10,
-                               fontWeight: 700,
-                            }}
-                         />
-                      )}
-
-                      <XAxis
-                        dataKey="index"
+                     <XAxis
+                        dataKey="t"
                         type="number"
-                        domain={[0, grid.length - 1]}
+                        domain={["dataMin", "dataMax"]}
+                        ticks={ticks}
+                        tickFormatter={formatMonth}
                         axisLine={false}
                         tickLine={false}
-                        tick={false}
-                        height={0}
+                        minTickGap={24}
+                        tick={{ fill: "var(--chart-label)", fontSize: 11, fontWeight: 700 }}
+                        tickMargin={8}
+                        height={22}
                      />
 
                      <YAxis
@@ -362,60 +266,58 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: "var(--chart-label)", fontSize: 12 }}
-                        tickFormatter={(v: number) => `${Math.round(v * 10) / 10}`}
-                        width={45}
+                        tickFormatter={(v: number) => `${Math.round(v)}`}
+                        width={36}
                      />
 
                      <Tooltip
-                        cursor={{
-                           stroke: "var(--primary)",
-                           strokeWidth: 1,
-                           strokeDasharray: "4 4",
-                        }}
-                        contentStyle={{
-                           borderRadius: "12px",
-                           border: "none",
-                           boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                           backgroundColor: "var(--card-bg)",
-                           color: "var(--foreground)",
-                        }}
-                        itemStyle={{
-                           color: "var(--foreground)",
-                           fontWeight: 700,
-                        }}
-                        labelFormatter={(_, payload) => {
-                           if (!payload || !payload[0]) return ""
-                           const dateStr = payload[0].payload.date as string
-                           const d = new Date(dateStr)
-                           return d.toLocaleDateString(locale, {
-                              weekday: "long",
+                        cursor={{ stroke: "var(--primary)", strokeWidth: 1, strokeDasharray: "4 4" }}
+                        content={(props: any) => {
+                           const p = props?.payload?.[0]?.payload as Point | undefined
+                           if (!props?.active || !p) return null
+                           const dateLabel = new Date(`${p.date}T00:00:00`).toLocaleDateString(locale, {
+                              weekday: "short",
                               day: "numeric",
                               month: "long",
                            })
+                           const deltaColor =
+                              p.toward === "good" ? "#22c55e" : p.toward === "bad" ? "var(--danger)" : "var(--subtle)"
+                           return (
+                              <div
+                                 style={{
+                                    borderRadius: 12,
+                                    boxShadow: "0 4px 12px -2px rgb(0 0 0 / 0.15)",
+                                    backgroundColor: "var(--card-bg)",
+                                    color: "var(--foreground)",
+                                    padding: "8px 12px",
+                                 }}>
+                                 <div style={{ fontSize: 11, opacity: 0.6, fontWeight: 600 }}>{dateLabel}</div>
+                                 <div style={{ fontSize: 15, fontWeight: 700 }}>
+                                    {Math.round(p.weight * 10) / 10} kg
+                                 </div>
+                                 {p.deltaPrev != null && (
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: deltaColor, marginTop: 2 }}>
+                                       {p.deltaPrev < 0 ? "↓" : p.deltaPrev > 0 ? "↑" : "•"} {p.deltaPrev > 0 ? "+" : ""}
+                                       {p.deltaPrev} kg
+                                    </div>
+                                 )}
+                              </div>
+                           )
                         }}
-                        formatter={(value) => [
-                           `${Math.round(Number(value) * 10) / 10} kg`,
-                           t("chart.weight"),
-                        ]}
                      />
 
                      <Area
                         type="monotone"
-                        dataKey="interpolatedWeight"
-                        stroke="var(--primary)"
+                        dataKey="weight"
+                        stroke={strokeColor}
                         strokeWidth={3}
                         fill="url(#colorWeight)"
-                        connectNulls={false}
+                        connectNulls
                         isAnimationActive={false}
                         dot={(props: any) => {
                            const { cx, cy, payload } = props
-                           if (
-                              payload.weight === null ||
-                              payload.weight === undefined ||
-                              cx == null ||
-                              cy == null
-                           )
-                              return null
+                           if (cx == null || cy == null) return null
+                           const isLast = payload.t === lastT
                            return (
                               <g
                                  onClick={(e) => {
@@ -423,10 +325,13 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
                                     handleDotClick(payload.date, payload.weight)
                                  }}
                                  style={{ cursor: "pointer" }}>
+                                 {isLast && (
+                                    <circle cx={cx} cy={cy} r={9} fill="var(--primary)" fillOpacity={0.15} />
+                                 )}
                                  <circle
                                     cx={cx}
                                     cy={cy}
-                                    r={4}
+                                    r={isLast ? 5 : 3.5}
                                     fill="var(--primary)"
                                     strokeWidth={2}
                                     stroke="var(--card-bg)"
@@ -444,14 +349,7 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
                                     handleDotClick(payload.date, payload.weight)
                                  }}
                                  style={{ cursor: "pointer" }}>
-                                 <circle
-                                    cx={cx}
-                                    cy={cy}
-                                    r={6}
-                                    fill="var(--accent)"
-                                    strokeWidth={2}
-                                    stroke="var(--card-bg)"
-                                 />
+                                 <circle cx={cx} cy={cy} r={7} fill="var(--accent)" strokeWidth={2} stroke="var(--card-bg)" />
                               </g>
                            )
                         }}
@@ -465,28 +363,16 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
             )}
          </div>
 
-          <div className="flex max-[415px]:grid max-[415px]:grid-cols-2 mx-auto mt-4 px-3 bg-white/5 rounded-2xl sm:rounded-full py-2 w-full sm:w-auto text-xs font-bold text-subtle gap-2 sm:gap-5 max-[415px]:gap-2">
-             <button
-                onClick={() => setPeriod("month")}
-                className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "month" ? "bg-primary text-white" : ""}`}>
-                {t("chart.period.month")}
-             </button>
-             <button
-                onClick={() => setPeriod("6m")}
-                className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "6m" ? "bg-primary text-white" : ""}`}>
-                {t("chart.period.6m")}
-             </button>
-             <button
-                onClick={() => setPeriod("year")}
-                className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "year" ? "bg-primary text-white" : ""}`}>
-                {t("chart.period.year")}
-             </button>
-             <button
-                onClick={() => setPeriod("all")}
-                className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === "all" ? "bg-primary text-white" : ""}`}>
-                {t("chart.period.all")}
-             </button>
-          </div>
+         <div className="flex max-[415px]:grid max-[415px]:grid-cols-2 mx-auto mt-4 px-3 bg-white/5 rounded-2xl sm:rounded-full py-2 w-full sm:w-auto text-xs font-bold text-subtle gap-2 sm:gap-5 max-[415px]:gap-2">
+            {(["month", "6m", "year", "all"] as const).map((p) => (
+               <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`w-full sm:w-auto text-nowrap text-center max-[415px]:px-4 max-[415px]:py-2 max-[415px]:text-xs sm:px-6 px-4 py-2 rounded-full transition-colors ${period === p ? "bg-primary text-white" : ""}`}>
+                  {t(`chart.period.${p}`)}
+               </button>
+            ))}
+         </div>
       </div>
    )
 }

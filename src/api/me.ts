@@ -143,12 +143,37 @@ export interface TodayContext {
    mealCount: number
 }
 
+export interface UserPreferences {
+   themeColor: string
+   darkMode: boolean
+   locale: string
+}
+
+export interface GamificationState {
+   xp: number
+   level: number
+   currentStreak: number
+   longestStreak: number
+   totalWorkouts: number
+   lastActivityDate: string | null
+   achievements: string[]
+}
+
+export interface ContextHabit {
+   type: "WATER" | "STEPS"
+   value: number
+   target: number | null
+}
+
 export interface MeContext {
    user: SessionUser
    onboardingCompleted: boolean
    profile: UserProfile | null
    goals: UserGoals | null
    nutrition: NutritionSettings | null
+   preferences: UserPreferences
+   gamification: GamificationState
+   habits: ContextHabit[]
    channels: PublicChannel[]
    coachingProfile: unknown | null
    today: TodayContext
@@ -156,4 +181,18 @@ export interface MeContext {
 
 export function apiGetContext(): Promise<ApiResult<MeContext>> {
    return apiFetch<MeContext>("/me/context")
+}
+
+// ─── UI preferences (theme, dark mode, language) ───────────────────────────
+
+export interface UpdatePreferencesPayload {
+   themeColor?: string
+   darkMode?: boolean
+   locale?: string
+}
+
+export function apiUpdatePreferences(
+   payload: UpdatePreferencesPayload,
+): Promise<ApiResult<{ preferences: UserPreferences }>> {
+   return apiFetch("/me/preferences", { method: "PATCH", body: payload })
 }

@@ -14,14 +14,10 @@ import {
    Shield,
    Rocket,
    Trophy,
-   Save,
-   Plus,
-   X,
 } from "lucide-react"
-import WeightChart from "@/components/WeightChart"
-import { logWeight } from "@/lib/weightLog"
-import { todayLocalISO } from "@/api/client"
-import { DatePicker } from "@/components/ui"
+import HabitsSection from "@/components/HabitsSection"
+import { CountUp } from "@/components/ui"
+import { cardEnter, stagger } from "@/lib/motion"
 
 export default function ProgressPage() {
    const {
@@ -31,7 +27,6 @@ export default function ProgressPage() {
       totalWorkouts,
       resetProgress,
       user,
-      targetWeight,
       dailyCalories,
       targetCalories,
        workoutCompleted,
@@ -39,34 +34,8 @@ export default function ProgressPage() {
        waterGlasses,
        waterStreak,
        meals,
-      isDarkMode,
    } = useStore()
    const { t } = useTranslation("common")
-   const [editingWeight, setEditingWeight] = useState(false)
-   const [weightInput, setWeightInput] = useState(String(user?.weight ?? ""))
-   const [showWeightForm, setShowWeightForm] = useState(false)
-   const [newWeight, setNewWeight] = useState("")
-   const [newWeightDate, setNewWeightDate] = useState(
-      new Date().toISOString().split("T")[0],
-   )
-
-   const handleSaveWeight = async () => {
-      const parsed = parseFloat(weightInput)
-      if (!isNaN(parsed) && parsed > 0) {
-         await logWeight(parsed, todayLocalISO())
-      }
-      setEditingWeight(false)
-   }
-
-   const handleAddWeightEntry = async () => {
-      const parsed = parseFloat(newWeight)
-      if (!isNaN(parsed) && parsed > 0) {
-         await logWeight(parsed, newWeightDate)
-      }
-      setNewWeight("")
-      setNewWeightDate(todayLocalISO())
-      setShowWeightForm(false)
-   }
    const nextLevelXp = level * 100
    const progressToNext = (xp / nextLevelXp) * 100
 
@@ -108,130 +77,23 @@ export default function ProgressPage() {
          </header>
 
          {/* Top Grid: Chart and Level */}
-         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6 mb-6">
+         <motion.div
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6 mb-6">
             <motion.section
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               className="md:col-span-2 xl:col-span-2 bg-card-bg/40 rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between min-h-[280px]">
-               <div className="flex justify-between items-start mb-2">
-                  <div>
-                     {editingWeight ? (
-                        <div className="flex items-center gap-2">
-                           <input
-                              type="number"
-                              aria-label={t("progress.weight_aria")}
-                              className="text-4xl font-display font-bold text-foreground w-24 bg-transparent border-b-2 border-primary outline-none"
-                              value={weightInput}
-                              onChange={(e) => setWeightInput(e.target.value)}
-                              onKeyDown={(e) =>
-                                 e.key === "Enter" && handleSaveWeight()
-                              }
-                           />
-                            <span className="text-xl text-subtle font-normal">kg</span>
-                            <button
-                               aria-label={t("progress.save_weight")}
-                               onClick={handleSaveWeight}
-                               className="min-w-11 min-h-11 flex items-center justify-center p-1.5 bg-primary/10 rounded-lg text-primary hover:bg-primary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                               <Save size={16} />
-                            </button>
-                        </div>
-                     ) : (
-                        <div className="flex items-center gap-2">
-                           <h2 className="text-4xl font-display font-bold text-foreground">
-                              {user?.weight ?? "--"}{" "}
-                              <span className="text-xl text-subtle font-normal">
-                                 kg
-                              </span>
-                           </h2>
-                        </div>
-                     )}
-                  </div>
-                   <div className="bg-primary/10 text-primary px-3 py-1 rounded-xl text-xs font-bold">
-                     {t("progress.target", { weight: targetWeight })}
-                  </div>
-               </div>
-                <div className="flex-1 w-full -ml-4">
-                    <WeightChart
-                       targetWeight={targetWeight}
-                       onPointClick={(date, weight) => {
-                          setNewWeightDate(date)
-                          setNewWeight(weight !== null ? String(weight) : "")
-                          setShowWeightForm(true)
-                       }}
-                    />
-                </div>
-
-               <div className="mt-4 flex justify-center items-center">
-                  <AnimatePresence mode="wait">
-                     {!showWeightForm ? (
-                        <motion.button
-                           key="btn"
-                           initial={{ opacity: 0, scale: 0.9 }}
-                           animate={{ opacity: 1, scale: 1 }}
-                           exit={{ opacity: 0, scale: 0.9 }}
-                           transition={{ duration: 0.2 }}
-                           onClick={() => setShowWeightForm(true)}
-                           className="flex items-center gap-2 py-2.5 text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-4 rounded-xl hover:bg-primary/20 active:scale-95 transition-all">
-                           <Plus size={14} /> {t("progress.log_weight")}
-                        </motion.button>
-                     ) : (
-                        <motion.div
-                           key="form"
-                           initial={{ opacity: 0, width: 0 }}
-                           animate={{ opacity: 1, width: "auto" }}
-                           exit={{ opacity: 0, width: 0 }}
-                           transition={{ duration: 0.35, ease: "easeInOut" }}
-                           className="flex flex-col gap-2 overflow-hidden">
-                           <div className="flex items-center gap-2">
-                              <DatePicker
-                                 variant="inline"
-                                 value={newWeightDate}
-                                 onChange={setNewWeightDate}
-                                 minYear={new Date().getFullYear() - 10}
-                                 maxYear={new Date().getFullYear()}
-                                 maxDate={todayLocalISO()}
-                                 isDarkMode={isDarkMode}
-                              />
-                              <button
-                                 aria-label={t("progress.cancel")}
-                                 onClick={() => setShowWeightForm(false)}
-                                 className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-muted text-subtle rounded-xl hover:text-foreground transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                                 <X size={16} />
-                              </button>
-                           </div>
-                           <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-2 bg-muted/50 dark:bg-white/5 px-3 py-2 rounded-2xl border border-card-border flex-1">
-                                 <input
-                                    type="number"
-                                    step="0.1"
-                                    aria-label={t("progress.weight_aria")}
-                                    placeholder="70.5"
-                                    className="bg-transparent text-sm font-bold text-foreground w-full outline-none"
-                                    value={newWeight}
-                                    onChange={(e) => setNewWeight(e.target.value)}
-                                    onKeyDown={(e) =>
-                                       e.key === "Enter" && handleAddWeightEntry()
-                                    }
-                                 />
-                                 <span className="text-xs text-subtle font-bold">kg</span>
-                              </div>
-                              <button
-                                 aria-label={t("progress.save_weight")}
-                                 onClick={handleAddWeightEntry}
-                                 className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                                 <Save size={16} />
-                              </button>
-                           </div>
-                        </motion.div>
-                     )}
-                  </AnimatePresence>
-               </div>
+               variants={cardEnter}
+               className="md:col-span-2 xl:col-span-2 bg-card-bg/40 rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col min-h-[280px]">
+               <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Droplet size={20} className="text-water" /> {t("habits.title")}
+               </h2>
+               <HabitsSection />
             </motion.section>
 
             <motion.section
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               className="md:col-span-2 xl:col-span-1 bg-level-card-bg rounded-[32px] p-6 shadow-sm border border-card-border relative overflow-hidden flex flex-col justify-between min-h-[280px]">
+               variants={cardEnter}
+               className="md:col-span-2 xl:col-span-1 bg-level-card-bg rounded-[32px] p-6 border border-card-border soft-raised relative overflow-hidden flex flex-col justify-between min-h-[280px]">
                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
                <div className="flex justify-between items-center relative z-10 w-full mb-6">
                   <div>
@@ -239,7 +101,7 @@ export default function ProgressPage() {
                          {t("progress.level")}
                       </span>
                       <h2 className="text-5xl font-display font-extrabold mt-1 text-foreground">
-                        {level}
+                        <CountUp value={level} />
                      </h2>
                   </div>
                   <div className="bg-primary/10 w-12 h-12 rounded-2xl border border-primary/10 flex items-center justify-center">
@@ -248,7 +110,7 @@ export default function ProgressPage() {
                </div>
                <div className="relative z-10 w-full mt-auto">
                   <div className="flex justify-between text-xs font-bold mb-1.5">
-                      <span className="text-subtle/80">{xp} XP</span>
+                      <span className="text-subtle/80"><CountUp value={xp} /> XP</span>
                       <span className="text-subtle">{nextLevelXp} XP</span>
                   </div>
                    <div className="h-3 bg-muted rounded-full overflow-hidden">
@@ -264,16 +126,18 @@ export default function ProgressPage() {
                    </p>
                </div>
             </motion.section>
-         </div>
+         </motion.div>
 
          {/* Stats + Badges Area: Reversed for Mobile ONLY using flex-col-reverse */}
-         <div className="flex flex-col-reverse xl:grid xl:grid-cols-4 gap-4 lg:gap-6 flex-1">
+         <motion.div
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+            className="flex flex-col-reverse xl:grid xl:grid-cols-4 gap-4 lg:gap-6 flex-1">
             {/* Achievements Section - Spans 3 columns on Desktop */}
             <motion.section
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               transition={{ delay: 0.2 }}
-               className="xl:col-span-3 bg-card-bg/40 rounded-[32px] p-6 border border-card-border shadow-sm">
+               variants={cardEnter}
+               className="xl:col-span-3 bg-card-bg rounded-[32px] p-6 border border-card-border soft-raised">
                <h3 className="font-bold text-base mb-4 text-foreground flex items-center gap-2">
                   <Star fill="currentColor" size={18} className="text-accent" />
                   {t("progress.achievements")}
@@ -308,39 +172,33 @@ export default function ProgressPage() {
             </motion.section>
 
             {/* Stats (Streak/Workouts) - Above Logros on mobile */}
-            <div className="grid grid-cols-2 xl:grid-cols-1 gap-4 lg:gap-6 h-full xl:col-span-1">
-               <motion.div
-                  initial={{ x: 20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                  className="bg-card-bg/40 rounded-[32px] p-5 border border-card-border shadow-sm flex flex-col justify-center items-center text-center flex-1">
+            <motion.div
+               variants={cardEnter}
+               className="grid grid-cols-2 xl:grid-cols-1 gap-4 lg:gap-6 h-full xl:col-span-1">
+               <div className="bg-card-bg rounded-[32px] p-5 border border-card-border soft-raised flex flex-col justify-center items-center text-center flex-1">
                   <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent mb-2">
                      <Flame size={24} fill="currentColor" />
                   </div>
                   <span className="text-3xl font-display font-bold text-foreground block leading-tight">
-                     {streak}
+                     <CountUp value={streak} />
                   </span>
                    <span className="text-caption text-subtle">
                       {t("progress.streak")}
                    </span>
-               </motion.div>
-               <motion.div
-                  initial={{ x: 20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.15 }}
-                  className="bg-card-bg/40 rounded-[32px] p-5 border border-card-border shadow-sm flex flex-col justify-center items-center text-center flex-1">
+               </div>
+               <div className="bg-card-bg rounded-[32px] p-5 border border-card-border soft-raised flex flex-col justify-center items-center text-center flex-1">
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-2">
                      <Zap size={24} fill="currentColor" />
                   </div>
                   <span className="text-3xl font-display font-bold text-foreground block leading-tight">
-                     {totalWorkouts}
+                     <CountUp value={totalWorkouts} />
                   </span>
                    <span className="text-caption text-subtle">
                       {t("progress.workouts")}
                    </span>
-               </motion.div>
-            </div>
-         </div>
+               </div>
+            </motion.div>
+         </motion.div>
       </div>
    )
 }

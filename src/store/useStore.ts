@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { MeContext } from '@/api/me';
+import { apiUpdatePreferences, type MeContext } from '@/api/me';
 import type { MealEntry } from '@/api/meals';
 import type { WeightLog } from '@/api/weight';
 import type { Routine } from '@/api/routines';
@@ -21,6 +21,13 @@ export function levelFromApi(level: ActivityLevel): Level {
   if (level === 'SEDENTARY' || level === 'LIGHT') return 'principiante';
   if (level === 'ACTIVE' || level === 'VERY_ACTIVE') return 'avanzado';
   return 'intermedio';
+}
+
+// Backend stores locales like "es-AR"; the UI uses 2-letter subtags (es/en/pt).
+const SUPPORTED_LOCALES = ['es', 'en', 'pt'];
+function normalizeLocale(locale: string): string {
+  const subtag = locale.slice(0, 2).toLowerCase();
+  return SUPPORTED_LOCALES.includes(subtag) ? subtag : 'es';
 }
 
 function heightCm(height: { cm?: number; feet?: number; inches?: number } | null): number {
@@ -116,12 +123,6 @@ function getTargetWeight(goal: Goal, currentWeight: number, userTarget?: number)
   return currentWeight;
 }
 
-function getTargetCalories(goal: Goal): number {
-  if (goal === 'baja_peso') return 1800;
-  if (goal === 'gana_masa') return 2500;
-  return 2000;
-}
-
 function todayISO(): string {
   // Local calendar date (YYYY-MM-DD). Using UTC would shift the day in non-UTC
   // timezones and mismatch the backend's localDate strings (clobbering dailyCalories).
@@ -148,12 +149,17 @@ interface AppState {
   waterGlasses: number;
   waterLiters: number;
   waterStreak: number;
+  waterTarget: number;
+  steps: number;
+  stepsTarget: number;
   lastHydrationStreakDate: string | null;
   meals: Meal[];
   workoutCompleted: boolean;
   isDarkMode: boolean;
+  locale: string;
   animationsEnabled: boolean;
   totalWorkouts: number;
+  achievements: string[];
   routines: Routine[];
   activeRoutineId: string | null;
   themeColor: string;
@@ -176,6 +182,7 @@ interface AppState {
   removeMeal: (id: string) => void;
   addWater: () => void;
   resetWater: () => void;
+  setSteps: (value: number) => void;
   setWorkoutCompleted: (completed: boolean) => void;
   resetDaily: () => void;
   checkAndResetDaily: () => void;
@@ -208,14 +215,21 @@ export const useStore = create<AppState>()(
       waterGlasses: 0,
       waterLiters: 0,
       waterStreak: 0,
+      waterTarget: 10,
+      steps: 0,
+      stepsTarget: 8000,
       lastHydrationStreakDate: null,
       meals: [],
       workoutCompleted: false,
       isDarkMode: false,
+      locale: 'es',
       animationsEnabled: true,
       totalWorkouts: 0,
+      achievements: [],
       routines: [],
       activeRoutineId: null,
+      // Logged-out / onboarding shows orange (nicer for the login screen); once
+      // logged in, hydrateFromContext applies the account preference (default neutral).
       themeColor: 'orange',
       weightHistory: [],
       targetWeight: 65,
@@ -223,7 +237,12 @@ export const useStore = create<AppState>()(
       lastResetDate: null,
       lastUserEmail: null,
       hydrated: false,
-      setThemeColor: (theme) => set({ themeColor: theme }),
+      // Persist UI preferences server-side so they follow the account (best-effort).
+      setThemeColor: (theme) => {
+        set({ themeColor: theme });
+        void apiUpdatePreferences({ themeColor: theme });
+      },
+      setSteps: (value) => set({ steps: Math.max(0, Math.round(value)) }),
 
       // ─── Backend hydration (backend is the source of truth) ──────────────
       hydrateFromContext: (ctx) => {
@@ -243,26 +262,38 @@ export const useStore = create<AppState>()(
         const target = ctx.today.calorieTarget ?? ctx.nutrition?.dailyCalorieTarget ?? state.targetCalories;
         const targetWeight = ctx.goals?.targetWeight ?? getTargetWeight(goal, weight);
 
+        // Today's habit values (water glasses, steps) from the backend.
+        const waterHabit = ctx.habits.find((h) => h.type === 'WATER');
+        const stepsHabit = ctx.habits.find((h) => h.type === 'STEPS');
+
         set({
           hydrated: true,
           isOnboarded: ctx.onboardingCompleted,
           lastUserEmail: ctx.user.email,
-          // Reset gamification only when a different user signs in.
+          // Reset day-scoped local state only when a different user signs in.
           ...(isNewUser
             ? {
-                xp: 0,
-                level: 1,
-                streak: 0,
-                waterGlasses: 0,
                 waterLiters: 0,
                 workoutCompleted: false,
-                totalWorkouts: 0,
                 routines: [],
                 activeRoutineId: null,
                 lastWorkoutDate: null,
                 lastResetDate: null,
               }
             : {}),
+          // Gamification + preferences are backend-authoritative.
+          xp: ctx.gamification.xp,
+          level: ctx.gamification.level,
+          streak: ctx.gamification.currentStreak,
+          totalWorkouts: ctx.gamification.totalWorkouts,
+          achievements: ctx.gamification.achievements,
+          themeColor: ctx.preferences.themeColor,
+          isDarkMode: ctx.preferences.darkMode,
+          locale: normalizeLocale(ctx.preferences.locale),
+          waterGlasses: waterHabit?.value ?? 0,
+          waterTarget: waterHabit?.target ?? 10,
+          steps: stepsHabit?.value ?? 0,
+          stepsTarget: stepsHabit?.target ?? 8000,
           user: {
             name,
             email: ctx.user.email,
@@ -327,7 +358,7 @@ export const useStore = create<AppState>()(
              isOnboarded: true,
              user: profile,
              lastUserEmail: newEmail,
-             targetCalories: getTargetCalories(profile.goal),
+             // targetCalories is set by hydrateFromContext right after (backend calc).
               targetWeight: getTargetWeight(profile.goal, profile.weight, profile.targetWeight),
              weightHistory: [{ date: today, weight: profile.weight }],
              xp: 0,
@@ -351,7 +382,7 @@ export const useStore = create<AppState>()(
              isOnboarded: true,
              user: profile,
              lastUserEmail: newEmail,
-             targetCalories: getTargetCalories(profile.goal),
+             // targetCalories is set by hydrateFromContext right after (backend calc).
               targetWeight: getTargetWeight(profile.goal, profile.weight, profile.targetWeight),
              weightHistory: [{ date: today, weight: profile.weight }],
            });
@@ -484,7 +515,11 @@ export const useStore = create<AppState>()(
           lastResetDate: today,
         });
       },
-      toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
+      toggleDarkMode: () => set((state) => {
+        const next = !state.isDarkMode;
+        void apiUpdatePreferences({ darkMode: next });
+        return { isDarkMode: next };
+      }),
       toggleAnimations: () => set((state) => ({ animationsEnabled: !state.animationsEnabled })),
       resetProgress: () => set({ xp: 0, level: 1, streak: 0, totalWorkouts: 0, workoutCompleted: false, waterGlasses: 0, waterLiters: 0, waterStreak: 0, lastHydrationStreakDate: null, dailyCalories: 0, meals: [], routines: [], activeRoutineId: null, weightHistory: [], lastWorkoutDate: null, lastResetDate: null }),
       updateUser: (updates) => set((state) => {
@@ -493,7 +528,9 @@ export const useStore = create<AppState>()(
         let newTargetCalories = state.targetCalories;
         if (newUser) {
           if (updates.goal) {
-            newTargetCalories = getTargetCalories(newUser.goal);
+            // Calorie target is backend-authoritative (Mifflin-St Jeor from the
+            // full profile); it's re-hydrated from /me after a goal change, so we
+            // don't recompute it from a crude local constant here.
             newTargetWeight = getTargetWeight(newUser.goal, newUser.weight, newUser.targetWeight);
           }
           if (updates.weight && !updates.goal) {

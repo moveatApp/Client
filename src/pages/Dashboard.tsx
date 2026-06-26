@@ -18,7 +18,8 @@ import { useTranslation } from "react-i18next"
 import WeightChart from "@/components/WeightChart"
 import { logWeight } from "@/lib/weightLog"
 import { todayLocalISO } from "@/api/client"
-import { DatePicker } from "@/components/ui"
+import { DatePicker, CountUp } from "@/components/ui"
+import { cardEnter, stagger } from "@/lib/motion"
 
 export default function Home() {
    const navigate = useNavigate()
@@ -102,15 +103,18 @@ export default function Home() {
             </div>
          </header>
 
-         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4 w-full">
+         <motion.div
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4 w-full">
             {/* Chart card */}
             <motion.section
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               className="col-span-1 sm:col-span-2 xl:col-span-2 bg-card-bg/40 rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between min-h-[280px]">
+               variants={cardEnter}
+               className="col-span-1 sm:col-span-2 xl:col-span-2 bg-card-bg rounded-[32px] p-6 border border-card-border soft-raised flex flex-col justify-between min-h-[280px]">
                <div className="flex justify-between items-start mb-2">
                   <h2 className="text-4xl font-display font-bold text-foreground">
-                     {user?.weight ?? "--"}{" "}
+                     {user?.weight != null ? <CountUp value={user.weight} decimals={1} /> : "--"}{" "}
                      <span className="text-xl text-subtle font-normal">kg</span>
                   </h2>
                   <div className="bg-primary/10 text-primary px-3 py-1 rounded-xl text-xs font-bold">
@@ -119,14 +123,9 @@ export default function Home() {
                </div>
 
                <div className="flex-1 w-full">
-                  <WeightChart
-                     targetWeight={targetWeight}
-                     onPointClick={(date, weight) => {
-                        setDashWeightDate(date)
-                        setDashWeight(weight !== null ? String(weight) : "")
-                        setShowDashWeightForm(true)
-                     }}
-                  />
+                  {/* Tapping a point only shows its tooltip (view the day's weight);
+                      logging is done via the "Registrar peso" button below. */}
+                  <WeightChart targetWeight={targetWeight} />
                </div>
                <div className="mt-3 flex justify-center items-center">
                   <AnimatePresence mode="wait">
@@ -179,14 +178,14 @@ export default function Home() {
                               <button
                                  aria-label={t("dashboard.save_weight")}
                                  onClick={handleDashWeightSave}
-                                 className="p-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors">
-                                 <Save size={16} />
+                                 className="min-w-11 min-h-11 flex items-center justify-center bg-primary text-white rounded-2xl shadow-md shadow-primary/25 hover:bg-primary/90 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+                                 <Save size={18} />
                               </button>
                               <button
                                  aria-label={t("dashboard.cancel")}
                                  onClick={() => setShowDashWeightForm(false)}
-                                 className="min-w-11 min-h-11 flex items-center justify-center p-2 bg-muted text-subtle rounded-xl hover:text-foreground transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                                 <X size={16} />
+                                 className="min-w-11 min-h-11 flex items-center justify-center bg-muted text-subtle rounded-2xl hover:text-foreground active:scale-95 transition-all shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+                                 <X size={18} />
                               </button>
                            </div>
                         </motion.div>
@@ -197,10 +196,8 @@ export default function Home() {
 
             {/* Daily circular progress — Apple Watch rings */}
             <motion.section
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               transition={{ delay: 0.1 }}
-               className="col-span-1 bg-card-bg/40 rounded-[32px] p-6 shadow-sm border border-card-border flex flex-col justify-between items-center text-center min-h-[320px] md:min-h-[380px]">
+               variants={cardEnter}
+               className="col-span-1 bg-card-bg rounded-[32px] p-6 border border-card-border soft-raised flex flex-col justify-between items-center text-center min-h-[320px] md:min-h-[380px]">
                <div className="w-full flex justify-between items-center mb-2">
                   <span className="text-caption text-subtle">{t("dashboard.today_progress")}</span>
                </div>
@@ -260,7 +257,7 @@ export default function Home() {
                   {/* Center text */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                      <span className="text-2xl font-display font-extrabold text-foreground leading-none">
-                        {dailyCalories}
+                        <CountUp value={dailyCalories} />
                      </span>
                      <span className="text-xs text-subtle font-bold mt-0.5">
                         / {targetCalories} kcal
@@ -268,7 +265,7 @@ export default function Home() {
                      <div className="flex items-center gap-1 mt-2">
                         <Droplet size={12} className="text-water fill-water" />
                         <span className="text-sm font-bold text-water">
-                           {waterGlasses * 200}ml
+                           <CountUp value={waterGlasses * 200} />ml
                         </span>
                         <span className="text-xs text-subtle">/ 2000ml</span>
                      </div>
@@ -290,7 +287,9 @@ export default function Home() {
             </motion.section>
 
             {/* Meal / Workout row */}
-            <div className="col-span-1 sm:col-span-2 xl:col-span-3 grid grid-cols-2 gap-3 lg:gap-4">
+            <motion.div
+               variants={cardEnter}
+               className="col-span-1 sm:col-span-2 xl:col-span-3 grid grid-cols-2 gap-3 lg:gap-4">
                {/* Last meal card */}
                {(() => {
                   const lastMeal =
@@ -302,7 +301,7 @@ export default function Home() {
                           )[0]
                         : null
                   return (
-                     <div className="col-span-1 flex flex-col h-full bg-level-card-bg border border-card-border rounded-[32px] shadow-sm overflow-hidden relative">
+                     <div className="col-span-1 flex flex-col h-full bg-level-card-bg border border-card-border rounded-[32px] soft-raised overflow-hidden relative">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
                         <Link
                            to="/nutrition"
@@ -358,7 +357,7 @@ export default function Home() {
                })()}
 
                {/* Suggested workout card */}
-               <div className="col-span-1 flex flex-col h-full bg-level-card-bg border border-card-border rounded-[32px] shadow-sm overflow-hidden relative">
+               <div className="col-span-1 flex flex-col h-full bg-level-card-bg border border-card-border rounded-[32px] soft-raised overflow-hidden relative">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
                   <Link
                      to="/training"
@@ -412,14 +411,12 @@ export default function Home() {
                      <ArrowRight size={16} />
                   </Link>
                </div>
-            </div>
+            </motion.div>
 
             {/* Streak row */}
             <motion.div
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               transition={{ delay: 0.2 }}
-               className="col-span-1 sm:col-span-2 xl:col-span-3 bg-level-card-bg dark:border dark:border-card-border rounded-[32px] p-6 shadow-sm flex flex-col justify-between min-h-[160px] relative overflow-hidden">
+               variants={cardEnter}
+               className="col-span-1 sm:col-span-2 xl:col-span-3 bg-level-card-bg border border-card-border rounded-[32px] p-6 soft-raised flex flex-col justify-between min-h-[160px] relative overflow-hidden">
                <div className="absolute inset-0 bg-linear-to-br from-primary to-secondary dark:hidden" />
                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8 dark:hidden" />
                <div className="absolute inset-0 pointer-events-none bg-linear-to-b from-white/25 via-white/5 to-transparent dark:hidden" />
@@ -433,7 +430,7 @@ export default function Home() {
                   </div>
                   <div className="flex items-baseline justify-center gap-1">
                      <span className="text-5xl font-display font-extrabold text-white dark:text-foreground leading-none">
-                        {streak}
+                        <CountUp value={streak} />
                      </span>
                      <span className="text-base font-bold text-white/70 dark:text-subtle">
                         {t("dashboard.day", { count: streak })}
@@ -447,7 +444,7 @@ export default function Home() {
                   </span>
                </div>
             </motion.div>
-         </div>
+         </motion.div>
       </div>
    )
 }

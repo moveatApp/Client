@@ -22,6 +22,16 @@
          "all": "All"
       }
    },
+   "habits": {
+      "title": "Habits",
+      "water": "Water",
+      "steps": "Steps",
+      "glasses": "{{value}}/{{target}} glasses",
+      "steps_of": "{{value}}/{{target}} steps",
+      "add": "Add",
+      "remove": "Remove",
+      "log": "Log"
+   },
    "language": {
       "label": "Language",
       "en": "English",
@@ -78,10 +88,16 @@
       "theme": {
          "label": "Theme color",
          "options": {
+            "neutral": "Neutral",
             "orange": "Orange",
             "green": "Green",
             "blue": "Blue",
-            "purple": "Purple"
+            "purple": "Purple",
+            "red": "Red",
+            "teal": "Teal",
+            "rose": "Rose",
+            "amber": "Amber",
+            "indigo": "Indigo"
          }
       },
       "animations": {
@@ -91,6 +107,18 @@
       },
       "goal": {
          "label": "My goal"
+      },
+      "target_weight": {
+         "label": "Target weight",
+         "save": "Save"
+      },
+      "calories": {
+         "label": "Daily calories",
+         "auto": "Automatic",
+         "manual": "Manual",
+         "calculated_hint": "Calculated from your profile: {{value}} kcal",
+         "invalid": "Enter a value between 800 and 8000 kcal",
+         "save": "Save"
       },
       "goals": {
          "baja_peso": "Lose weight",

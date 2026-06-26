@@ -22,6 +22,16 @@
          "all": "Tudo"
       }
    },
+   "habits": {
+      "title": "Hábitos",
+      "water": "Água",
+      "steps": "Passos",
+      "glasses": "{{value}}/{{target}} copos",
+      "steps_of": "{{value}}/{{target}} passos",
+      "add": "Adicionar",
+      "remove": "Remover",
+      "log": "Registrar"
+   },
    "language": {
       "label": "Idioma",
       "en": "Inglês",
@@ -78,10 +88,16 @@
       "theme": {
          "label": "Cor do tema",
          "options": {
+            "neutral": "Neutro",
             "orange": "Laranja",
             "green": "Verde",
             "blue": "Azul",
-            "purple": "Roxo"
+            "purple": "Roxo",
+            "red": "Vermelho",
+            "teal": "Teal",
+            "rose": "Rosa",
+            "amber": "Âmbar",
+            "indigo": "Índigo"
          }
       },
       "animations": {
@@ -91,6 +107,18 @@
       },
       "goal": {
          "label": "Meu objetivo"
+      },
+      "target_weight": {
+         "label": "Peso alvo",
+         "save": "Salvar"
+      },
+      "calories": {
+         "label": "Calorias diárias",
+         "auto": "Automático",
+         "manual": "Manual",
+         "calculated_hint": "Calculado pelo seu perfil: {{value}} kcal",
+         "invalid": "Digite um valor entre 800 e 8000 kcal",
+         "save": "Salvar"
       },
       "goals": {
          "baja_peso": "Perder peso",

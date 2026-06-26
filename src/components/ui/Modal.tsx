@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion"
+import { createPortal } from "react-dom"
 import React from "react"
 
 interface ModalProps {
@@ -17,7 +18,8 @@ export default function Modal({
    footer,
 }: ModalProps) {
    const titleId = React.useId()
-   return (
+   // Portaled to <body> so the fixed overlay escapes the page-transition transform.
+   return createPortal(
       <AnimatePresence>
          {isOpen && (
             <motion.div
@@ -27,7 +29,7 @@ export default function Modal({
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
-               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 overscroll-contain"
+               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 overscroll-contain"
                onClick={onClose}
             >
                <motion.div
@@ -45,6 +47,7 @@ export default function Modal({
                </motion.div>
             </motion.div>
          )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body,
    )
 }
