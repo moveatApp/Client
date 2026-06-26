@@ -69,6 +69,7 @@
       },
       "channels": {
          "subtitle": "Connect your WhatsApp to log meals and workouts by chat.",
+         "open_whatsapp": "Chat on WhatsApp",
          "whatsapp": "WhatsApp",
          "telegram": "Telegram",
          "soon": "Coming soon",

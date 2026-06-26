@@ -69,6 +69,7 @@
       },
       "channels": {
          "subtitle": "Conectá tu WhatsApp para registrar comidas y entrenamientos por chat.",
+         "open_whatsapp": "Chatear por WhatsApp",
          "whatsapp": "WhatsApp",
          "telegram": "Telegram",
          "soon": "Próximamente",

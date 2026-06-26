@@ -57,6 +57,14 @@ export default function ChannelsSection() {
          </h3>
          <p className="text-sm text-subtle mb-4">{t("profile.channels.subtitle")}</p>
 
+         <a
+            href="https://wa.chatfuel.com/mov-eat"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mb-4 w-full flex items-center justify-center gap-2 bg-[#25D366] text-white font-bold py-3.5 rounded-2xl shadow-md shadow-[#25D366]/25 hover:brightness-95 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+            <MessageCircle size={18} /> {t("profile.channels.open_whatsapp")}
+         </a>
+
          <div className="bg-card-bg/40 rounded-3xl overflow-hidden shadow-sm border border-card-border flex flex-col">
             {/* WhatsApp */}
             <div className="border-b border-card-border">
