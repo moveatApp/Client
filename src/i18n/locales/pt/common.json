@@ -68,8 +68,11 @@
          "connections": "Conexões"
       },
       "channels": {
-         "subtitle": "Conecte seu WhatsApp para registrar refeições e treinos pelo chat.",
+         "subtitle": "Conecte seu canal preferido para registrar refeições e treinos pelo chat.",
          "open_whatsapp": "Conversar no WhatsApp",
+         "connect_preferred": "Conecte seu canal preferido",
+         "premium": "Premium",
+         "premium_only": "Disponível com Premium",
          "whatsapp": "WhatsApp",
          "telegram": "Telegram",
          "soon": "Em breve",

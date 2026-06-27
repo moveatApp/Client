@@ -160,6 +160,7 @@ interface AppState {
   animationsEnabled: boolean;
   totalWorkouts: number;
   achievements: string[];
+  whatsappEnabled: boolean;
   routines: Routine[];
   activeRoutineId: string | null;
   themeColor: string;
@@ -226,6 +227,7 @@ export const useStore = create<AppState>()(
       animationsEnabled: true,
       totalWorkouts: 0,
       achievements: [],
+      whatsappEnabled: false,
       routines: [],
       activeRoutineId: null,
       // Logged-out / onboarding shows orange (nicer for the login screen); once
@@ -287,6 +289,7 @@ export const useStore = create<AppState>()(
           streak: ctx.gamification.currentStreak,
           totalWorkouts: ctx.gamification.totalWorkouts,
           achievements: ctx.gamification.achievements,
+          whatsappEnabled: ctx.features?.whatsapp ?? false,
           themeColor: ctx.preferences.themeColor,
           isDarkMode: ctx.preferences.darkMode,
           locale: normalizeLocale(ctx.preferences.locale),

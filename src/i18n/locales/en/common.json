@@ -68,8 +68,11 @@
          "connections": "Connections"
       },
       "channels": {
-         "subtitle": "Connect your WhatsApp to log meals and workouts by chat.",
+         "subtitle": "Connect your preferred channel to log meals and workouts by chat.",
          "open_whatsapp": "Chat on WhatsApp",
+         "connect_preferred": "Connect your preferred channel",
+         "premium": "Premium",
+         "premium_only": "Available with Premium",
          "whatsapp": "WhatsApp",
          "telegram": "Telegram",
          "soon": "Coming soon",

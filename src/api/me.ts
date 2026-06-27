@@ -165,6 +165,10 @@ export interface ContextHabit {
    target: number | null
 }
 
+export interface FeatureFlags {
+   whatsapp: boolean
+}
+
 export interface MeContext {
    user: SessionUser
    onboardingCompleted: boolean
@@ -173,6 +177,7 @@ export interface MeContext {
    nutrition: NutritionSettings | null
    preferences: UserPreferences
    gamification: GamificationState
+   features: FeatureFlags
    habits: ContextHabit[]
    channels: PublicChannel[]
    coachingProfile: unknown | null
