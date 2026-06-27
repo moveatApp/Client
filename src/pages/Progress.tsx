@@ -16,6 +16,7 @@ import {
    Trophy,
 } from "lucide-react"
 import HabitsSection from "@/components/HabitsSection"
+import PomodoroTimer from "@/components/PomodoroTimer"
 import { CountUp } from "@/components/ui"
 import { cardEnter, stagger } from "@/lib/motion"
 
@@ -125,6 +126,15 @@ export default function ProgressPage() {
                       {t("progress.xp_remaining", { xp: nextLevelXp - xp })}
                    </p>
                </div>
+            </motion.section>
+
+            <motion.section
+               variants={cardEnter}
+               className="md:col-span-2 xl:col-span-3 bg-card-bg/40 rounded-[32px] p-6 shadow-sm border border-card-border">
+               <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Clock size={20} className="text-primary" /> {t("pomodoro.title")}
+               </h2>
+               <PomodoroTimer />
             </motion.section>
          </motion.div>
 

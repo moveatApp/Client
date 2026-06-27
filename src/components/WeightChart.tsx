@@ -171,12 +171,27 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
       return [Math.max(0, min - padding), max + padding]
    }, [series, targetWeight])
 
-   // Split the line color at the target line: below target → green, above → theme.
-   const targetOffset =
-      targetWeight != null && yDomain[1] > yDomain[0]
-         ? Math.min(1, Math.max(0, (yDomain[1] - targetWeight) / (yDomain[1] - yDomain[0])))
-         : null
-   const strokeColor = targetOffset === null ? "var(--primary)" : "url(#weightSplit)"
+   // Color each segment by its direction toward the goal: green when the weight
+   // moved closer to the target, red when it moved away, theme color when flat or
+   // no target. Stop offsets are each point's real x-fraction on the time axis,
+   // so a segment's color lines up exactly with its span (hard edges at points).
+   const towardStops = useMemo(() => {
+      if (series.length < 2) return null
+      const tMin = series[0].t
+      const tMax = series[series.length - 1].t
+      const span = tMax - tMin
+      if (span <= 0) return null
+      const colorFor = (toward: Point["toward"]) =>
+         toward === "good" ? "#22c55e" : toward === "bad" ? "var(--danger)" : "var(--primary)"
+      const stops: { offset: number; color: string }[] = []
+      for (let i = 1; i < series.length; i += 1) {
+         const color = colorFor(series[i].toward)
+         stops.push({ offset: (series[i - 1].t - tMin) / span, color })
+         stops.push({ offset: (series[i].t - tMin) / span, color })
+      }
+      return stops
+   }, [series])
+   const strokeColor = towardStops ? "url(#weightToward)" : "var(--primary)"
 
    const formatMonth = useCallback(
       (ts: number) => {
@@ -220,12 +235,15 @@ export default function WeightChart({ onPointClick, targetWeight }: WeightChartP
                            <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
                            <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                         </linearGradient>
-                        {targetOffset !== null && (
-                           <linearGradient id="weightSplit" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset={0} stopColor="var(--primary)" />
-                              <stop offset={targetOffset} stopColor="var(--primary)" />
-                              <stop offset={targetOffset} stopColor="#22c55e" />
-                              <stop offset={1} stopColor="#22c55e" />
+                        {towardStops && (
+                           <linearGradient id="weightToward" x1="0" y1="0" x2="1" y2="0">
+                              {towardStops.map((s, idx) => (
+                                 <stop
+                                    key={idx}
+                                    offset={`${Math.min(100, Math.max(0, s.offset * 100)).toFixed(3)}%`}
+                                    stopColor={s.color}
+                                 />
+                              ))}
                            </linearGradient>
                         )}
                      </defs>

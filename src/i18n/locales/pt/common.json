@@ -180,7 +180,9 @@
       "day_one": "dia",
       "day_other": "dias",
       "streak_keep": "Continue assim!",
-      "streak_start": "Comece hoje"
+      "streak_start": "Comece hoje",
+      "steps": "Passos",
+      "steps_placeholder": "Passos de hoje"
    },
    "progress": {
       "header": "Seu progresso",
@@ -598,5 +600,18 @@
       "LUNCH": "Almoço",
       "SNACK": "Lanche",
       "DINNER": "Jantar"
+   },
+   "pomodoro": {
+      "title": "Pomodoro",
+      "focus": "Foco",
+      "break": "Pausa",
+      "short_break": "Pausa curta",
+      "long_break": "Pausa longa",
+      "start": "Iniciar",
+      "pause": "Pausar",
+      "reset": "Reiniciar",
+      "today_one": "{{count}} pomodoro hoje",
+      "today_other": "{{count}} pomodoros hoje",
+      "settings": "Ajustar minutos"
    }
 }

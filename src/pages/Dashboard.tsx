@@ -6,6 +6,8 @@ import {
    Flame,
    Plus,
    Droplet,
+   Footprints,
+   Check,
    Save,
    X,
    UtensilsCrossed,
@@ -18,6 +20,7 @@ import { useTranslation } from "react-i18next"
 import WeightChart from "@/components/WeightChart"
 import { logWeight } from "@/lib/weightLog"
 import { todayLocalISO } from "@/api/client"
+import { apiUpsertHabit } from "@/api/habits"
 import { DatePicker, CountUp } from "@/components/ui"
 import { cardEnter, stagger } from "@/lib/motion"
 import { localDateStr } from "@/lib/date"
@@ -32,6 +35,9 @@ export default function Home() {
       dailyCalories,
       waterGlasses,
       addWater,
+      steps,
+      stepsTarget,
+      setSteps,
       isDarkMode,
       meals,
       streak,
@@ -41,6 +47,8 @@ export default function Home() {
    const { trigger } = useWebHaptics({ debug: true })
    const { t } = useTranslation("common")
    const [mounted, setMounted] = useState(false)
+   const [stepsOpen, setStepsOpen] = useState(false)
+   const [stepsDraft, setStepsDraft] = useState("")
    const [showDashWeightForm, setShowDashWeightForm] = useState(false)
    const [dashWeight, setDashWeight] = useState("")
    const [dashWeightDate, setDashWeightDate] = useState(
@@ -80,6 +88,25 @@ export default function Home() {
       if (waterGlasses + 1 === 10) {
          trigger("success")
       }
+   }
+
+   const toggleSteps = () => {
+      setStepsDraft(steps > 0 ? String(steps) : "")
+      setStepsOpen((open) => !open)
+   }
+
+   const saveSteps = () => {
+      const n = Math.max(0, Math.round(Number(stepsDraft)))
+      if (!Number.isFinite(n)) return
+      setSteps(n)
+      void apiUpsertHabit("STEPS", {
+         localDate: todayLocalISO(),
+         value: n,
+         target: stepsTarget,
+         unit: "step",
+      })
+      setStepsOpen(false)
+      if (n >= stepsTarget) trigger("success")
    }
 
    return (
@@ -253,23 +280,57 @@ export default function Home() {
                         strokeDasharray={`${Math.min((waterGlasses / 10) * 81.6, 81.6)}, 81.6`}
                         className="transition-all duration-700 ease-out"
                      />
+                     {/* Innermost ring track — Steps */}
+                     <circle
+                        cx="20"
+                        cy="20"
+                        r="8"
+                        fill="none"
+                        stroke="var(--muted-foreground)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        opacity="0.15"
+                     />
+                     {/* Innermost ring progress — Steps */}
+                     <circle
+                        cx="20"
+                        cy="20"
+                        r="8"
+                        fill="none"
+                        stroke="var(--accent)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeDasharray={`${Math.min((steps / Math.max(stepsTarget, 1)) * 50.27, 50.27)}, 50.27`}
+                        className="transition-all duration-700 ease-out"
+                     />
                   </svg>
 
-                  {/* Center text */}
+                  {/* Center text — calories only, so it never overlaps the rings */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                     <span className="text-2xl font-display font-extrabold text-foreground leading-none">
+                     <span className="text-3xl font-display font-extrabold text-foreground leading-none">
                         <CountUp value={dailyCalories} />
                      </span>
                      <span className="text-xs text-subtle font-bold mt-0.5">
                         / {targetCalories} kcal
                      </span>
-                     <div className="flex items-center gap-1 mt-2">
-                        <Droplet size={12} className="text-water fill-water" />
-                        <span className="text-sm font-bold text-water">
-                           <CountUp value={waterGlasses * 200} />ml
-                        </span>
-                        <span className="text-xs text-subtle">/ 2000ml</span>
-                     </div>
+                  </div>
+               </div>
+
+               {/* Ring legend: water + steps below the ring (kept out of the center) */}
+               <div className="flex items-center justify-center gap-4 mt-3 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                     <Droplet size={14} className="text-water fill-water" />
+                     <span className="text-sm font-bold text-water">
+                        <CountUp value={waterGlasses * 200} />
+                        <span className="text-xs text-subtle font-medium"> / 2000ml</span>
+                     </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                     <Footprints size={14} className="text-accent" />
+                     <span className="text-sm font-bold text-accent">
+                        <CountUp value={steps} />
+                        <span className="text-xs text-subtle font-medium"> / {stepsTarget}</span>
+                     </span>
                   </div>
                </div>
 
@@ -284,7 +345,46 @@ export default function Home() {
                      className="flex-1 flex items-center justify-center gap-1.5 min-h-11 py-3 text-xs font-bold bg-water/10 text-water border border-water/20 rounded-xl hover:bg-water/20 active:scale-95 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                      <Droplet size={14} /> {t("dashboard.water")}
                   </button>
+                  <button
+                     onClick={toggleSteps}
+                     aria-expanded={stepsOpen}
+                     className={`flex-1 flex items-center justify-center gap-1.5 min-h-11 py-3 text-xs font-bold border rounded-xl active:scale-95 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                        stepsOpen
+                           ? "bg-accent/20 text-accent border-accent/30"
+                           : "bg-accent/10 text-accent border-accent/20 hover:bg-accent/20"
+                     }`}>
+                     <Footprints size={14} /> {t("dashboard.steps")}
+                  </button>
                </div>
+
+               <AnimatePresence>
+                  {stepsOpen && (
+                     <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden w-full">
+                        <div className="flex gap-2 w-full mt-2">
+                           <input
+                              type="number"
+                              inputMode="numeric"
+                              min={0}
+                              autoFocus
+                              value={stepsDraft}
+                              onChange={(e) => setStepsDraft(e.target.value)}
+                              onKeyDown={(e) => e.key === "Enter" && saveSteps()}
+                              placeholder={t("dashboard.steps_placeholder")}
+                              className="flex-1 min-w-0 bg-muted/60 border border-card-border rounded-xl px-3 py-2.5 text-sm font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                           />
+                           <button
+                              onClick={saveSteps}
+                              className="min-w-11 flex items-center justify-center px-4 bg-accent text-white rounded-xl font-bold active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+                              <Check size={16} />
+                           </button>
+                        </div>
+                     </motion.div>
+                  )}
+               </AnimatePresence>
             </motion.section>
 
             {/* Meal / Workout row */}
