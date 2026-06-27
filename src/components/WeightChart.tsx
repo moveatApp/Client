@@ -11,6 +11,7 @@ import {
    ResponsiveContainer,
    ReferenceLine,
 } from "recharts"
+import { localDateStr } from "@/lib/date"
 
 type Period = "month" | "6m" | "year" | "all"
 type Granularity = "day" | "week" | "month"
@@ -48,7 +49,7 @@ function bucketKey(date: string, gran: Granularity): string {
    const d = new Date(`${date}T00:00:00`)
    const day = (d.getDay() + 6) % 7 // 0 = Monday
    d.setDate(d.getDate() - day)
-   return d.toISOString().slice(0, 10)
+   return localDateStr(d)
 }
 
 type BasePoint = Pick<Point, "t" | "date" | "weight">

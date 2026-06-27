@@ -5,6 +5,7 @@ import type { MealEntry } from '@/api/meals';
 import type { WeightLog } from '@/api/weight';
 import type { Routine } from '@/api/routines';
 import type { ActivityLevel, PrimaryGoal } from '@/api/client';
+import { localDateStr } from "@/lib/date"
 
 export type Goal = 'baja_peso' | 'gana_masa' | 'mantiene' | 'bienestar';
 export type Level = 'principiante' | 'intermedio' | 'avanzado';
@@ -354,7 +355,7 @@ export const useStore = create<AppState>()(
          const state = get();
          const newEmail = profile.email || null;
          const isNewUser = newEmail && newEmail !== state.lastUserEmail;
-         const today = new Date().toISOString().split('T')[0];
+         const today = localDateStr();
 
          if (isNewUser) {
            set({
@@ -439,7 +440,7 @@ export const useStore = create<AppState>()(
         if (nextGlasses >= 10) {
           const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          const yesterdayStr = localDateStr(yesterday);
           if (state.lastHydrationStreakDate === today) {
             // Ya registrado hoy
           } else if (state.lastHydrationStreakDate === yesterdayStr) {
@@ -464,11 +465,11 @@ export const useStore = create<AppState>()(
          const state = get();
          if (completed && !state.workoutCompleted) {
            state.addXP(50);
-           const today = new Date().toISOString().split('T')[0];
+           const today = localDateStr();
            // Check if last workout was yesterday to maintain streak
            const yesterday = new Date();
            yesterday.setDate(yesterday.getDate() - 1);
-           const yesterdayStr = yesterday.toISOString().split('T')[0];
+           const yesterdayStr = localDateStr(yesterday);
 
            let newStreak = state.streak;
            if (state.lastWorkoutDate === yesterdayStr || state.lastWorkoutDate === today) {
@@ -496,7 +497,7 @@ export const useStore = create<AppState>()(
 
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayStr = localDateStr(yesterday);
 
         let newStreak = state.streak;
         if (state.lastWorkoutDate && state.lastWorkoutDate !== today && state.lastWorkoutDate !== yesterdayStr) {
@@ -547,7 +548,7 @@ export const useStore = create<AppState>()(
         };
       }),
       updateWeight: (weight) => set((state) => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDateStr();
         const existingIndex = state.weightHistory.findIndex(e => e.date === today);
         let newHistory;
         if (existingIndex >= 0) {
@@ -563,7 +564,7 @@ export const useStore = create<AppState>()(
         };
       }),
       addWeightEntry: (weight, dateStr) => set((state) => {
-        const date = dateStr || new Date().toISOString().split('T')[0];
+        const date = dateStr || localDateStr();
         const existingIndex = state.weightHistory.findIndex(e => e.date === date);
         let newHistory;
         if (existingIndex >= 0) {
@@ -571,18 +572,18 @@ export const useStore = create<AppState>()(
         } else {
           newHistory = [...state.weightHistory, { date, weight }];
         }
-        const isToday = date === new Date().toISOString().split('T')[0];
+        const isToday = date === localDateStr();
         return {
           user: isToday && state.user ? { ...state.user, weight } : state.user,
           weightHistory: newHistory,
         };
       }),
       updateStreak: () => set((state) => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDateStr();
         if (state.lastWorkoutDate === today) return {};
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayStr = localDateStr(yesterday);
         const newStreak = state.lastWorkoutDate === yesterdayStr ? state.streak + 1 : 1;
         return { streak: newStreak, lastWorkoutDate: today };
       }),

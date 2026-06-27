@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { Button, CountUp } from "@/components/ui"
 import { cardEnter, stagger } from "@/lib/motion"
+import { localDateStr } from "@/lib/date"
 
 export default function NutritionPage() {
    const {
@@ -38,10 +39,10 @@ export default function NutritionPage() {
       addXP(20)
    }
 
-   const todayStr = new Date().toISOString().split("T")[0]
+   const todayStr = localDateStr()
    const yesterdayDate = new Date()
    yesterdayDate.setDate(yesterdayDate.getDate() - 1)
-   const yesterdayStr = yesterdayDate.toISOString().split("T")[0]
+   const yesterdayStr = localDateStr(yesterdayDate)
 
    // Optimistic delete: drop the meal locally, persist, and roll back on error.
    const handleDeleteMeal = async (meal: Meal) => {

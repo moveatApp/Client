@@ -5,6 +5,7 @@
 // Public endpoints live under `/v1/...` (never hardcode `/api`).
 
 import { tError } from "@/i18n"
+import { localDateStr } from "@/lib/date"
 
 export const API_BASE_URL =
    (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env
@@ -174,11 +175,7 @@ export async function apiFetch<T>(
 
 /** Helper to build today's local date in YYYY-MM-DD. */
 export function todayLocalISO(): string {
-   const now = new Date()
-   const y = now.getFullYear()
-   const m = String(now.getMonth() + 1).padStart(2, "0")
-   const d = String(now.getDate()).padStart(2, "0")
-   return `${y}-${m}-${d}`
+   return localDateStr()
 }
 
 /** The browser's IANA timezone, with a safe fallback. */

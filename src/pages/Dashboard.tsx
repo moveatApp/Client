@@ -20,6 +20,7 @@ import { logWeight } from "@/lib/weightLog"
 import { todayLocalISO } from "@/api/client"
 import { DatePicker, CountUp } from "@/components/ui"
 import { cardEnter, stagger } from "@/lib/motion"
+import { localDateStr } from "@/lib/date"
 
 export default function Home() {
    const navigate = useNavigate()
@@ -43,7 +44,7 @@ export default function Home() {
    const [showDashWeightForm, setShowDashWeightForm] = useState(false)
    const [dashWeight, setDashWeight] = useState("")
    const [dashWeightDate, setDashWeightDate] = useState(
-      new Date().toISOString().split("T")[0],
+      localDateStr(),
    )
 
    useEffect(() => {

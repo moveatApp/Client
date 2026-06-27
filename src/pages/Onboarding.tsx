@@ -62,6 +62,7 @@ import {
    PASSWORD_RULES,
 } from "@/components/onboarding/validation"
 import { estimateMacros } from "@/lib/nutrition"
+import { localDateStr } from "@/lib/date"
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -69,12 +70,12 @@ import { estimateMacros } from "@/lib/nutrition"
 function isoYearsAgo(years: number): string {
    const d = new Date()
    d.setFullYear(d.getFullYear() - years)
-   return d.toISOString().split("T")[0]
+   return localDateStr(d)
 }
 
 /** Local today as YYYY-MM-DD. */
 function todayISO(): string {
-   return new Date().toISOString().split("T")[0]
+   return localDateStr()
 }
 
 // Date-of-birth bounds: not in the future and no more than 120 years ago.
